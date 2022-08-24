@@ -22,7 +22,7 @@ void command_main();
 void _GO_IDLE(){command_main();DLCMatState();}
 void Moni();
 void DLCMatConfigDefault(),DLCMatStatusDefault(),DLCMatReortDefault();
-void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatPostReport();
+void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatPostSndSub(),DLCMatPostReport();
 void DLCMatTimerset(int tmid,int cnt );
 extern	char _Main_version[];
 int DLCMatRecvDisp();
@@ -271,8 +271,8 @@ void MTopn1()
 	memcpy( DLC_MatRadioDensty,DLC_MatLineBuf,DLC_MatLineIdx );
 	DLC_MatLineIdx = 0;
 	if( DLC_BigState == 1 ){
-		DLCMatTimerClr( 0 );
 		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
+		DLCMatTimerset( 0,300 );
 	}
 	else {
 		DLCMatSend( "AT$OPEN\r" );
@@ -327,6 +327,13 @@ void MTrprt()
 	DLCMatTimerset( 0,3000 );
 	DLC_MatState = MATC_STATE_RPT;
 }
+void MTrpOk()
+{
+	DLC_MatLineIdx = 0;
+	DLCMatPostSndSub();
+	DLCMatTimerset( 0,3000 );
+	DLC_MatState = MATC_STATE_RPT;
+}
 void MTcls3()
 {
 	DLC_MatLineIdx = 0;
@@ -348,6 +355,13 @@ void MTslep()
 //	DLCMatTimerset( 0,3000 );										/* For Test afer 30s Go Wake */
     UTIL_LED1_OFF();
 	DLC_MatState = MATC_STATE_SLP;
+}
+void MTNoSlp()
+{
+	putst("Sleep Rtry!\r\n");
+	DLC_MatLineIdx = 0;
+	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
+	DLCMatTimerset( 0,300 );
 }
 void MTslp1()
 {
@@ -402,7 +416,7 @@ void	 (*MTjmp[17][19])() = {
 /* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, MTserv, ______, ______, ______, ______, ______, ______, MTcls3, ______, ______, ______, ______, ______, ______ },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
-/* OK          4 */{ ______, ______, ______, MTapn,  MTserv, MTcong, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
+/* OK          4 */{ ______, ______, ______, MTapn,  MTserv, MTcong, ______, ______, ______, ______, ______, ______, MTrpOk, ______, ______, ______, ______, ______, ______ },
 /* $CONNECT:1  5 */{ ______, ______, ______, ______, ______, ______, MTtime, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $TIME       6 */{ ______, ______, ______, ______, ______, ______, MTrsrp, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $RSRP       7 */{ ______, ______, ______, ______, ______, ______, MTopn1, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
@@ -410,7 +424,7 @@ void	 (*MTjmp[17][19])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTcls1, ______, MTcls2, ______, MTcls3, ______, ______, ______, ______, ______, ______ },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, ______, ______, ______, ______, ______ },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTdisc, ______, ______, ______, ______, ______, ______ },
-/* TimOut     12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTapn,  MTserv, ______, ______, ______, ______, ______, ______, ______, MTslp1, ______, ______, ______, ______, ______ },
+/* TimOut     12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTapn,  MTserv, MTNoSlp,______, ______, ______, ______, ______, ______, MTslp1, ______, ______, ______, ______, ______ },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, ______, ______ },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
@@ -634,9 +648,9 @@ void DLCMatReortDefault()
 }
 //static char http_Head[] = "POST / HTTP/1.1\r\nConnection: Keep-Alive\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
 static char http_Head[] = "POST / HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
-static char http_tmp[4000];
+static char http_tmp[8000];
 //static char http_tmp[2000] = "PUT / HTTP/1.1\r\nHost: beam.soracom.io:8888\r\nUser-Agent: curl/7.64.0\r\nAccept:.*/*\r\nContent-Type:application/json\r\nContent-Length:0000\r\n\r\n";
-char	DLC_MatSendBuff[4000];
+char	DLC_MatSendBuff[1024*2+16];
 void DLCMatPostConfig()
 {
 	char	tmp[48],n,*p;
@@ -753,9 +767,35 @@ void DLCMatPostStatus()
 	機能：Reportを通知、SPI-Flashに溜まっているReportを通知
 	Parameter:通知する数
 */
+static	int DLC_MatSndCnt;
+void DLCMatPostSndSub()
+{
+	char	tmp[48],v;
+	int		i;
+	if( DLC_MatSndCnt < 0 )
+		return;
+	putst("DLCMatPostSndSub\r\n");
+	strcpy( DLC_MatSendBuff,"AT$SEND,\"" );
+	tmp[2] = 0;
+	for( i=0;http_tmp[DLC_MatSndCnt]!=0;i++ ){
+		v = http_tmp[DLC_MatSndCnt];
+		tmp[0] = outhex( v>>4 );
+		tmp[1] = outhex( v&0x0f );
+		strcat( DLC_MatSendBuff,tmp );
+		DLC_MatSndCnt++;
+		if( i == 512 ){
+			putst("■");
+			break;
+		}
+	}
+	strcat( DLC_MatSendBuff,"\"\r" );
+	DLCMatSend( DLC_MatSendBuff );
+	if( http_tmp[DLC_MatSndCnt]==0 )
+		DLC_MatSndCnt = -1;
+}
 void DLCMatPostReport()
 {
-	char	tmp[48],n,*p;
+	char	tmp[48],*p;
 	char	s[20];	
 	int		i,wk;
 	MLOG_T 	log_p;
@@ -763,7 +803,7 @@ void DLCMatPostReport()
 	strcat( http_tmp,"{\"Report\":{" );
 	strcat( http_tmp,"\"LoggerSerialNo\": 3423423}," );
 	strcat( http_tmp,"\"ReportList\":[" );
-	for(i=0;i<10;i++){
+	for(i=0;i<100;i++){
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
 		DLCMatClockGet( &log_p,s );
@@ -779,6 +819,10 @@ void DLCMatPostReport()
 			wk += 1;
 		sprintf( tmp,"\"Alert\":%02d}"		,wk );										strcat( http_tmp,tmp );
 	}
+	if( i == 0 ){
+		putst("Report is 0!\r\n");
+		return;
+	}
 	strcat( http_tmp,"]}" );
 	i = (int)(strchr(http_tmp,']')-strstr(http_tmp,"{\"Report\":{"))+1;
 	if( i > 0 ){
@@ -791,17 +835,9 @@ void DLCMatPostReport()
 		for( i=0;tmp[i]!=0;i++ )
 			p[7+i] = tmp[i];
 		putst( http_tmp );putcrlf();
-		strcpy( DLC_MatSendBuff,"AT$SEND,\"" );
-		tmp[2] = 0;
-		for( i=0;http_tmp[i]!=0;i++ ){
-			n = http_tmp[i];
-			tmp[0] = outhex( n>>4 );
-			tmp[1] = outhex( n&0x0f );
-			strcat( DLC_MatSendBuff,tmp );
-		}
-		strcat( DLC_MatSendBuff,"\"\r" );
-		DLCMatSend( DLC_MatSendBuff );
 	}
+	DLC_MatSndCnt = 0;
+	DLCMatPostSndSub();
 }
 int DLCMatRecvDisp()
 {
