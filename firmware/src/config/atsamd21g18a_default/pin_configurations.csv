@@ -1,0 +1,39 @@
+"Pin Number","Pin ID","Custom Name","Function","Mode", "Direction","Latch","Pull Up","Pull Down","Drive Strength"
+1,PA00,,Available,,,,,,NORMAL
+2,PA01,,Available,,,,,,NORMAL
+3,PA02,EXT1_CHECK,ADC_AIN0,Analog,High Impedance,n/a,,,NORMAL
+4,PA03,REF1,DAC_VREFP,Analog,High Impedance,n/a,,,NORMAL
+7,PB08,EXT2_CHECK,ADC_AIN2,Analog,High Impedance,n/a,,,NORMAL
+8,PB09,CH1_IN,ADC_AIN3,Analog,High Impedance,n/a,,,NORMAL
+9,PA04,CH2_IN,ADC_AIN4/VREFP,Analog,High Impedance,n/a,,,NORMAL
+10,PA05,VBUS_CHECK,GPIO,Digital,In,n/a,No,Yes,NORMAL
+11,PA06,nV1GD,GPIO,Digital,In,n/a,No,No,NORMAL
+12,PA07,nV2GD,GPIO,Digital,In,n/a,No,No,NORMAL
+13,PA08,EXT1_OFF,GPIO,Digital,Out,Low,,,NORMAL
+14,PA09,EXT2_OFF,GPIO,Digital,Out,Low,,,NORMAL
+15,PA10,TX,SERCOM0_PAD2,Digital,High Impedance,n/a,No,No,NORMAL
+16,PA11,RX,SERCOM0_PAD3,Digital,High Impedance,n/a,No,No,NORMAL
+19,PB10,RF_INT_IN,GPIO,Digital,Out,High,,,NORMAL
+20,PB11,RF_READY_OUT,GPIO,Digital,In,n/a,No,No,NORMAL
+21,PA12,,Available,,,,,,NORMAL
+22,PA13,nINTRA,EIC_EXTINT13,Digital,High Impedance,n/a,No,No,NORMAL
+23,PA14,nINTRB,EIC_EXTINT14,Digital,High Impedance,n/a,No,No,NORMAL
+24,PA15,PWR_MODE,GPIO,Digital,In,n/a,No,No,NORMAL
+25,PA16,MISO,SERCOM1_PAD0,Digital,High Impedance,n/a,No,No,NORMAL
+26,PA17,MEM_CS,GPIO,Digital,Out,High,,,NORMAL
+27,PA18,MOSI,SERCOM1_PAD2,Digital,High Impedance,n/a,No,No,NORMAL
+28,PA19,SCK,SERCOM1_PAD3,Digital,High Impedance,n/a,No,No,NORMAL
+29,PA20,TEST_SW,EIC_EXTINT4,Digital,In,n/a,No,No,NORMAL
+30,PA21,,Available,,,,,,NORMAL
+31,PA22,SDA,SERCOM3_PAD0,Digital,High Impedance,n/a,No,No,NORMAL
+32,PA23,SCL,SERCOM3_PAD1,Digital,High Impedance,n/a,No,No,NORMAL
+33,PA24,USB_DM,USB_DM,Digital,High Impedance,n/a,No,No,NORMAL
+34,PA25,USB_DP,USB_DP,Digital,High Impedance,n/a,No,No,NORMAL
+37,PB22,RF_RTS,GPIO,Digital,Out,Low,,,NORMAL
+38,PB23,GPIO_PB23,GPIO,Digital,Out,Low,,,NORMAL
+39,PA27,,Available,,,,,,NORMAL
+41,PA28,,Available,,,,,,NORMAL
+45,PA30,,Available,,,,,,NORMAL
+46,PA31,,Available,,,,,,NORMAL
+47,PB02,RF_TXO,SERCOM5_PAD0,Digital,High Impedance,n/a,No,No,NORMAL
+48,PB03,RF_RXI,SERCOM5_PAD1,Digital,High Impedance,n/a,No,No,NORMAL

@@ -1,0 +1,404 @@
+/*******************************************************************************
+  Main Source File
+
+  Company:
+    Interark Corp.
+
+  File Name:
+    main.c
+
+  Date:
+    2022/08/17 (R0)
+
+  Summary:
+    This file contains the "main" function for a project.
+
+  Description:
+    This source files is for DLC-04 project.
+
+*******************************************************************************/
+
+// *****************************************************************************
+// *****************************************************************************
+// Section: Included Files
+// *****************************************************************************
+// *****************************************************************************
+
+#define DEBUG_UART
+
+#include <stddef.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include "definitions.h"
+#include "wpfm.h"
+#include "util.h"
+#include "debug.h"
+#include "battery.h"
+#include "rtc.h"
+#include "smpif.h"
+
+/* temporary */
+#include "w25q128jv.h"
+#include "mlog.h"
+void  	    DLCMatMain();
+
+/*
+*   Local functions
+*/
+static void eventLoopOnMeasurementMode(void);
+static void eventLoopOnNonMeasurementMode(void);
+
+// *****************************************************************************
+// *****************************************************************************
+// Section: Main Entry Point
+// *****************************************************************************
+// *****************************************************************************
+
+int main(void)
+{
+    WPFM_status = WPFM_STATUS_INITIALIZING;
+
+    /* Initialize all modules */
+    SYS_Initialize(NULL);
+
+    /*** FOR DEBUG ***/
+    if (TEST_SW_Get() == 0)
+    {
+        DEBUG_UART_printlnString("## ERASE CHIP ##");
+        DEBUG_UART_printlnString("## DO NOT POWER OFF ##");
+        UTIL_startBlinkLED1(0);
+        // Erase flash memory chip
+        W25Q128JV_begin(MEM_CS_PIN);
+        int stat;
+        if ((stat = W25Q128JV_eraseChip(true)) == W25Q128JV_ERR_NONE)
+        {
+            DEBUG_UART_printlnString("ERASE CHIP OK.");
+        }
+        else
+        {
+            DEBUG_UART_printlnFormat("ERASE CHIP ERROR: %d", stat);
+        }
+        UTIL_stopBlinkLED1();
+    }
+
+    /* Get current operation mode */
+    WPFM_operationMode = UTIL_getPowerModeSW();
+
+    /* Initialize for application */
+    WPFM_initializeApplication();
+
+    DEBUG_UART_printlnFormat("WPFM_SETTING_PARAMETER size = %u", (unsigned int)sizeof(WPFM_SETTING_PARAMETER));
+    DEBUG_UART_printlnFormat("MLOG_T size = %u", (unsigned int)sizeof(MLOG_T));
+    DEBUG_UART_printlnFormat("MLOG Max logs = %u", ((MLOG_ADDRESS_MLOG_LAST + 1) / 256) * MLOG_LOGS_PER_PAGE);
+
+    // Main-loop
+    if (WPFM_operationMode == WPFM_OPERATION_MODE_NON_MEASUREMENT)
+    {
+        // Execute on non-measurement mode processing
+        DEBUG_UART_printlnString("RUN AS NON-MEASUREMENT MODE");
+        UTIL_LED1_ON();
+        //APP_delay(5000);
+        SYSTICK_DelayMs(1000);
+        UTIL_LED1_OFF();
+
+        // WPFM_settingParameter.alertOperationEnabled = false;
+        WPFM_status = WPFM_STATUS_WAIT_COMMAND;
+        SENSOR_updateMeasurementInterval(1);
+        DEBUG_UART_printlnFormat("START NON-MEASUR-LOOP(%lu)", SYS_tick);
+        eventLoopOnNonMeasurementMode();
+    }
+    else
+    {
+        // Execute on measurement mode processing
+        DEBUG_UART_printlnString("RUN AS MEASUREMENT MODE");
+        UTIL_startBlinkLED1(5);
+
+        WPFM_status = WPFM_STATUS_WAIT_COMMAND;
+        DEBUG_UART_printlnFormat("START MEASUR-LOOP(%lu)", SYS_tick);
+        eventLoopOnMeasurementMode();
+    }
+
+    /* Execution should not come here during normal operation */
+    return (EXIT_FAILURE);
+}
+
+/*
+*   測定モード時のメインループ処理
+*/
+static void eventLoopOnMeasurementMode(void)
+{
+    while (true)
+    {
+        SYS_Tasks();
+	    DLCMatMain();
+
+        // スライドスイッチの設定が変更されたか否かをチェックする
+        if (UTIL_getPowerModeSW() != WPFM_operationMode)
+        {
+            // 変更されていた時は、リブートして新しい動作モードで処理を開始する
+            WPFM_reboot();
+        }
+
+        // タクトスイッチが押下されたどうかをチェックする
+        if (WPFM_wasButtonPressed)
+        {
+            if (WPFM_lastButtonReleasedTime - WPFM_lastButtonPressedTime < WPFM_LONG_PRESSED_TIME)
+            {
+                // 短押しされたとき
+                DEBUG_UART_printlnString(">>SHORT PRSD");
+                WPFM_uploadOneShot(true);       // 未送信のログデータをアップロード
+            }
+            else
+            {
+                // 長押しされたとき
+                DEBUG_UART_printlnString(">>LONG PRSD");
+                if (WPFM_isBeingReplacedBattery)
+                {
+                    // 電池交換を終了する
+                    DEBUG_UART_printFormat("END REPLACE(#%d)", WPFM_externalBatteryNumberToReplace);
+                    int stat;
+                    if ((stat = BATTERY_leaveReplaceBattery()) == BATTERY_ERR_NONE)
+                    {
+                        // 電池交換の終了に成功したとき
+                        DEBUG_UART_printlnString(" - OK");
+                        WPFM_isBeingReplacedBattery = false;
+                    }
+                    else
+                    {
+                        // 電池交換の終了に失敗したとき（交換した電池の電圧が低い）は、終了せず、何もしない
+                        DEBUG_UART_printlnFormat(" - ERROR: %d", stat);
+                    }
+                    DEBUG_UART_FLUSH();
+                }
+                else
+                {
+                    // 電池交換を開始する
+                    DEBUG_UART_printFormat("BEGIN REPLACE(#%d)", WPFM_externalBatteryNumberToReplace);
+                    int stat;
+                    if ((stat = BATTERY_enterReplaceBattery()) == BATTERY_ERR_NONE)
+                    {
+                        // 電池交換の開始に成功したとき
+                        DEBUG_UART_printlnString(" - OK");
+                        WPFM_isBeingReplacedBattery = true;
+                        WPFM_startExchangingBatteryTime = RTC_now;
+                    }
+                    else
+                    {
+                        // 電池交換の開始に失敗したとき（電池交換が必要ないとき）は、無視する
+                        DEBUG_UART_printlnFormat(" - ERROR: %d", stat);
+                    }
+                    DEBUG_UART_FLUSH();
+                }
+            }
+            WPFM_wasButtonPressed = false;
+        }
+
+        // 定期計測のタイミングかどうかチェックする
+        if (WPFM_doMeasure)
+        {
+            // 定期計測処理を実行する
+            WPFM_status = WPFM_STATUS_MEASUREMENT;
+            static int measurementCount = 0;
+            if (measurementCount++ < 5)
+            {
+                // 定期計測の最初の5回だけLED1を500mS点灯させる
+                UTIL_LED1_ONESHOT();
+            }
+            WPFM_measureRegularly(false);
+            WPFM_status = WPFM_STATUS_WAIT_COMMAND;
+
+            if (WPFM_isInSendingRegularly)
+            {
+                SMPIF_sendRegularly();      // 定期受信を実行する
+                APP_printlnUSB("");             // デバッグ用に改行を入れる（リリース版では削除する）
+            }
+
+            WPFM_doMeasure = false;
+        }
+
+        // アラート警報するかどうかチェックする(また、電池交換中は定期通信を行わない)
+        if ((WPFM_doNotifies[0] || WPFM_doNotifies[1]) && ! WPFM_isBeingReplacedBattery)
+        {
+            // 通知処理(ダミー)を実行する
+            WPFM_status = WPFM_STATUS_EMERGENCY_ALERT;
+            WPFM_notifyAlert();
+            WPFM_status = WPFM_STATUS_WAIT_COMMAND;
+            WPFM_doNotifies[0] = WPFM_doNotifies[1] = false;
+        }
+
+        // 定期通信のタイミングかどうかチェックする(また、電池交換中は定期通信を行わない)
+        if (WPFM_doCommunicate && ! WPFM_isBeingReplacedBattery)
+        {
+            // 次の定期通信のアラームを設定する
+            WPFM_setNextCommunicateAlarm();
+            // 定期通信処理(ダミー)を実行する
+            WPFM_uploadRegularly();
+            WPFM_doCommunicate = false;
+        }
+
+        /*
+         * 条件がそろえば、スリープする。
+         * ただし、電池交換中、スマホ/PCがUSBポートに接続されているとき、あるいはタクトスイッチの押下中はスリープしない
+         */
+        if (WPFM_isBeingReplacedBattery)
+        {
+            if (RTC_now - WPFM_startExchangingBatteryTime > WPFM_settingParameter.maximumBatteryExchangeTime)
+            {
+                // 電池交換に要する時間が長すぎる時は、一旦、電池交換モードから抜ける
+                WPFM_isBeingReplacedBattery = false;
+                WPFM_startExchangingBatteryTime = 0;
+                BATTERY_turnOffExtLed();
+                DEBUG_UART_printlnString("EXIT REPLACE BATTERY..");
+            }
+        }
+        else if (WPFM_isConnectingUSB)
+        {
+            // Smarthone I/F processing
+            int stat = 0;
+            switch (WPFM_status)
+            {
+                case WPFM_STATUS_WAIT_COMMAND:
+                    if ((stat = SMPIF_readMessage()) == SMPIF_ERR_NONE)
+                    {
+                        WPFM_status = WPFM_STATUS_PROCESSING_COMMAND;
+                    }
+                    else if (stat != SMPIF_ERR_NO_MESSAGE)
+                    {
+                        // stay in WPFM_STATUS_WAIT_COMMAND
+                        DEBUG_UART_printlnFormat("SMPIF_readMessage() error: %d", stat);
+                    }
+                    break;
+                case WPFM_STATUS_PROCESSING_COMMAND:
+                    if ((stat = SMPIF_handleMessage()) == SMPIF_ERR_NONE)
+                    {
+                        WPFM_status = WPFM_STATUS_WAIT_COMMAND;
+                    }
+                    else
+                    {
+                        DEBUG_UART_printlnFormat("SMPIF_handleMessage() error: %d", stat);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        else if (WPFM_tactSwStatus != WPFM_TACTSW_STATUS_NORMAL)
+        {
+            // タクトスイッチの押下中なので、スリープしない
+        }
+        else
+        {
+            WPFM_isInSendingRegularly = false;  // USBケーブルがVEなしで抜かれた時のために
+
+            // Fall aSleep if there is no work to do
+            WPFM_status = WPFM_STATUS_SLEEP;
+            DEBUG_UART_printlnString(">SLEEP");
+            APP_delay(1);
+            WPFM_sleep();
+            APP_delay(1);
+            DEBUG_UART_printlnString("<WAKE UP");
+            WPFM_status = WPFM_STATUS_IDLE;
+        }
+    } // end-of-while-loop
+}
+
+/*
+*   非測定モード時のメインループ処理
+*/
+static void eventLoopOnNonMeasurementMode(void)
+{
+    while (true)
+    {
+        SYS_Tasks();
+ 	    DLCMatMain();
+
+        // スライドスイッチの設定が変更されたか否かをチェックする
+        if (UTIL_getPowerModeSW() != WPFM_operationMode)
+        {
+            // 変更されていた時は、リブートして新しい動作モードで処理を開始する
+            WPFM_reboot();
+        }
+
+        // タクトスイッチが押下されたどうかをチェックする
+        if (WPFM_wasButtonPressed)
+        {
+            if (WPFM_lastButtonReleasedTime - WPFM_lastButtonPressedTime < WPFM_LONG_PRESSED_TIME)
+            {
+                // 短押しされたとき
+                DEBUG_UART_printlnFormat("SHORT PRESSED: %u %u", (unsigned int)WPFM_lastButtonReleasedTime, (unsigned int)WPFM_lastButtonPressedTime);
+                WPFM_uploadOneShot(false);      // 空のデータをアップロード
+            }
+            else
+            {
+                // 長押しされたとき
+                DEBUG_UART_printlnFormat("LONG PRESSED: %u %u", (unsigned int)WPFM_lastButtonReleasedTime, (unsigned int)WPFM_lastButtonPressedTime);
+                // 非測定モードの時は電池交換を許容しないので、何もしない
+
+                MLOG_dump();    // FOR DEBUG!
+                MLOG_checkLogs(false);
+
+            }
+            WPFM_wasButtonPressed = false;
+        }
+
+        if (WPFM_isConnectingUSB)
+        {
+            UTIL_LED1_OFF();
+
+            if (WPFM_isInSendingRegularly)
+            {
+                // 1秒間隔で計測を行い、スマホアプリへ送信する
+                if (WPFM_doMeasure)
+                {
+                    WPFM_measureRegularly(true);
+                    SMPIF_sendRegularly();       // 定期受信を実行する
+                    WPFM_doMeasure = false;
+                }
+            }
+
+            // Smarthone I/F processing
+            int stat = 0;
+            switch (WPFM_status)
+            {
+                case WPFM_STATUS_WAIT_COMMAND:
+                    if ((stat = SMPIF_readMessage()) == SMPIF_ERR_NONE)
+                    {
+                        WPFM_status = WPFM_STATUS_PROCESSING_COMMAND;
+                    }
+                    else if (stat != SMPIF_ERR_NO_MESSAGE)
+                    {
+                        // stay in WPFM_STATUS_WAIT_COMMAND
+                        DEBUG_UART_printlnFormat("SMPIF_readMessage() error: %d", stat);
+                    }
+                    break;
+                case WPFM_STATUS_PROCESSING_COMMAND:
+                    if ((stat = SMPIF_handleMessage()) == SMPIF_ERR_NONE)
+                    {
+                        WPFM_status = WPFM_STATUS_WAIT_COMMAND;
+                    }
+                    else
+                    {
+                        DEBUG_UART_printlnFormat("SMPIF_handleMessage() error: %d", stat);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        else if (WPFM_tactSwStatus != WPFM_TACTSW_STATUS_NORMAL)
+        {
+            // タクトスイッチの押下中
+        }
+        else
+        {
+            // USB was disconnected
+            WPFM_isInSendingRegularly = false;  // USBケーブルがVEなしで抜かれた時のために
+
+            UTIL_LED1_ON();
+        }
+    }
+}
+
+/*******************************************************************************
+ End of File
+*/

@@ -1,0 +1,22 @@
+format_version: v1.0
+type: UniqueComponent
+attributes: {id: drv_usbfs_v1}
+children:
+- type: Symbols
+  children:
+  - type: Boolean
+    attributes: {id: USB_DEVICE_VBUS_SENSE}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: 'true'}
+  - type: String
+    attributes: {id: USB_DEVICE_VBUS_SENSE_PIN_NAME}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: VBUS_CHECK}
+- type: ElementPosition
+  attributes: {x: '361', y: '303', id: drv_usbfs_v1}
