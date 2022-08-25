@@ -1,3 +1,4 @@
+void DLCMatCall(int);
 /*
  * File:    communicate.c
  * Author:  Interark Corp.
@@ -20,7 +21,7 @@ void WPFM_uploadRegularly(void)
      *  Communication processing is described here -- BEGIN --
      ***/
 
-     WPFM_uploadOneShot(true);
+    DLCMatCall(0);
 
     /*
      *  -- END --
@@ -33,7 +34,7 @@ void WPFM_uploadRegularly(void)
 void WPFM_uploadOneShot(bool unsentOrEmpty)
 {
     // Wake up MATcore
-    RF_INT_IN_Set();    // INT_IN high to wake up
+    DLCMatCall(2);
 #if 0
     APP_delay(10);
 
@@ -96,7 +97,7 @@ void WPFM_uploadOneShot(bool unsentOrEmpty)
 void WPFM_notifyAlert(void)
 {
     APP_delay(10);
-    RF_INT_IN_Set();    // INT_IN high to wake up
+    DLCMatCall(1);
     DEBUG_UART_printlnString("[[NOTIFY WARNING ALERT !!]]\n");
     APP_delay(5);
 }
