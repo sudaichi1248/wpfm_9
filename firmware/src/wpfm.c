@@ -2,7 +2,7 @@
  * File:    wpfm.c
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project common definition file.
- * Date:    2022/08/17 (R0)
+ * Date:    2022/08/23 (R0)
  * Note:
  */
 
@@ -52,9 +52,11 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     // Calibration
     { { 1794, 4080, 4070, 4060 }, { 4090, 4080, 4070, 4060 } },     // calibration upper values[LSB]
     { { 586, 20,  30,  40 }, { 10, 20,  30,  40  } },                // calibration lower values[LSB]
-    2400,                   // lowThresholdVoltage[mV]
-    5,                      // timesLessThresholdVoltage
-    30                      // maximumBatteryExchangeTime[sec]
+    2400,                       // lowThresholdVoltage[mV]
+    5,                          // timesLessThresholdVoltage
+    30,                         // maximumBatteryExchangeTime[sec]
+    "水圧", "MPa",              // Measure_ch1, MeaKind_ch1
+    "流量", "m3/h"              // Measure_ch2, MeaKind_ch2
 };
 volatile uint16_t WPFM_measurementInterval;              // Current measurement interval[Sec]
 uint16_t WPFM_communicationInterval;            // Current communication interval[Sec]
@@ -180,5 +182,9 @@ void WPFM_dumpSettingParameter(WPFM_SETTING_PARAMETER *param_p)
     DEBUG_UART_printlnFormat("lowThresholdVoltage: %u", (unsigned int)param_p->lowThresholdVoltage); APP_delay(10);
     DEBUG_UART_printlnFormat("timesLessThresholdVoltage: %u", (unsigned int)param_p->timesLessThresholdVoltage); APP_delay(10);
     DEBUG_UART_printlnFormat("maximumBatteryExchangeTime: %u", (unsigned int)param_p->maximumBatteryExchangeTime); APP_delay(10);
+
+    DEBUG_UART_printlnFormat("Measure_ch1/MeaKind_ch1: \"%s\", \"%s\"", param_p->Measure_ch1, param_p->MeaKind_ch1); APP_delay(10);
+    DEBUG_UART_printlnFormat("Measure_ch2/MeaKind_ch2: \"%s\", \"%s\"", param_p->Measure_ch2, param_p->MeaKind_ch2); APP_delay(10);
+
     DEBUG_UART_printlnFormat("--");
 }

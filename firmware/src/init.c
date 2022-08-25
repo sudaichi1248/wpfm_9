@@ -1,3 +1,4 @@
+void DLCMatSleepWait();
 /*
  * File:    init.c
  * Author:  Interark Corp.
@@ -18,6 +19,7 @@
 #include "s5851a.h"
 #include "w25q128jv.h"
 #include "mlog.h"
+#include "moni.h"
 
 /*
 *   Local variables and functions
@@ -79,8 +81,10 @@ void WPFM_initializeApplication(void)
     {
         DEBUG_UART_printlnString("parameter read error.");
     }
+    if( WPFM_settingParameter.isInvalid )
+    	DEBUG_UART_printlnString("('„D')('„D')('„D')..");
     if (true)
-//kasai    if (WPFM_settingParameter.isInvalid)
+//  if (WPFM_settingParameter.isInvalid)
     {
         // Set default values
         DEBUG_UART_printlnString("Set default parameter.");
@@ -341,7 +345,7 @@ void WPFM_reboot(void)
 void WPFM_sleep(void)
 {
     // (1) Make settings to save power before going to sleep.
-    RF_INT_IN_Clear();      // sleep MATcore
+    DLCMatSleepWait();
     UTIL_setLED1();         // turn off LED1
     UTIL_setEXT1LED();      // turn off EXT1_LED
     UTIL_setEXT2LED();      // turn off EXT2_LED

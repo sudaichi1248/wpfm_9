@@ -2,7 +2,7 @@
  * File:    wpfm.h
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project common header file.
- * Date:    2022/08/17 (R0)
+ * Date:    2022/08/24 (R0)
  * Note:    Defined values ​​need to be reviewed according to specifications!
  */
 
@@ -47,9 +47,11 @@ extern "C" {
 #define WPFM_MISSING_VALUE_FLOAT        FLT_MAX         //
 #define WPFM_MISSING_VALUE_UINT16       0xffff          //
 #define WPFM_MISSING_VALUE_UINT32       0xffffffff      //
-  //
-//#define WPFM_SETTING_PARAMETER_ADDRESS  0x0003FF00      // Last space of flash memory (256Bytes)
+  // Setting parameter address
 #define WPFM_SETTING_PARAMETER_ADDRESS  0x0003FE00      // Last space of flash memory (256Bytes)
+  // Maximum symbols
+#define WPFM_MAX_TARGET_NAME            16              // Measurement target name ("水圧" ..)
+#define WPFM_MAX_UNIT_NAME              16              // Measurement unit name ("MPa" ..)
 
 /*
 *   Types
@@ -121,10 +123,10 @@ typedef struct
     uint16_t        lowThresholdVoltage;                // 電池切替が必要だと判断する電圧の閾値[mV]
     uint16_t        timesLessThresholdVoltage;          // 電池切替が必要だと判断する、閾値を下回った最低回数[回]
     uint16_t        maximumBatteryExchangeTime;         // 電池交換のために許容する最大時間[Sec]
-    char			Measure_ch1[16];					// 単位文字列
-    char			MeaKind_ch1[16];
-    char			Measure_ch2[16];
-    char			MeaKind_ch2[16];
+    char            Measure_ch1[WPFM_MAX_TARGET_NAME];  // CH1の計測対象名
+    char            MeaKind_ch1[WPFM_MAX_UNIT_NAME];    // CH1の単位名
+    char            Measure_ch2[WPFM_MAX_TARGET_NAME];  // CH2の計測対象名
+    char            MeaKind_ch2[WPFM_MAX_UNIT_NAME];    // CH2の単位名
 } WPFM_SETTING_PARAMETER;
     // value of sensorKinds[] is used for index of calibrationUpperValues[] and calibrationLowerValues[]
 // index of each array -- common values
