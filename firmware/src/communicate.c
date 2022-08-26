@@ -21,7 +21,7 @@ void WPFM_uploadRegularly(void)
      *  Communication processing is described here -- BEGIN --
      ***/
 
-    DLCMatCall(0);
+    DLCMatCall(1);
 
     /*
      *  -- END --
@@ -97,7 +97,7 @@ void WPFM_uploadOneShot(bool unsentOrEmpty)
 void WPFM_notifyAlert(void)
 {
     APP_delay(10);
-    DLCMatCall(1);
+    DLCMatCall(3);
     DEBUG_UART_printlnString("[[NOTIFY WARNING ALERT !!]]\n");
     APP_delay(5);
 }

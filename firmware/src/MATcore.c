@@ -39,10 +39,12 @@ char	DLC_MatNUM[16] = "812001003404286";
 char	DLC_MatIMEI[16];
 int		DLC_MatTmid;
 uchar	DLC_BigState,DLC_Matknd;
+#define		TIMER_NUM	2
 struct {
-	int	cnt;
-} DLC_MatTimer;
-char getch()
+	int		cnt;
+	uchar	TO;
+} DLC_MatTimer[TIMER_NUM];
+char getkey()
 {
 	char	c;
 	if( SERCOM0_USART_Read( (unsigned char*)&c,1 ) ){
@@ -50,6 +52,17 @@ char getch()
 		return c;
 	}
 	return 0;
+}
+char getch()
+{
+	char	c;
+	while(1){
+		if( SERCOM0_USART_Read( (unsigned char*)&c,1 ) ){
+			putch(c);
+			return c;
+		}
+		_GO_IDLE();
+	}
 }
 void putch( char c )
 {
@@ -70,20 +83,13 @@ void DLCMatInit()
 	DLCMatTimerset( 0,3000 );
 }
 /*
-	Function:通信タスクにTO通知
-*/
-void DLCMatNoty(int tmid)
-{
-	DLC_MatTmid = tmid;
-}
-/*
 	Function:通信タスクのTO通知の確認
 */
 int	DLCMatTmChk(int tmid)
 {
-	if( DLC_MatTmid ){
-		if( DLC_MatTimer.cnt == 0 ){
-			DLC_MatTmid = 0;
+	if( DLC_MatTimer[tmid].TO ){
+		if( DLC_MatTimer[tmid].cnt == 0 ){
+			DLC_MatTimer[tmid].TO = 0;
 			return 1;
 		}
 	}
@@ -91,11 +97,13 @@ int	DLCMatTmChk(int tmid)
 }
 void DLCMatTimerInt()
 {
-	if( DLC_MatTimer.cnt != 0 ){
-		DLC_MatTimer.cnt--;
-		if( DLC_MatTimer.cnt == 0 )
-			DLCMatNoty(1);
-//	putch('t');
+	for(int i=0;i<TIMER_NUM;i++ ){
+		if( DLC_MatTimer[i].cnt != 0 ){
+			DLC_MatTimer[i].cnt--;
+			if( DLC_MatTimer[i].cnt == 0 )
+				DLC_MatTimer[i].TO = 1;
+	//	putch('t');
+		}
 	}
 }
 /*
@@ -103,11 +111,12 @@ void DLCMatTimerInt()
 */
 void DLCMatTimerset(int tmid,int cnt )
 {
-	DLC_MatTimer.cnt = cnt;
+	DLC_MatTimer[tmid].cnt = cnt;
 }
 void DLCMatTimerClr(int tmid )
 {
-	DLC_MatTimer.cnt = 0;
+	DLC_MatTimer[tmid].cnt = 0;
+	DLC_MatTimer[tmid].TO = 0;
 }
 void DLCMatLog(int len)
 {
@@ -174,11 +183,12 @@ int	DLCMatCharInt( char *p,char *title )
 #define		MATC_FACT_CLS	9
 #define		MATC_FACT_DATA	10
 #define		MATC_FACT_DSC	11
-#define		MATC_FACT_TO	12
+#define		MATC_FACT_TO1	12
 #define		MATC_FACT_WUP	13
 #define		MATC_FACT_FOTA	14
 #define		MATC_FACT_FTP	15
 #define		MATC_FACT_SLP	16
+#define		MATC_FACT_TO2	17
 /* 状態 */
 #define		MATC_STATE_INIT	0
 #define		MATC_STATE_IDLE	1
@@ -314,6 +324,7 @@ void MTdata()
 void MTcls1()
 {
 	DLC_MatLineIdx = 0;
+	DLC_Matknd = 0;
 	DLCMatSend( "AT$OPEN\r" );
 	DLC_MatState = MATC_STATE_OPN2;
 }
@@ -335,7 +346,6 @@ void MTrprt()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatPostReport();
-	DLC_Matknd = 0;
 	DLCMatTimerset( 0,3000 );
 	DLC_MatState = MATC_STATE_RPT;
 }
@@ -418,29 +428,26 @@ void DLCMatClockGet(MLOG_T *log_p,char *s)
 	RTC_convertToDateTime(log_p->timestamp.second,&dt);
 	sprintf( s,"%02d/%02d/%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 }
+/*
+	計測からCallされて、通信を行う 通信タスクをWAKEUPさせると通信は勝手に走って、終わるとSleepへ行く
+*/
 void DLCMatCall(int knd )
 {
+	if( DLC_Matknd )
+		putst("Stacked TheCall..\r\n" );
 	DLC_Matknd = knd;
 	switch( DLC_Matknd ){
-	case 0:
-		putst("●CALL!\r\n");										/* Constant */
-		break;
 	case 1:
-		putst("★CALL!\r\n");										/* Alert */
+		putst("●CALL!\r\n");										/* Constant */
 		break;
 	case 2:	
 		putst("■CALL!\r\n");										/* Push */
 		break;
+	case 3:
+		putst("★CALL!\r\n");										/* Alert */
+		break;
 	}
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
-	if ( DLC_MatState <= MATC_STATE_COND )
-		DLC_BigState = 2;
-	else if( DLC_MatState >= MATC_STATE_OPN1 )						/* Sleep中 */
-		;
-	else {
-		putst("★Bat★\r\n");
-		MTopn1();
-	}
 }
 void DLCMatSleepWait()
 {
@@ -454,7 +461,44 @@ void DLCMatSleepWait()
 	}
 	putst("Wait Sleep Err\r\n");
 }
-void	 (*MTjmp[17][19])() = {
+uchar	DLC_MatLedTest;
+void MTtim2()
+{
+	if( DLC_MatLedTest ){
+		DLCMatTimerset( 1,50 );
+		if( DLC_MatLedTest & 0x10 ){
+			if( DLC_MatLedTest & 0x01 ){
+				DLC_MatLedTest &= ~0x01;
+				GPIOEXP_set(0);
+			}
+			else {
+				DLC_MatLedTest |= 0x01;
+				GPIOEXP_clear(0);
+			}
+		}
+		if( DLC_MatLedTest & 0x20 ){
+			if( DLC_MatLedTest & 0x02 ){
+				DLC_MatLedTest &= ~0x02;
+				GPIOEXP_set(1);
+			}
+			else {
+				DLC_MatLedTest |= 0x02;
+				GPIOEXP_clear(1);
+			}
+		}
+		if( DLC_MatLedTest & 0x40 ){
+			if( DLC_MatLedTest & 0x04 ){
+				DLC_MatLedTest &= ~0x04;
+				GPIOEXP_set(2);
+			}
+			else {
+				DLC_MatLedTest |= 0x04;
+				GPIOEXP_clear(2);
+			}
+		}
+	}
+}
+void	 (*MTjmp[18][19])() = {
 /*					  0         1       2      3       4       5       6       7       8       9       10      11      12      13      14      15      16      17   18     */
 /*				  	 INIT    IDLE    IMEI    APN     SVR     CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     MNT     ERR   */
 /* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy  },
@@ -469,11 +513,12 @@ void	 (*MTjmp[17][19])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTcls1, ______, MTcls2, ______, MTcls3, ______, ______, ______, ______, ______, ______ },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, ______, ______, ______, ______, ______ },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTdisc, ______, ______, ______, ______, ______, ______ },
-/* TimOut     12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTapn,  MTserv, MTNoSlp,______, ______, ______, ______, MTcls2, ______, MTdisc, ______, ______, ______, ______, ______ },
+/* TimOut1    12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTapn,  MTserv, MTNoSlp,______, ______, ______, ______, MTcls2, ______, MTdisc, ______, ______, ______, ______, ______ },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, ______, ______ },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $SLEEP     16 */{ ______, ______, ______, ______, ______, ______, MTslep, ______, ______, ______, ______, ______, ______, MTslep, ______, ______, ______, ______, ______ },
+/* TimeOut2   17 */{ MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2 },
 							};
 void DLCMatState()
 {
@@ -609,11 +654,13 @@ void DLCMatState()
 	}
 	if( DLC_Matfact == 0xff ){
 		if( DLCMatTmChk( 0 ) )
-			DLC_Matfact = MATC_FACT_TO;
+			DLC_Matfact = MATC_FACT_TO1;
+		else if( DLCMatTmChk( 1 ) )
+			DLC_Matfact = MATC_FACT_TO2;
 		else {
 			switch( MatGetMsgStack() ){
 			case 1:
-				DLC_Matfact = MATC_FACT_TO;
+				DLC_Matfact = MATC_FACT_TO1;
 				break;
 			case 2:
 				DLC_Matfact = MATC_FACT_WUP;
@@ -633,11 +680,8 @@ void DLCMatState()
 }
 struct {
 	int		LoggerSerialNo;
-	float	ExtCellPwr1;
-	float	ExtCellPwr2;
 	int		Batt1Use;
 	int		Batt2Use;
-	float	Temp;
 	float	TxType;
 } DLC_MatSgtatusPara;
 struct {
@@ -650,7 +694,7 @@ void DLCMatConfigDefault()
 {
 	WPFM_SETTING_PARAMETER	config;
 	config.isInvalid = 1;
-	config.serialNumber 					= 1234567;
+	config.serialNumber 					= 9999999;
 	config.measurementInterval 				= 60;
 	config.communicationInterval 			= 300;
 	config.communicationIntervalOnAlert 	= 30;
@@ -774,15 +818,15 @@ void DLCMatPostStatus()
 	sprintf( tmp,"\"MSISDN\":%s,"			,DLC_MatNUM );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Version\":%5s,"			,ver ); 				 						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"LTEVersion\":%s,"		,DLC_MatVer );									strcat( http_tmp,tmp );
-	sprintf( tmp,"\"ExtCellPwr1\":%f,"		,DLC_MatSgtatusPara.ExtCellPwr1 );				strcat( http_tmp,tmp );
-	sprintf( tmp,"\"ExtCellPwr2\":%f,"		,DLC_MatSgtatusPara.ExtCellPwr2 );				strcat( http_tmp,tmp );
+	sprintf( tmp,"\"ExtCellPwr1\":%f,"		,(float)WPFM_lastBatteryVoltages[0]/100 );		strcat( http_tmp,tmp );
+	sprintf( tmp,"\"ExtCellPwr2\":%f,"		,(float)WPFM_lastBatteryVoltages[1]/100 );		strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Batt1Use\":%d,"			,DLC_MatSgtatusPara.Batt1Use );					strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Batt2Use\":%d,"			,DLC_MatSgtatusPara.Batt2Use );					strcat( http_tmp,tmp );
 	sprintf( tmp,"\"RSRP\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSRP:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"RSRQ\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSRQ:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"RSSI\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSSI:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"SINR\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"SINR:" ));	strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Temp\":%f,"				,DLC_MatSgtatusPara.Temp );						strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Temp\":%d,"				,WPFM_lastTemperatureOnBoard );					strcat( http_tmp,tmp );
  	sprintf( tmp,"\"TxType\":%f"			,DLC_MatSgtatusPara.TxType );					strcat( http_tmp,tmp );
 	strcat( http_tmp,"}}" );
 	i = (int)(strchr(http_tmp,'}')-strstr(http_tmp,"{\"Status\":{"))+1;
@@ -932,6 +976,281 @@ int DLCMatRecvDisp()
 		putst("format err1\r\n");
 	return -1;
 }
+void DLCSPIFlashTest()
+{
+	int		rt,k;
+	char    key;
+	while(1){
+		uint8_t DmyData[256],Data[256];
+		int	address;
+		for( int i=0;i<256;i++ )
+			DmyData[i] = i;
+		putst("\r\nW:write R:read E:erase=>");
+		key = toupper(getch());
+		putst("\r\nAddress=>");address = c_get32b();
+		switch( key ){
+		case 'W':
+			if( address == -1 ){
+				for( int j=0;j<0x1000;j++ ){
+					if( W25Q128JV_eraseSctor( j,true ) == W25Q128JV_ERR_NONE ){
+						char line[20];
+						putst("ERASE OK");putcrlf();
+						sprintf(line, "%03X", (unsigned int)j);
+						putst(line);putcrlf();
+						APP_delay(300);
+						address = (j << 4);								/* 0,0x10,0x20,0x30... */
+						for( int i=0;i<16;i++ ){
+							if( W25Q128JV_programPage( address++,(uint8_t)0,DmyData,(uint16_t)sizeof(DmyData),true ) == W25Q128JV_ERR_NONE ){
+								putst( "PROG. OK\r\n" );
+								sprintf( line, "%04X\r\n",(unsigned int)address );
+								putst( line );
+							}
+							else
+							    putst("PAGE NG\r\n");
+						}
+					}
+					else {
+						putst("ERASE NG\r\n");
+					}
+				}
+			}
+			else {
+				address /= 0x100;
+				for( int i=0;i<16;i++ ){
+					if( W25Q128JV_programPage( address+i,0,(uint8_t*)DmyData,(uint16_t)sizeof(DmyData),true )== W25Q128JV_ERR_NONE ){
+						char line[20];
+						putst( "PROG. OK\r\n" );
+						sprintf( line, "%04X\r\n",(unsigned int)address+i );
+						putst( line );
+					}
+					else
+						putst("PAGE NG\r\n");
+				}
+			}
+			break;
+		case 'R':
+			if( address == -1 ){
+			    for (int k=0; k<0x10000;k++){				/* 65万セクタ(256) */
+					uint32_t addr = ((uint32_t)k << 8);
+					if (W25Q128JV_readData(addr, Data, (uint16_t)sizeof(Data)) == W25Q128JV_ERR_NONE){
+#if 0
+						puthxw( addr );putcrlf();
+						Dump( (char*)Data,sizeof( Data ) );
+#else
+						if( memcmp( Data,DmyData,sizeof( Data )) ){
+							putst("Find NG=>");puthxw( addr );putcrlf();break;
+						}
+						else{
+							puthxw( addr );putcrlf();
+						}
+#endif
+					}
+					else{
+						putst("Read NG ");puthxw( addr );putcrlf();
+					}
+					APP_delay(2);
+				}
+			}
+			else {
+				rt = W25Q128JV_readDataFaster( address,(uint8_t*)DmyData, sizeof( DmyData ));
+				if( !rt ){
+					putcrlf();Dump( (char*)DmyData,sizeof( DmyData ) );
+				}
+				else {
+					puthxb( rt );putcrlf();
+				}
+			}
+			break;
+		case 'E':
+			if( address == -1 ){
+	  			rt = W25Q128JV_eraseChip(true);
+				if( !rt ){
+					putst("OK\r\n");
+				}
+				else {
+					puthxb( rt );putcrlf();
+				}
+			}
+			else {
+				rt = W25Q128JV_eraseSctor(address/0x1000, true);
+				if( !rt ){
+					putst("OK\r\n");
+				}
+				else {
+					puthxb( rt );putcrlf();
+				}
+			}
+			break;
+		case 'B':
+			for (k = 0; k < 4; k++) {	/* 指定アドレス～3ブロック消去 */
+				char line[20];
+				W25Q128JV_eraseBlock64(((address / 0x10000) + k), true);
+				sprintf( line, "%X:ERASE OK\r\n",(unsigned int)((address / 0x10000) + k) );
+				putst( line );
+			}
+			break;
+		case 0x03:
+		case 0x1b:
+			return;
+		}
+		putst("\r\nSPI>");
+	}
+}
+int CheckPasswd()
+{
+	putst("PASSWD=");
+	if( getch() == 'y')
+		if( getch() == 'e')
+			if( getch() == 's')
+				return 1;
+	return 0;
+}
+void DLCRomTest()
+{
+	char	key,buff[256];
+	int		address=0;
+	while(1){
+		switch( toupper( getch() ) ){
+		case 'w':
+			NVMCTRL_PageWrite( (uint32_t *)buff,address );
+			break;
+	    case 'e':
+			NVMCTRL_RowErase( address );
+			break;
+		case 'f':
+			putst("Fill char=>");
+			key = getch();
+			memset( buff,key,sizeof( buff ));
+			putst("\r\n");
+			Dump( (char*)buff,sizeof( buff ) );
+			break;
+		case 'r':
+			address+=0x100;
+			putch('@');puthxw( address );putcrlf();
+			NVMCTRL_Read( (uint32_t *)buff,sizeof( buff ),address );
+			putcrlf();
+			Dump( buff,sizeof( buff ) );
+			break;
+		case 'a':
+			putst("Read mem Address=>" );
+			address = c_get32b();
+			break;
+		case 0x1b:
+		case 0x03:
+			return;
+	 	}
+		putst("\r\nROM>");
+	}
+}
+void DLCMatBypass()
+{
+	while(1){
+		uint8_t c;
+		if( SERCOM0_USART_Read( &c, 1 )){				/* UARTから入力 */
+			if( c == 0x03 || c == 0x1b )				/* ESC/CTRL-Cでexit */
+				return;
+			SERCOM0_USART_Read( &c, 1 );
+			SERCOM5_USART_Write( &c, 1 );				/* MATcoreに出力 */
+		}
+		APP_delay(10);
+		if( SERCOM5_USART_Read( &c, 1 )){				/* MATcoreから入力 */
+			SERCOM0_USART_Write( &c, 1 );				/* UARTへ出力 */
+			if( c == '\r' ){
+				c = '\n';
+				SERCOM0_USART_Write( &c, 1 );			/* UARTへ出力 */
+			}
+		}
+		APP_delay(10);
+	}
+}
+void DLCMatTest()
+{
+	static uchar DLC_MatSleep;
+	char    key;
+	while(1){
+		putst("\r\nCore>");
+		key = toupper( getch() );
+		switch( key ){
+		case 'A':
+			DLCMatSend( "AT$SETAPN,soracom.io,sora,sora,CHAP\r" );
+			break;
+		case 'B':
+			putst("UART<=>MATcore MODE!\r\n");
+			DLCMatBypass();
+			break;
+		case 'C':
+			DLCMatSend( "AT$CONNECT\r" );
+			break;
+		case 'D':
+			DLCMatSend( "AT$DISCONNECT\r" );
+			break;
+		case 'L':
+			DLCMatSend( "AT$CLOSE\r" );
+			break;
+		case  'M':
+			putst("Msg=");
+			MatMsgSend( c_get32b() );
+			break;
+		case 'N':
+			DLCMatSend( "AT$NUM\r" );
+			DLCMatSend( "AT$IMEI\r" );
+			DLCMatSend( "AT$TIME\r" );
+			break;
+		case 'R':
+			DLCMatSend( "AT$RSRP\r" );
+			DLCMatSend( "AT$RSRQ\r" );
+			DLCMatSend( "AT$RSSI\r" );
+			DLCMatSend( "AT$SINR\r" );
+			break;
+		case 'O':
+			DLCMatSend( "AT$OPEN\r" );
+			break;
+		case 'S':
+			DLCMatSend( "AT$SETSERVER,karugamosoft.ddo.jp,9999\r" );
+			break;
+		case 'T':
+			DLCMatSend( "AT$SETSERVER,beam.soracom.io,8888\r" );
+			break;
+		case 'U':
+#if 1
+			DLCMatPostConfig();
+#else
+			DLCMatSend( "AT$SEND,\"414243\"\r" );
+#endif
+			break;
+		case 'V':
+			DLCMatSend( "AT$RECV,1024\r" );
+			break;
+		case ' ':
+			putst("Stat=");puthxb( DLC_MatState );putcrlf();
+			Dump( (char*)DLC_MatLineBuf,64 );
+			putst("idx=");puthxb( DLC_MatLineIdx );putcrlf();
+			break;
+		case '#':
+			if( zLogOn ^= 1 )
+				putst("LogOn\r\n");
+			else
+				putst("LogOff\r\n");
+			break;
+		case '$':
+			memset( DLC_MatLineBuf,0,sizeof(DLC_MatLineBuf));
+			DLC_MatLineIdx = 0;
+			break;
+		case '&':
+			DLC_MatState = 100;
+			break;
+		case '!':
+			if( DLC_MatSleep ^= 1 )
+				PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );
+			else
+				PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );
+			break;
+		case 0x03:
+		case 0x1b:
+			return;
+		}
+	}
+}
 void DLCMatMain()
 {
 	char key;
@@ -943,17 +1262,78 @@ void DLCMatMain()
 		DLCMatInit();
 		DLC_BigState = 1;
 	}
-	key = getch();
+	key = getkey();
 	if( key ){
 		key = toupper(key);
 		switch( key ){
 		case 0x1b:
 			Moni();
 			break;
+		case 'M':
+			if( CheckPasswd() )
+				DLCMatTest();
+			break;
+		case 'I':
+			putst("Read IO(1-7)=>");
+			key = getch()-'1';
+			putcrlf();puthxb(GPIOEXP_get(key));
+			break;
+		case 'L':
+			putst("LED(1-3)=>");
+			key = getch()-'1';
+			putst("1:On 2:Off 3:Blink=>");
+			switch( getch() ){
+			case '1':
+				GPIOEXP_clear(key);
+				break;
+			case '2':
+				DLC_MatLedTest &= ~(1<<key);
+				DLC_MatLedTest &= ~(1<<(key+4));
+				GPIOEXP_set(key);
+				break;
+			case '3':
+				DLC_MatLedTest |= (1<<key);
+				DLC_MatLedTest |= (1<<(key+4));
+				DLCMatTimerset( 1,50 );
+				GPIOEXP_set(key);
+				break;
+			}
+			break;
+		case 'O':
+			putst("\r\nNum=>");
+			PORT_GroupWrite( PORT_GROUP_1,0x1<<c_get32b(),0 );
+			break;
+		case 'U':
+			putst("\r\nNum=>");
+			PORT_GroupWrite( PORT_GROUP_1,0x1<<c_get32b(),-1 );
+			break;
+		case 'Y':
+			putcrlf();
+			puthxw( PORT_GroupRead( PORT_GROUP_1 ));
+			break;
+		case 'E':												/* 強制本プロ削除 */
+			if( CheckPasswd() ){
+				putst("Address=0x8000 Erased!\r\n");
+				NVMCTRL_RowErase( 0x8000 );
+				__NVIC_SystemReset();
+			}
+			break;
+		case 'F':
+			if( CheckPasswd() )
+				DLCSPIFlashTest();
+			break;
+		case 'W':
+			if( CheckPasswd() )
+				DLCMatConfigDefault();
+			break;
+		case 'R':
+			if( CheckPasswd() )
+				DLCRomTest();
+			break;
 		default:
 			break;
 		}
-		putst("DLC>");
+		putst("\r\nDLC>");
 	}
 	_GO_IDLE();
 }
