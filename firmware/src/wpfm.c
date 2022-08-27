@@ -2,7 +2,7 @@
  * File:    wpfm.c
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project common definition file.
- * Date:    2022/08/23 (R0)
+ * Date:    2022/08/26 (R0)
  * Note:
  */
 
@@ -34,8 +34,8 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     300,                    // communication interval on normal[sec]
     4,                      // measurement interval on alert[sec]
     60,                     // communication interval on alert[sec]
-    { SENSOR_KIND_1_3V, SENSOR_KIND_NOT_PRESENT },   // sensor kinds
-    { 1, 0 }, { 0, 0 },                   // upper/lower values
+    { SENSOR_KIND_1_3V, SENSOR_KIND_1_5V },   // sensor kinds
+    { 3, 5 }, { 1, 1 },                   // upper/lower values
     {
         {       // ch1 alert enabled kind
             { WPFM_ALERT_KIND_ENABLED, WPFM_ALERT_KIND_ENABLED }, { WPFM_ALERT_KIND_ENABLED, WPFM_ALERT_KIND_ENABLED }
@@ -44,14 +44,14 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
             { WPFM_ALERT_KIND_ENABLED, WPFM_ALERT_KIND_ENABLED }, { WPFM_ALERT_KIND_ENABLED, WPFM_ALERT_KIND_ENABLED }
         }
     },
-    { { 0.820, 0.923 }, { 0.0, 0.0 } },         // alart upper limits
-    { { 0.215, 0.182 }, { 0.0, 0.0 } },         // alart lower limits
+    { { 2.620, 2.823 }, { 4.620, 4.823 } },         // alart upper limits
+    { { 1.315, 1.132 }, { 1.315, 1.132 } },         // alart lower limits
     { 30, 30 },             // alart chattring times
     WPFM_CHATTERING_KIND_IGNORE,    // chattering kind
     300,                    // emergency alart timeout[sec]
     // Calibration
-    { { 1794, 4080, 4070, 4060 }, { 4090, 4080, 4070, 4060 } },     // calibration upper values[LSB]
-    { { 586, 20,  30,  40 }, { 10, 20,  30,  40  } },                // calibration lower values[LSB]
+    { { 1793, 4080, 4070, 4060 }, { 1793, 2995, 4070, 4060 } },     // calibration upper values[LSB]
+    { { 566, 20,  30,  40 }, { 566, 566,  20,  40  } },                // calibration lower values[LSB]
     2400,                       // lowThresholdVoltage[mV]
     5,                          // timesLessThresholdVoltage
     30,                         // maximumBatteryExchangeTime[sec]

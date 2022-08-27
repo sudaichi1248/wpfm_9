@@ -87,7 +87,7 @@ void TC5_TimerInitialize( void )
     TC5_REGS->COUNT16.TC_CTRLA = TC_CTRLA_MODE_COUNT16 | TC_CTRLA_PRESCALER_DIV1024 | TC_CTRLA_WAVEGEN_MPWM ;
 
     /* Configure timer period */
-    TC5_REGS->COUNT16.TC_CC[0U] = 1406U;
+    TC5_REGS->COUNT16.TC_CC[0U] = 609U;
 
     /* Clear all interrupt flags */
     TC5_REGS->COUNT16.TC_INTFLAG = TC_INTFLAG_Msk;

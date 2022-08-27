@@ -39,6 +39,8 @@ char	DLC_MatNUM[16] = "812001003404286";
 char	DLC_MatIMEI[16];
 int		DLC_MatTmid;
 uchar	DLC_BigState,DLC_Matknd;
+uchar	DLC_MatRetry;
+
 #define		TIMER_NUM	2
 struct {
 	int		cnt;
@@ -76,8 +78,6 @@ void putch( char c )
 */
 void DLCMatInit()
 {
-	DLCMatConfigDefault();
-	DLCMatReortDefault();
 	TC5_TimerCallbackRegister( (TC_TIMER_CALLBACK)DLCMatTimerInt, (uintptr_t)0 );
 	TC5_TimerStart();
 	DLCMatTimerset( 0,3000 );
@@ -141,7 +141,7 @@ void DLCMatSend( char *s )
 	rmn = sz%64;
 	for( i=0;i<blk;i++){
 		SERCOM5_USART_Write( (uint8_t*)&s[i*64],64 );
-		APP_delay(100);
+		APP_delay(57);
 	}
 	if( rmn ){
 		SERCOM5_USART_Write( (uint8_t*)&s[i*64],rmn );
@@ -307,6 +307,16 @@ void MTcnfg()
 	DLCMatTimerset( 0,3000 );
 	DLC_MatState = MATC_STATE_CNFG;
 }
+void MTrrcv()
+{
+	DLCMatTimerset( 0,300 );
+}
+void MTrvTO()
+{
+	DLC_MatLineIdx = 0;
+	DLCMatSend( "AT$CLOSE\r" );
+	DLCMatTimerset( 0,100 );
+}
 void MTdata()
 {
 	int	rt;
@@ -315,10 +325,12 @@ void MTdata()
 	if( rt == 0 ){
 		DLC_MatLineIdx = 0;
 		zLogOn = 1;
+		DLCMatTimerset( 0,1000 );
 	}
 	else {
 		DLC_MatLineIdx = 0;
 		DLCMatSend( "AT$RECV,1024\r" );
+		DLCMatTimerset( 0,100 );
 	}
 }
 void MTcls1()
@@ -353,14 +365,8 @@ void MTrpOk()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatPostSndSub();
-	DLCMatTimerset( 0,3000 );
-	DLC_MatState = MATC_STATE_RPT;
-}
-void MTcls3()
-{
-	DLC_MatLineIdx = 0;
-	DLCMatSend( "AT$DISCONNECT\r" );
 	DLCMatTimerset( 0,300 );
+	DLC_MatState = MATC_STATE_RPT;
 }
 void MTdisc()
 {
@@ -368,6 +374,16 @@ void MTdisc()
 	DLCMatTimerset( 0,300 );
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
 	DLC_MatState = MATC_STATE_SLP;
+}
+void MTcls3()
+{
+	DLC_MatLineIdx = 0;
+	if( ++DLC_MatRetry > 3 ){
+		MTdisc();
+		return;
+	}
+	DLCMatSend( "AT$DISCONNECT\r" );
+	DLCMatTimerset( 0,300 );
 }
 void MTslep()
 {
@@ -505,7 +521,7 @@ void	 (*MTjmp[18][19])() = {
 /* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, MTserv, ______, MTopn1, ______, ______, ______, ______, MTcls3, ______, ______, ______, ______, ______, ______ },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
-/* OK          4 */{ ______, ______, ______, MTapn,  MTserv, MTconn, ______, ______, ______, ______, ______, ______, MTrpOk, ______, ______, ______, ______, ______, ______ },
+/* OK          4 */{ ______, ______, ______, MTapn,  MTserv, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______ },
 /* $CONNECT:1  5 */{ ______, ______, ______, ______, ______, ______, MTtime, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $TIME       6 */{ ______, ______, ______, ______, ______, ______, MTrsrp, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $RSRP       7 */{ ______, ______, ______, ______, ______, ______, MTGslp, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
@@ -513,7 +529,7 @@ void	 (*MTjmp[18][19])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTcls1, ______, MTcls2, ______, MTcls3, ______, ______, ______, ______, ______, ______ },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, ______, ______, ______, ______, ______ },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTdisc, ______, ______, ______, ______, ______, ______ },
-/* TimOut1    12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTapn,  MTserv, MTNoSlp,______, ______, ______, ______, MTcls2, ______, MTdisc, ______, ______, ______, ______, ______ },
+/* TimOut1    12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTapn,  MTserv, MTNoSlp,______, MTrvTO, ______, MTrvTO, MTcls2, MTcls3, MTdisc, ______, ______, ______, ______, ______ },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, ______, ______ },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
@@ -578,6 +594,7 @@ void DLCMatState()
 			DLC_MatLineIdx -= 4;
 			memcpy( DLC_MatLineBuf,&DLC_MatLineBuf[4],DLC_MatLineIdx );
 			DLC_Matfact = MATC_FACT_OK;
+			DLC_MatRetry = 0;
 		}
 	}
 	if( DLC_MatLineIdx == 3 ){
@@ -585,6 +602,7 @@ void DLCMatState()
 			DLC_MatLineIdx -= 3;
 			memcpy( DLC_MatLineBuf,&DLC_MatLineBuf[3],DLC_MatLineIdx );
 			DLC_Matfact = MATC_FACT_OK;
+			DLC_MatRetry = 0;
 		}
 	}
 	if( DLC_MatLineIdx >= 10 ){
@@ -684,11 +702,12 @@ struct {
 	int		Batt2Use;
 	float	TxType;
 } DLC_MatSgtatusPara;
+#define	REPORT_LIST_MAX	100
 struct {
 	float	Value_ch1;
 	float	Value_ch2;
 	char	Alert[2];
-} DLC_MatReportData[100];
+} DLC_MatReportData[REPORT_LIST_MAX];
 int	DLC_MatReportStack;
 void DLCMatConfigDefault()
 {
@@ -892,7 +911,7 @@ void DLCMatPostReport()
 	strcat( http_tmp,"{\"Report\":{" );
 	strcat( http_tmp,"\"LoggerSerialNo\": 3423423}," );
 	strcat( http_tmp,"\"ReportList\":[" );
-	for(i=0;i<100;i++){
+	for(i=0;i<REPORT_LIST_MAX;i++){
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
 		DLCMatClockGet( &log_p,s );
@@ -1311,6 +1330,10 @@ void DLCMatMain()
 			putcrlf();
 			puthxw( PORT_GroupRead( PORT_GROUP_1 ));
 			break;
+		case 'X':
+			putcrlf();
+			puthxw( PORT_GroupRead( PORT_GROUP_0 ));
+			break;
 		case 'E':												/* ‹­§–{ƒvƒíœ */
 			if( CheckPasswd() ){
 				putst("Address=0x8000 Erased!\r\n");
@@ -1329,6 +1352,10 @@ void DLCMatMain()
 		case 'R':
 			if( CheckPasswd() )
 				DLCRomTest();
+			break;
+		case 0x01:												/* CTRL+A */
+			if( CheckPasswd() )
+				__NVIC_SystemReset();
 			break;
 		default:
 			break;
