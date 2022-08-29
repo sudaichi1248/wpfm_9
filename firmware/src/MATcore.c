@@ -19,7 +19,8 @@
 void DLCMatTimerInt();
 void DLCMatState();
 void command_main();
-void _GO_IDLE(){command_main();DLCMatState();}
+//void _GO_IDLE(){command_main();DLCMatState();}
+void _GO_IDLE(){DLCMatState();}
 void Moni();
 void DLCMatConfigDefault(),DLCMatStatusDefault(),DLCMatReortDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatPostSndSub(),DLCMatPostReport();
@@ -297,15 +298,21 @@ void MTGslp()
 	}
 	else {
 		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
-		DLCMatTimerset( 0,300 );
+		DLCMatTimerset( 0,600 );
 	}
 }
 void MTcnfg()
 {
 	DLC_MatLineIdx = 0;
-	DLCMatPostConfig();
+	if( DLC_Matknd == 1 ){
+		DLCMatPostConfig();
+		DLC_MatState = MATC_STATE_CNFG;
+	}
+	else{
+		DLCMatPostStatus();
+		DLC_MatState = MATC_STATE_STAT;
+	}
 	DLCMatTimerset( 0,3000 );
-	DLC_MatState = MATC_STATE_CNFG;
 }
 void MTrrcv()
 {
@@ -697,9 +704,6 @@ void DLCMatState()
 		memset( DLC_MatLineBuf,0,sizeof( DLC_MatLineBuf ));
 }
 struct {
-	int		LoggerSerialNo;
-	int		Batt1Use;
-	int		Batt2Use;
 	float	TxType;
 } DLC_MatSgtatusPara;
 #define	REPORT_LIST_MAX	100
@@ -754,16 +758,14 @@ void DLCMatReortDefault()
 		DLC_MatReportData[i].Alert[1] = '0';
 	}
 }
-//static char http_Head[] = "POST / HTTP/1.1\r\nConnection: Keep-Alive\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
 static char http_Head[] = "POST / HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
 static char http_tmp[8000];
-//static char http_tmp[2000] = "PUT / HTTP/1.1\r\nHost: beam.soracom.io:8888\r\nUser-Agent: curl/7.64.0\r\nAccept:.*/*\r\nContent-Type:application/json\r\nContent-Length:0000\r\n\r\n";
 char	DLC_MatSendBuff[1024*2+16];
+static WPFM_SETTING_PARAMETER	config;
 void DLCMatPostConfig()
 {
 	char	tmp[48],n,*p;
 	int		i;
-	WPFM_SETTING_PARAMETER	config;
 	WPFM_readSettingParameter( &config );
 	strcpy( http_tmp,http_Head );
 	strcat( http_tmp,"{\"Config\":{" );
@@ -832,15 +834,17 @@ void DLCMatPostStatus()
 	ver[5] = 0;
 	strcpy( http_tmp,http_Head );
 	strcat( http_tmp,"{\"Status\":{" );
-	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,DLC_MatSgtatusPara.LoggerSerialNo );			strcat( http_tmp,tmp );
+	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );					strcat( http_tmp,tmp );
 	sprintf( tmp,"\"IMEI\":%s,"				,DLC_MatIMEI );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"MSISDN\":%s,"			,DLC_MatNUM );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Version\":%5s,"			,ver ); 				 						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"LTEVersion\":%s,"		,DLC_MatVer );									strcat( http_tmp,tmp );
-	sprintf( tmp,"\"ExtCellPwr1\":%f,"		,(float)WPFM_lastBatteryVoltages[0]/100 );		strcat( http_tmp,tmp );
-	sprintf( tmp,"\"ExtCellPwr2\":%f,"		,(float)WPFM_lastBatteryVoltages[1]/100 );		strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Batt1Use\":%d,"			,DLC_MatSgtatusPara.Batt1Use );					strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Batt2Use\":%d,"			,DLC_MatSgtatusPara.Batt2Use );					strcat( http_tmp,tmp );
+	sprintf( tmp,"\"ExtCellPwr1\":%.3f,"	,(float)WPFM_lastBatteryVoltages[0]/1000 );		strcat( http_tmp,tmp );
+	sprintf( tmp,"\"ExtCellPwr2\":%.3f,"	,(float)WPFM_lastBatteryVoltages[1]/1000 );		strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Batt1Use\":%d,"			,WPFM_externalBatteryNumberInUse );				strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Batt2Use\":%d,"			,WPFM_externalBatteryNumberToReplace );			strcat( http_tmp,tmp );
+	sprintf( tmp,"\"EARFCN\":%d,"			,123 );											strcat( http_tmp,tmp );
+	sprintf( tmp,"\"CellId\":%d,"			,192 );											strcat( http_tmp,tmp );
 	sprintf( tmp,"\"RSRP\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSRP:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"RSRQ\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSRQ:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"RSSI\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSSI:" ));	strcat( http_tmp,tmp );
@@ -878,7 +882,7 @@ void DLCMatPostStatus()
 static	int DLC_MatSndCnt;
 void DLCMatPostSndSub()
 {
-	char	tmp[48],v;
+	char	tmp[3],v;
 	int		i;
 	if( DLC_MatSndCnt < 0 )
 		return;
@@ -905,11 +909,11 @@ void DLCMatPostReport()
 {
 	char	tmp[48],*p;
 	char	s[20];	
-	int		i,wk;
+	int		i;
 	MLOG_T 	log_p;
 	strcpy( http_tmp,http_Head );
 	strcat( http_tmp,"{\"Report\":{" );
-	strcat( http_tmp,"\"LoggerSerialNo\": 3423423}," );
+	sprintf( tmp,"\"LoggerSerialNo\":%d},"	,(int)config.serialNumber );				strcat( http_tmp,tmp );
 	strcat( http_tmp,"\"ReportList\":[" );
 	for(i=0;i<REPORT_LIST_MAX;i++){
 		if( MLOG_getLog( &log_p ) < 0 )
@@ -920,17 +924,14 @@ void DLCMatPostReport()
 		sprintf( tmp,"{\"Time\":\"%s\","		,s );									strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch1\":%f,"	,log_p.measuredValues[0] );					strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch2\":%f,"	,log_p.measuredValues[1] );					strcat( http_tmp,tmp );
-		wk = 0;
-		if( log_p.alertStatus )
-			wk = 10;
-		if( log_p.batteryStatus )
-			wk += 1;
-		sprintf( tmp,"\"Alert\":%02d}"		,wk );										strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Alert\":%02d,"		,log_p.alertStatus  );						strcat( http_tmp,tmp );
+		sprintf( tmp,"\"BatStatus\":%02d}"	,log_p.batteryStatus  );					strcat( http_tmp,tmp );
 	}
 	if( i == 0 ){
 		putst("Report is 0!\r\n");
 		return;
 	}
+	sprintf( tmp,"Report=%d\r\n",i );putst( tmp );
 	strcat( http_tmp,"]}" );
 	i = (int)(strchr(http_tmp,']')-strstr(http_tmp,"{\"Report\":{"))+1;
 	if( i > 0 ){
