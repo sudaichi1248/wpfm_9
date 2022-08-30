@@ -562,15 +562,14 @@ void DLCMatCall(int knd )
 }
 void DLCMatSleepWait()
 {
-	for(int i=0;i<60;i++){
-		puts("¡");
+	for(int i=0;i<6000;i++){
+		_GO_IDLE();
 		if( DLC_MatState == MATC_STATE_SLP ){
-			putcrlf();
 			return;
 		}
-		APP_delay(1000);
+		APP_delay(10);
 	}
-	putst("Wait Sleep Err\r\n");
+	putst("MATcore Startup Err\r\n");
 }
 uchar	DLC_MatLedTest;
 void MTtim2()
@@ -759,7 +758,10 @@ void DLCMatState()
 		if( strstr( (char*)DLC_MatLineBuf,"$RECVDATA:" )){
 			p = strchr( (char*)DLC_MatLineBuf,'\"' );
 			if( p > 0 ){
-				if( strstr( p+2,"\"\r" )){
+				p++;
+				q = strstr( p,"\"\r" );
+				if( q ){
+					putst("RSZ=");puthxs(q-p);putcrlf();
 					DLC_Matfact = MATC_FACT_DATA;
 				}
 			}
@@ -847,7 +849,7 @@ void DLCMatReortDefault()
 	}
 }
 static char http_Head[] = "POST / HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
-static char http_tmp[8000];
+static char http_tmp[10000];
 char	DLC_MatSendBuff[1024*2+16];
 static WPFM_SETTING_PARAMETER	config;
 void DLCMatPostConfig()
@@ -1614,11 +1616,16 @@ void DLCMatTest()
 		}
 	}
 }
+void MATRts()
+{
+	if( PORT_GroupRead( PORT_GROUP_1 )&(0x1<<22))
+		putch('@');
+}
 void DLCMatMain()
 {
 	char key;
 	char *VerPrint();
-	PORT_GroupWrite( PORT_GROUP_1,0x1<<22,0 );
+//	PORT_GroupWrite( PORT_GROUP_1,0x1<<22,0 );
 	if( DLC_BigState == 0 ){
 		putst( VerPrint() );
 		putst( "\r\nMATcore Task Started.\r\n" );
