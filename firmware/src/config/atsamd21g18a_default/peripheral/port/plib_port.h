@@ -139,14 +139,8 @@
 #define RX_PIN                  PORT_PIN_PA11
 
 /*** Macros for RF_INT_IN pin ***/
-#if 1
 #define RF_INT_IN_Set()               (PORT_REGS->GROUP[1].PORT_OUTSET = ((uint32_t)1U << 10U))
 #define RF_INT_IN_Clear()             (PORT_REGS->GROUP[1].PORT_OUTCLR = ((uint32_t)1U << 10U))
-#else
-#define RF_INT_IN_Set()   
-#define RF_INT_IN_Clear() 
-#endif
-
 #define RF_INT_IN_Toggle()            (PORT_REGS->GROUP[1].PORT_OUTTGL = ((uint32_t)1U << 10U))
 #define RF_INT_IN_OutputEnable()      (PORT_REGS->GROUP[1].PORT_DIRSET = ((uint32_t)1U << 10U))
 #define RF_INT_IN_InputEnable()       (PORT_REGS->GROUP[1].PORT_DIRCLR = ((uint32_t)1U << 10U))
