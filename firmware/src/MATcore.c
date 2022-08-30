@@ -56,7 +56,7 @@ char	DLC_MatSPICheckbufFota[256];	// fota ベリファイ用バッファ
 static	char wget_Head[] = "GET /wpfm.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// fota FOTAデータ指定
 // static char wget_Head[] = "GET /2048.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// fota
 // static char wget_Head[] = "GET /256.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// fota
-#define	 	DLC_MatSPIFlashAddrFota		0xd60000;	// fota SPIフラッシュ書込みアドレス(仮)
+#define	 	DLC_MatSPIFlashAddrFota		0xE00000;	// fota SPIフラッシュ書込みアドレス
 struct {
 	int		cnt;
 	uchar	TO;
@@ -1058,7 +1058,7 @@ void DLCMatWgetFile()	// fota
 }
 int DLCMatRecvDisp()
 {
-	char	*p,n;
+	char	*p,*q,n;
 	int		i,j=0,k;
 	if(( p = strstr( (char*)DLC_MatLineBuf,"$RECVDATA:" )) > 0 ){
 		p = str2int( &p[10],&i );										/* $RECVDATA,i,j,"...."<cr> */
@@ -1075,6 +1075,8 @@ int DLCMatRecvDisp()
 		p = strchr( p,'\"' );
 		if( p > 0 ){
 			p++;
+			q = strchr( p,'\"' );
+			putst("1024=");puthxs(q-p);putcrlf();
 			for( k=0;k<i;k++ ){
 				n = inhex( *p++ )<<4;
 				n += inhex( *p++ );
@@ -1130,9 +1132,9 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 			p++;
 			q = strchr( p,'\"' );
 			putst("1024=");puthxs(q-p);putcrlf();
-			if ((q-p) != (i*2)) {
-				Dump((char *)DLC_MatLineBuf,1128);putcrlf();
-			}
+//			if ((q-p) != (i*2)) {
+//				Dump((char *)DLC_MatLineBuf,1128);putcrlf();
+//			}
 			memset(DLC_MatResBuf, 0xFF, sizeof(DLC_MatResBuf));	/* 受信バッファFF初期化 */
 			for( k=0;k<i;k++ ){
 				n = inhex( *p++ )<<4;
