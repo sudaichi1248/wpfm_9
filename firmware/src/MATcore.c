@@ -332,14 +332,8 @@ void MTGslp()
 void MTcnfg()
 {
 	DLC_MatLineIdx = 0;
-	if( DLC_Matknd == 1 ){
-		DLCMatPostConfig();
-		DLC_MatState = MATC_STATE_CNFG;
-	}
-	else{
-		DLCMatPostStatus();
-		DLC_MatState = MATC_STATE_STAT;
-	}
+	DLCMatPostConfig();
+	DLC_MatState = MATC_STATE_CNFG;
 	DLCMatTimerset( 0,3000 );
 }
 void MTwget()	// fota
@@ -848,7 +842,9 @@ void DLCMatReortDefault()
 		DLC_MatReportData[i].Alert[1] = '0';
 	}
 }
-static char http_Head[] = "POST / HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
+static char http_config[] = "POST /config HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
+static char http_status[] = "POST /status HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
+static char http_report[] = "POST /report HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
 static char http_tmp[10000];
 char	DLC_MatSendBuff[1024*2+16];
 static WPFM_SETTING_PARAMETER	config;
@@ -857,9 +853,9 @@ void DLCMatPostConfig()
 	char	tmp[48],n,*p;
 	int		i;
 	char	s[32];
-	strcpy( s,"1970.01.01 00:00:00" );
+	strcpy( s,"1970-01-01 00:00:00" );
 	WPFM_readSettingParameter( &config );
-	strcpy( http_tmp,http_Head );
+	strcpy( http_tmp,http_config );
 	strcat( http_tmp,"{\"Config\":{" );
 	sprintf( tmp,"\"LoggerSerialNo\":%d,"		,(int)config.serialNumber );				strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Interval\":%d,"				,config.measurementInterval );				strcat( http_tmp,tmp );
@@ -928,7 +924,7 @@ void DLCMatPostStatus()
 	int		i;
 	memcpy( ver,&_Main_version[4],5 );
 	ver[5] = 0;
-	strcpy( http_tmp,http_Head );
+	strcpy( http_tmp,http_status );
 	strcat( http_tmp,"{\"Status\":{" );
 	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );					strcat( http_tmp,tmp );
 	sprintf( tmp,"\"IMEI\":%s,"				,DLC_MatIMEI );									strcat( http_tmp,tmp );
@@ -1007,7 +1003,7 @@ void DLCMatPostReport()
 	char	s[20];	
 	int		i;
 	MLOG_T 	log_p;
-	strcpy( http_tmp,http_Head );
+	strcpy( http_tmp,http_report );
 	strcat( http_tmp,"{\"Report\":{" );
 	sprintf( tmp,"\"LoggerSerialNo\":%d},"	,(int)config.serialNumber );				strcat( http_tmp,tmp );
 	strcat( http_tmp,"\"ReportList\":[" );
