@@ -856,6 +856,8 @@ void DLCMatPostConfig()
 {
 	char	tmp[48],n,*p;
 	int		i;
+	char	s[32];
+	strcpy( s,"1970.01.01 00:00:00" );
 	WPFM_readSettingParameter( &config );
 	strcpy( http_tmp,http_Head );
 	strcat( http_tmp,"{\"Config\":{" );
@@ -891,7 +893,11 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"Lower2_ch2\":%f,"			,config.alertLowerLimits[1][1] );			strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Measure_ch2\":\"%s\","		,config.Measure_ch2 );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"MeaKind_ch2\":\"%s\","		,config.MeaKind_ch2 );						strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Chattering_ch2\":%d"		,config.alertChatteringTimes[1] );			strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Chattering_ch2\":%d,"		,config.alertChatteringTimes[1] );			strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Chatterring_type\":%d,"		,1 );										strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Chatterring_type\":%d,"		,1 );										strcat( http_tmp,tmp );
+	sprintf( tmp,"\"AlertPause\":%s,"			,s );										strcat( http_tmp,tmp );
+	sprintf( tmp,"\"AlertTimeOut\":%d"			,30 );										strcat( http_tmp,tmp );
 	strcat( http_tmp,"}}" );
 	i = (int)(strchr(http_tmp,'}')-strstr(http_tmp,"{\"Config\":{"))+1;
 	if( i > 0 ){
