@@ -18,9 +18,10 @@
 #include "wpfm.h"
 void DLCMatTimerInt();
 void DLCMatState();
+void IDLEputch();
 void command_main();
 //void _GO_IDLE(){command_main();DLCMatState();}
-void _GO_IDLE(){DLCMatState();}
+void _GO_IDLE(){DLCMatState();IDLEputch();}
 void Moni();
 void DLCMatConfigDefault(),DLCMatStatusDefault(),DLCMatReortDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatPostSndSub(),DLCMatPostReport();
@@ -81,11 +82,28 @@ char getch()
 		_GO_IDLE();
 	}
 }
+#define	_DEBUG_PUTCH_SZ_MAX		0x800
+#define	_DEBUG_PUTCH_SZ_MSK		0x7FF
+struct {
+	int	wx;
+	int	rx;
+	char	buff[_DEBUG_PUTCH_SZ_MAX];
+} DLC_Matdebug;
 void putch( char c )
 {
-	while(1){
-		if( SERCOM0_USART_Write( (unsigned char*)&c,1 ) == 1 )
+	DLC_Matdebug.buff[DLC_Matdebug.wx++] = c;
+	DLC_Matdebug.wx &= _DEBUG_PUTCH_SZ_MSK;
+}
+void IDLEputch( )
+{
+	char	c;
+	if( DLC_Matdebug.wx != DLC_Matdebug.rx ){
+		c = DLC_Matdebug.buff[DLC_Matdebug.rx];
+		if( SERCOM0_USART_Write( (unsigned char*)&c,1 ) == 1 ){
+			DLC_Matdebug.rx++;
+			DLC_Matdebug.rx &= _DEBUG_PUTCH_SZ_MSK;
 			return;
+		}
 	}
 }
 /* 
