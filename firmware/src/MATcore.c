@@ -853,7 +853,7 @@ void DLCMatPostConfig()
 	char	tmp[48],n,*p;
 	int		i;
 	char	s[32];
-	strcpy( s,"1970-01-01 00:00:00" );
+	strcpy( s,"1970-01-01 09:00:01" );
 	WPFM_readSettingParameter( &config );
 	strcpy( http_tmp,http_config );
 	strcat( http_tmp,"{\"Config\":{" );
@@ -1016,7 +1016,7 @@ void DLCMatPostReport()
 		sprintf( tmp,"{\"Time\":\"%s\","		,s );									strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch1\":%f,"	,log_p.measuredValues[0] );					strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch2\":%f,"	,log_p.measuredValues[1] );					strcat( http_tmp,tmp );
-		sprintf( tmp,"\"Alert\":%02d}"		,log_p.alertStatus  );						strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Alert\":\"%02d\"}"	,log_p.alertStatus  );						strcat( http_tmp,tmp );
 	}
 	if( i == 0 ){
 		putst("Report is 0!\r\n");
