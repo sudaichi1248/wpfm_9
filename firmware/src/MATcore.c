@@ -531,7 +531,7 @@ void DLCMatClockGet(MLOG_T *log_p,char *s)
 {
 	RTC_DATETIME dt;
 	RTC_convertToDateTime(log_p->timestamp.second,&dt);
-	sprintf( s,"%02d/%02d/%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+	sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 }
 /*
 	計測からCallされて、通信を行う 通信タスクをWAKEUPさせると通信は勝手に走って、終わるとSleepへ行く
@@ -891,7 +891,6 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"MeaKind_ch2\":\"%s\","		,config.MeaKind_ch2 );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Chattering_ch2\":%d,"		,config.alertChatteringTimes[1] );			strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Chatterring_type\":%d,"		,1 );										strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Chatterring_type\":%d,"		,1 );										strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertPause\":%s,"			,s );										strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertTimeOut\":%d"			,30 );										strcat( http_tmp,tmp );
 	strcat( http_tmp,"}}" );
@@ -1006,7 +1005,7 @@ void DLCMatPostReport()
 	strcpy( http_tmp,http_report );
 	strcat( http_tmp,"{\"Report\":{" );
 	sprintf( tmp,"\"LoggerSerialNo\":%d},"	,(int)config.serialNumber );				strcat( http_tmp,tmp );
-	strcat( http_tmp,"\"ReportList\":[" );
+	strcat( http_tmp,"\"Reportlist\":[" );
 	for(i=0;i<REPORT_LIST_MAX;i++){
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
@@ -1014,9 +1013,9 @@ void DLCMatPostReport()
 		if( i > 0)
 			strcat( http_tmp,"," );
 		sprintf( tmp,"{\"Time\":\"%s\","		,s );									strcat( http_tmp,tmp );
-		sprintf( tmp,"\"Value_ch1\":%f,"	,log_p.measuredValues[0] );					strcat( http_tmp,tmp );
-		sprintf( tmp,"\"Value_ch2\":%f,"	,log_p.measuredValues[1] );					strcat( http_tmp,tmp );
-		sprintf( tmp,"\"Alert\":\"%02d\"}"	,log_p.alertStatus  );						strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Value_ch1\":%.3f,"	,log_p.measuredValues[0] );					strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Value_ch2\":%.3f,"	,log_p.measuredValues[1] );					strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Alert\":\"%02x\"}"	,log_p.alertStatus  );						strcat( http_tmp,tmp );
 	}
 	if( i == 0 ){
 		putst("Report is 0!\r\n");
