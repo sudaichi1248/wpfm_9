@@ -1016,8 +1016,7 @@ void DLCMatPostReport()
 		sprintf( tmp,"{\"Time\":\"%s\","		,s );									strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch1\":%f,"	,log_p.measuredValues[0] );					strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch2\":%f,"	,log_p.measuredValues[1] );					strcat( http_tmp,tmp );
-		sprintf( tmp,"\"Alert\":%02d,"		,log_p.alertStatus  );						strcat( http_tmp,tmp );
-		sprintf( tmp,"\"BatStatus\":%02d}"	,log_p.batteryStatus  );					strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Alert\":%02d}"		,log_p.alertStatus  );						strcat( http_tmp,tmp );
 	}
 	if( i == 0 ){
 		putst("Report is 0!\r\n");
