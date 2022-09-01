@@ -853,7 +853,7 @@ void DLCMatPostConfig()
 	char	tmp[48],n,*p;
 	int		i;
 	char	s[32];
-	strcpy( s,"1970-01-01 09:00:01" );
+	strcpy( s,"\"1970-01-01 09:00:01\"" );
 	WPFM_readSettingParameter( &config );
 	strcpy( http_tmp,http_config );
 	strcat( http_tmp,"{\"Config\":{" );
@@ -862,6 +862,7 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"ReprotInterval\":%d,"		,config.communicationInterval );			strcat( http_tmp,tmp );
 	sprintf( tmp,"\"IntervalAlert\":%d,"		,config.measurementIntervalOnAlert  );		strcat( http_tmp,tmp );
 	sprintf( tmp,"\"ReprotIntervalAlert\":%d,"	,config.communicationIntervalOnAlert );		strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Measurment\":%d,"			,0 );										strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Select_ch1\":%d,"			,config.sensorKinds[0] )		;			strcat( http_tmp,tmp );		/* ch1 センサ種別 */
 	sprintf( tmp,"\"Upper0_ch1\":%d,"			,config.upperLimits[0] );					strcat( http_tmp,tmp );		/* ch1 センサ出力の上限値 */
 	sprintf( tmp,"\"Lower0_ch1\":%d,"			,config.lowerLimits[0] );					strcat( http_tmp,tmp );		/* ch1 センサ出力の下限値 */
@@ -890,7 +891,7 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"Measure_ch2\":\"%s\","		,config.Measure_ch2 );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"MeaKind_ch2\":\"%s\","		,config.MeaKind_ch2 );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Chattering_ch2\":%d,"		,config.alertChatteringTimes[1] );			strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Chatterring_type\":%d,"		,1 );										strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Chattering_type\":%d,"		,1 );										strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertPause\":%s,"			,s );										strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertTimeOut\":%d"			,30 );										strcat( http_tmp,tmp );
 	strcat( http_tmp,"}}" );
@@ -926,10 +927,10 @@ void DLCMatPostStatus()
 	strcpy( http_tmp,http_status );
 	strcat( http_tmp,"{\"Status\":{" );
 	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );					strcat( http_tmp,tmp );
-	sprintf( tmp,"\"IMEI\":%s,"				,DLC_MatIMEI );									strcat( http_tmp,tmp );
-	sprintf( tmp,"\"MSISDN\":%s,"			,DLC_MatNUM );									strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Version\":%5s,"			,ver ); 				 						strcat( http_tmp,tmp );
-	sprintf( tmp,"\"LTEVersion\":%s,"		,DLC_MatVer );									strcat( http_tmp,tmp );
+	sprintf( tmp,"\"IMEI\":\"%s\","			,DLC_MatIMEI );									strcat( http_tmp,tmp );
+	sprintf( tmp,"\"MSISDN\":\"%s\","		,DLC_MatNUM );									strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Version\":\"%5s\","		,ver );											strcat( http_tmp,tmp );
+	sprintf( tmp,"\"LTEVersion\":\"%s\","	,DLC_MatVer );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"ExtCellPwr1\":%.3f,"	,(float)WPFM_lastBatteryVoltages[0]/1000 );		strcat( http_tmp,tmp );
 	sprintf( tmp,"\"ExtCellPwr2\":%.3f,"	,(float)WPFM_lastBatteryVoltages[1]/1000 );		strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Batt1Use\":%d,"			,WPFM_externalBatteryNumberInUse );				strcat( http_tmp,tmp );
