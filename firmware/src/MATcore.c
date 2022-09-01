@@ -439,10 +439,10 @@ void MTcls3()
 }
 void MTclsF()	// fota
 {
-	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* 現状0番地(test) */
+	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* FOTAデータ保存番地 */
 	DLC_MatLineIdx = 0;
 	putst("RecvData2:\r\n");
-putst("DLC_MatSPIRemaindataFota:");puthxw(DLC_MatSPIRemaindataFota);putcrlf();
+// putst("DLC_MatSPIRemaindataFota:");puthxw(DLC_MatSPIRemaindataFota);putcrlf();
 	fotaaddress /= DLC_MatSPIFlashPage;
 	if (DLC_MatSPIRemaindataFota != 0) {	/* 半端byteありの場合 */
 		if (W25Q128JV_programPage(fotaaddress + DLC_MatSPIWritePageFota, 0, (uint8_t*)DLC_MatSPIRemainbufFota, DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){	/* 256byte書込む */
@@ -467,7 +467,17 @@ putst("DLC_MatSPIRemaindataFota:");puthxw(DLC_MatSPIRemaindataFota);putcrlf();
 		putst("BufData2:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
 	}
 	if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし */
-		DLCMatTimerClr( 0 );	/* タイマークリア */
+		memset(DLC_MatSPICheckbufFota, 0xFF, sizeof(DLC_MatSPICheckbufFota));
+		DLC_MatSPICheckbufFota[0xFC] = 0x04;
+		DLC_MatSPICheckbufFota[0xFD] = 0x03;
+		DLC_MatSPICheckbufFota[0xFE] = 0x02;
+		DLC_MatSPICheckbufFota[0xFF] = 0x01;
+		putst("CheckData:\r\n");Dump(DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage);putcrlf();
+		if (W25Q128JV_programPage(fotaaddress + 0x35F, 0, (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){	/* チェック用256byte書込む */
+			DLCMatTimerClr( 0 );	/* タイマークリア */
+			putst("FOTA timer CLR\r\n");
+// putst("address:");puthxw(fotaaddress + 0x35F);putcrlf();
+		}
 	}
 }
 void MTslep()
@@ -499,7 +509,9 @@ void MTwake()
 }
 void MTtoF()	// fota T/O
 {
+	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* FOTAデータ保存番地 */
 	// 実行フラグそのままでリセットしリトライ?
+	W25Q128JV_eraseSctor(((fotaaddress + 0x36000) / 0x1000) - 1, true);	/* 失敗なのでFOTAデータ最終セクタ消去(SPI Flash) */
 }
 struct {
 	uchar	wx;
@@ -804,7 +816,6 @@ void DLCMatConfigDefault()
 	config.serialNumber 					= 9999999;
 	config.measurementInterval 				= 60;
 	config.communicationInterval 			= 300;
-	config.communicationIntervalOnAlert 	= 30;
 	config.communicationIntervalOnAlert 	= 120;
 	config.sensorKinds[0]		 			= 1;
 	config.upperLimits[0]		 			= 1;
@@ -1000,12 +1011,12 @@ void DLCMatPostSndSub()
 void DLCMatPostReport()
 {
 	char	tmp[48],*p;
-	char	s[20];	
+	char	s[32];	
 	int		i;
 	MLOG_T 	log_p;
 	strcpy( http_tmp,http_report );
 	strcat( http_tmp,"{\"Report\":{" );
-	sprintf( tmp,"\"LoggerSerialNo\":%d},"	,(int)config.serialNumber );				strcat( http_tmp,tmp );
+	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );				strcat( http_tmp,tmp );
 	strcat( http_tmp,"\"Reportlist\":[" );
 	for(i=0;i<REPORT_LIST_MAX;i++){
 		if( MLOG_getLog( &log_p ) < 0 )
@@ -1023,8 +1034,8 @@ void DLCMatPostReport()
 		return;
 	}
 	sprintf( tmp,"Report=%d\r\n",i );putst( tmp );
-	strcat( http_tmp,"]}" );
-	i = (int)(strchr(http_tmp,']')-strstr(http_tmp,"{\"Report\":{"))+1;
+	strcat( http_tmp,"]}}" );
+	i = (int)(strchr(http_tmp,']')-strstr(http_tmp,"{\"Report\":{"))+2;
 	if( i > 0 ){
 		p = strstr( http_tmp,"Length:    " );
 		if( p < 0 ){
@@ -1115,7 +1126,7 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 {
 	char	*p,*q,*fpt,n;
 	int		i,j=0,k,len;
-	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* 現状0番地(test) */
+	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* FOTAデータ保存番地 */
 	if(( p = strstr( (char*)DLC_MatLineBuf,"$RECVDATA:" )) > 0 ){
 		p = str2int( &p[10],&i );										/* $RECVDATA,i,j,"...."<cr> */
 		if( p < 0 ){													/* p            q  */
