@@ -108,7 +108,6 @@ typedef struct
     uint16_t        communicationInterval;              // 平時の通信間隔 [Sec] - 60で割り切れること
     uint16_t        measurementIntervalOnAlert;         // 警報時の測定間隔 [Sec]
     uint16_t        communicationIntervalOnAlert;       // 警報時の通信間隔 [Sec] - 60で割り切れること
-	uint16_t		Measurment	;						// Measurement
     SENSOR_KIND     sensorKinds[2];                     // センサ種別[0:ch1/1:ch2]
     uint16_t        upperLimits[2];                     // 仕様上のセンサ出力の上限値[0:ch1/1:ch2] [-]
     uint16_t        lowerLimits[2];                     // 仕様上のセンサ出力の下限値[0:ch1/1:ch2] [-]
@@ -128,9 +127,6 @@ typedef struct
     char            MeaKind_ch1[WPFM_MAX_UNIT_NAME];    // CH1の単位名
     char            Measure_ch2[WPFM_MAX_TARGET_NAME];  // CH2の計測対象名
     char            MeaKind_ch2[WPFM_MAX_UNIT_NAME];    // CH2の単位名
-	uint16_t		Chattering_type;					// Chattering_type
-	char			AlertPause[24];						// AlertPause
-	uint16_t		AlertTimeOut;						// AlertTimeOut
 } WPFM_SETTING_PARAMETER;
     // value of sensorKinds[] is used for index of calibrationUpperValues[] and calibrationLowerValues[]
 // index of each array -- common values
