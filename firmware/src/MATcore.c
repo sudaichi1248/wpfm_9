@@ -32,7 +32,7 @@ int DLCMatRecvDisp();
 int DLCMatRecvWriteFota();	// fota FOTAデータ書込み処理
 char 	zLogOn=1;
 char	DLC_MatVer[8];
-char 	DLC_MatResBuf[2000];
+char 	DLC_MatResBuf[2048];
 int	 	DLC_MatResIdx;
 uchar	DLC_MatLineBuf[4000];
 int		DLC_MatLineIdx;
@@ -44,6 +44,7 @@ char	DLC_MatIMEI[16];
 int		DLC_MatTmid;
 uchar	DLC_BigState,DLC_Matknd;
 uchar	DLC_MatRetry;
+char	DLC_MatConfigItem[32];
 
 #define		TIMER_NUM	2
 bool	DLC_MatFotaExe=false;	// fota FOTA実行フラグ
@@ -82,8 +83,8 @@ char getch()
 		_GO_IDLE();
 	}
 }
-#define	_DEBUG_PUTCH_SZ_MAX		0x800
-#define	_DEBUG_PUTCH_SZ_MSK		0x7FF
+#define	_DEBUG_PUTCH_SZ_MAX		0x0800
+#define	_DEBUG_PUTCH_SZ_MSK		0x07FF
 struct {
 	int	wx;
 	int	rx;
@@ -834,6 +835,7 @@ void DLCMatConfigDefault()
 	config.serialNumber 					= 9999999;
 	config.measurementInterval 				= 60;
 	config.communicationInterval 			= 300;
+	config.measurementIntervalOnAlert	 	= 30;
 	config.communicationIntervalOnAlert 	= 120;
 	config.sensorKinds[0]		 			= 1;
 	config.upperLimits[0]		 			= 1;
@@ -895,10 +897,10 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"Select_ch1\":%d,"			,config.sensorKinds[0] )		;			strcat( http_tmp,tmp );		/* ch1 センサ種別 */
 	sprintf( tmp,"\"Upper0_ch1\":%d,"			,config.upperLimits[0] );					strcat( http_tmp,tmp );		/* ch1 センサ出力の上限値 */
 	sprintf( tmp,"\"Lower0_ch1\":%d,"			,config.lowerLimits[0] );					strcat( http_tmp,tmp );		/* ch1 センサ出力の下限値 */
-	sprintf( tmp,"\"AlertSw_U2_ch1\":%d,"		,(int)config.alertEnableKinds[0][0][0] );	strcat( http_tmp,tmp );		/* アラート U2 ch1 */
-	sprintf( tmp,"\"Upper2_ch1\":%f,"			,config.alertUpperLimits[0][0] );			strcat( http_tmp,tmp );		/* 上限値2 ch1 */
-	sprintf( tmp,"\"AlertSw_U1_ch1\":%d,"		,(int)config.alertEnableKinds[0][0][1] );	strcat( http_tmp,tmp );		/* アラート U1 ch1 */
-	sprintf( tmp,"\"Upper1_ch1\":%f,"			,config.alertUpperLimits[0][1] );			strcat( http_tmp,tmp );		/* 上限値1 ch1 */
+	sprintf( tmp,"\"AlertSw_U2_ch1\":%d,"		,(int)config.alertEnableKinds[0][0][1] );	strcat( http_tmp,tmp );		/* アラート U2 ch1 */
+	sprintf( tmp,"\"Upper2_ch1\":%f,"			,config.alertUpperLimits[0][1] );			strcat( http_tmp,tmp );		/* 上限値2 ch1 */
+	sprintf( tmp,"\"AlertSw_U1_ch1\":%d,"		,(int)config.alertEnableKinds[0][0][0] );	strcat( http_tmp,tmp );		/* アラート U1 ch1 */
+	sprintf( tmp,"\"Upper1_ch1\":%f,"			,config.alertUpperLimits[0][0] );			strcat( http_tmp,tmp );		/* 上限値1 ch1 */
 	sprintf( tmp,"\"AlertSw_L1_ch1\":%d,"		,(int)config.alertEnableKinds[0][1][0] );	strcat( http_tmp,tmp );		/* アラート U2 ch1 */
 	sprintf( tmp,"\"Lower1_ch1\":%f,"			,config.alertLowerLimits[0][0] );			strcat( http_tmp,tmp );		/* 上限値2 ch1 */
 	sprintf( tmp,"\"AlertSw_L2_ch1\":%d,"		,(int)config.alertEnableKinds[0][1][1] );	strcat( http_tmp,tmp );
@@ -909,10 +911,10 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"Select_ch2\":%d,"			,config.sensorKinds[1] );					strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Upper0_ch2\":%d,"			,config.upperLimits[1] );					strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Lower0_ch2\":%d,"			,config.lowerLimits[1] );					strcat( http_tmp,tmp );
-	sprintf( tmp,"\"AlertSw_U2_ch2\":%d,"		,(int)config.alertEnableKinds[1][0][0] );	strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Upper2_ch2\":%f,"			,config.alertUpperLimits[1][0] );			strcat( http_tmp,tmp );
-	sprintf( tmp,"\"AlertSw_U1_ch2\":%d,"		,(int)config.alertEnableKinds[1][0][1] );	strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Upper1_ch2\":%f,"			,config.alertUpperLimits[1][1] );			strcat( http_tmp,tmp );
+	sprintf( tmp,"\"AlertSw_U2_ch2\":%d,"		,(int)config.alertEnableKinds[1][0][1] );	strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Upper2_ch2\":%f,"			,config.alertUpperLimits[1][1] );			strcat( http_tmp,tmp );
+	sprintf( tmp,"\"AlertSw_U1_ch2\":%d,"		,(int)config.alertEnableKinds[1][0][0] );	strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Upper1_ch2\":%f,"			,config.alertUpperLimits[1][0] );			strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertSw_L1_ch2\":%d,"		,(int)config.alertEnableKinds[1][1][0] );	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Lower1_ch2\":%f,"			,config.alertLowerLimits[1][0] );			strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertSw_L2_ch2\":%d,"		,(int)config.alertEnableKinds[1][1][1] );	strcat( http_tmp,tmp );
@@ -920,9 +922,9 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"Measure_ch2\":\"%s\","		,config.Measure_ch2 );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"MeaKind_ch2\":\"%s\","		,config.MeaKind_ch2 );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Chattering_ch2\":%d,"		,config.alertChatteringTimes[1] );			strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Chattering_type\":%d,"		,1 );										strcat( http_tmp,tmp );
-	sprintf( tmp,"\"AlertPause\":%s,"			,s );										strcat( http_tmp,tmp );
-	sprintf( tmp,"\"AlertTimeOut\":%d"			,30 );										strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Chattering_type\":%d,"		,config.Chattering_type );					strcat( http_tmp,tmp );
+	sprintf( tmp,"\"AlertPause\":\"%s\","		,config.AlertPause );						strcat( http_tmp,tmp );
+	sprintf( tmp,"\"AlertTimeOut\":%d"			,config.AlertTimeOut );						strcat( http_tmp,tmp );
 	strcat( http_tmp,"}}" );
 	i = (int)(strchr(http_tmp,'}')-strstr(http_tmp,"{\"Config\":{"))+1;
 	if( i > 0 ){
@@ -1086,6 +1088,265 @@ void DLCMatWgetFile()	// fota
 	strcat( DLC_MatSendBuff,"\"\r" );
 	DLCMatSend( DLC_MatSendBuff );
 }
+void DLCMatINTParamSet(char *config_p)
+{
+	char	*config_ps;
+	int		config_len;
+	config_ps = strstr(config_p, ":");
+	config_len = strstr(config_p, ",") - strstr(config_p, ":");
+	memset(DLC_MatConfigItem, 0, sizeof(DLC_MatConfigItem));
+	if (config_len > 1) {
+		strncpy(DLC_MatConfigItem, config_ps+1, config_len-1);
+//		putst("\r\nDLC_MatConfigItem:\r\n");Dump(DLC_MatConfigItem, 16);
+	} else {
+		DLC_MatConfigItem[0] = 0;
+	}
+}
+void DLCMatSTRParamSet(char *config_p)
+{
+	char	*config_ps;
+	int		config_len;
+	config_ps = strstr(config_p, ":");
+	config_len = strstr(config_p, ",") - strstr(config_p, ":");
+	memset(DLC_MatConfigItem, 0, sizeof(DLC_MatConfigItem));
+	if (config_len > 3) {
+		strncpy(DLC_MatConfigItem, config_ps+2, config_len-3);	/* ""を含むため */
+//		putst("\r\nDLC_MatConfigItem:\r\n");Dump(DLC_MatConfigItem, 16);
+	} else {
+		DLC_MatConfigItem[0] = 0;
+	}
+}
+void DLCMatConfigRet()
+{
+	char	*config_p;
+	WPFM_readSettingParameter( &config );
+	if (strstr(DLC_MatResBuf, "\"Change\":true")) {
+		config_p = strstr(DLC_MatResBuf, "LoggerSerialNo");
+		if (config_p) {
+putst("coco3\r\n");
+			DLCMatINTParamSet(config_p);
+			config.serialNumber = atoi(DLC_MatConfigItem);
+//			putst("LoggerSerialNo:");puthxw(config.serialNumber);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Interval");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.measurementInterval = atoi(DLC_MatConfigItem);
+//			putst("Interval:");puthxw(config.measurementInterval);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "ReprotInterval");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.communicationInterval = atoi(DLC_MatConfigItem);
+//			putst("ReprotInterval:");puthxw(config.communicationInterval);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "IntervalAlert");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.measurementIntervalOnAlert = atoi(DLC_MatConfigItem);
+//			putst("IntervalAlert:");puthxw(config.measurementIntervalOnAlert);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "ReprotIntervalAlert");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.communicationIntervalOnAlert = atoi(DLC_MatConfigItem);
+//			putst("ReprotIntervalAlert:");puthxw(config.communicationIntervalOnAlert);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Measurment");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.Measurment = atoi(DLC_MatConfigItem);
+//			putst("Measurment:");puthxw(config.Measurment);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Select_ch1");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.sensorKinds[0] = atoi(DLC_MatConfigItem);
+//			putst("Select_ch1:");puthxb(config.sensorKinds[0]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Select_ch2");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.sensorKinds[1] = atoi(DLC_MatConfigItem);
+//			putst("Select_ch2:");puthxb(config.sensorKinds[1]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Upper0_ch1");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.upperLimits[0] = atoi(DLC_MatConfigItem);
+//			putst("Upper0_ch1:");puthxb(config.upperLimits[0]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Upper0_ch2");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.upperLimits[1] = atoi(DLC_MatConfigItem);
+//			putst("Upper0_ch2:");puthxb(config.upperLimits[1]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Lower0_ch1");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.lowerLimits[0] = atoi(DLC_MatConfigItem);
+//			putst("Lower0_ch1:");puthxb(config.lowerLimits[0]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Lower0_ch2");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.lowerLimits[1] = atoi(DLC_MatConfigItem);
+//			putst("Lower0_ch2:");puthxb(config.lowerLimits[1]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "AlertSw_U2_ch1");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertEnableKinds[0][0][1] = atoi(DLC_MatConfigItem);
+//			putst("AlertSw_U2_ch1:");puthxb(config.alertEnableKinds[0][0][1]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "AlertSw_U1_ch1");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertEnableKinds[0][0][0] = atoi(DLC_MatConfigItem);
+//			putst("AlertSw_U1_ch1:");puthxb(config.alertEnableKinds[0][0][0]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "AlertSw_L1_ch1");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertEnableKinds[0][1][0] = atoi(DLC_MatConfigItem);
+//			putst("AlertSw_L1_ch1:");puthxb(config.alertEnableKinds[0][1][0]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "AlertSw_L2_ch1");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertEnableKinds[0][1][1] = atoi(DLC_MatConfigItem);
+//			putst("AlertSw_L2_ch1:");puthxb(config.alertEnableKinds[0][1][1]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "AlertSw_U2_ch2");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertEnableKinds[1][0][1] = atoi(DLC_MatConfigItem);
+//			putst("AlertSw_U2_ch2:");puthxb(config.alertEnableKinds[1][0][1]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "AlertSw_U1_ch2");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertEnableKinds[1][0][0] = atoi(DLC_MatConfigItem);
+//			putst("AlertSw_U1_ch2:");puthxb(config.alertEnableKinds[1][0][0]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "AlertSw_L1_ch2");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertEnableKinds[1][1][0] = atoi(DLC_MatConfigItem);
+//			putst("AlertSw_L1_ch2:");puthxb(config.alertEnableKinds[1][1][0]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "AlertSw_L2_ch2");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertEnableKinds[1][1][1] = atoi(DLC_MatConfigItem);
+//			putst("AlertSw_L2_ch2:");puthxb(config.alertEnableKinds[1][1][1]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Upper2_ch1");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertUpperLimits[0][1] = atoi(DLC_MatConfigItem);
+//			putst("Upper2_ch1:");puthxb(config.alertUpperLimits[0][1]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Upper1_ch1");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertUpperLimits[0][0] = atoi(DLC_MatConfigItem);
+//			putst("Upper1_ch1:");puthxb(config.alertUpperLimits[0][0]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Lower1_ch1");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertLowerLimits[0][0] = atoi(DLC_MatConfigItem);
+//			putst("Lower1_ch1:");puthxb(config.alertLowerLimits[0][0]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Lower2_ch1");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertLowerLimits[0][1] = atoi(DLC_MatConfigItem);
+//			putst("Lower2_ch1:");puthxb(config.alertLowerLimits[0][1]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Upper2_ch2");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertUpperLimits[1][1] = atoi(DLC_MatConfigItem);
+//			putst("Upper2_ch2:");puthxb(config.alertUpperLimits[1][1]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Upper1_ch2");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertUpperLimits[1][0] = atoi(DLC_MatConfigItem);
+//			putst("Upper1_ch2:");puthxb(config.alertUpperLimits[1][0]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Lower1_ch2");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertLowerLimits[1][0] = atoi(DLC_MatConfigItem);
+//			putst("Lower1_ch2:");puthxb(config.alertLowerLimits[1][0]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Lower2_ch2");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertLowerLimits[1][1] = atoi(DLC_MatConfigItem);
+//			putst("Lower2_ch2:");puthxb(config.alertLowerLimits[1][1]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Measure_ch1");
+		if (config_p) {
+			DLCMatSTRParamSet(config_p);
+			strcpy(config.Measure_ch1, DLC_MatConfigItem);
+//			putst("Measure_ch1:");putst(config.Measure_ch1);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "MeaKind_ch1");
+		if (config_p) {
+			DLCMatSTRParamSet(config_p);
+			strcpy(config.MeaKind_ch1, DLC_MatConfigItem);
+//			putst("MeaKind_ch1:");putst(config.MeaKind_ch1);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Chattering_ch1");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertChatteringTimes[0] = atoi(DLC_MatConfigItem);
+//			putst("Chattering_ch1:");puthxb(config.alertChatteringTimes[0]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Measure_ch2");
+		if (config_p) {
+			DLCMatSTRParamSet(config_p);
+			strcpy(config.Measure_ch2, DLC_MatConfigItem);
+//			putst("Measure_ch2:");putst(config.Measure_ch2);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "MeaKind_ch2");
+		if (config_p) {
+			DLCMatSTRParamSet(config_p);
+			strcpy(config.MeaKind_ch2, DLC_MatConfigItem);
+//			putst("MeaKind_ch2:");putst(config.MeaKind_ch2);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Chattering_ch2");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.alertChatteringTimes[1] = atoi(DLC_MatConfigItem);
+//			putst("Chattering_ch2:");puthxb(config.alertChatteringTimes[1]);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "Chattering_type");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.Chattering_type = atoi(DLC_MatConfigItem);
+//			putst("Chattering_type:");puthxb(config.Chattering_type);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "AlertPause");
+		if (config_p) {
+			DLCMatSTRParamSet(config_p);
+			strcpy(config.AlertPause, DLC_MatConfigItem);
+//			putst("AlertPause:");putst(config.AlertPause);putcrlf();
+		}
+		config_p = strstr(DLC_MatResBuf, "AlertTimeOut");
+		if (config_p) {
+			DLCMatINTParamSet(config_p);
+			config.AlertTimeOut = atoi(DLC_MatConfigItem);
+//			putst("AlertTimeOut:");puthxb(config.AlertTimeOut);putcrlf();
+		}
+		WPFM_writeSettingParameter( &config );
+	}
+}
 int DLCMatRecvDisp()
 {
 	char	*p,*q,n;
@@ -1116,14 +1377,21 @@ int DLCMatRecvDisp()
 //				if( strstr( DLC_MatResBuf,"Connection: close" ))
 //					return 0;
 //			}
-// fota			if (strstr(DLC_MatResBuf, "\"LTEVersion\":")) {	// fota StatusでF/W version指定されたらFOTA起動?
-// fota				DLC_MatFotaExe = true;
-// fota				// フラグを維持したまま再起動したい
-// fota			}
 			if( j == 0 ){
 				DLC_MatResBuf[DLC_MatResIdx] = 0;
 				putst( DLC_MatResBuf );
 				DLC_MatResIdx = 0;
+putst("coco1\r\n");
+				if (strstr(DLC_MatResBuf,"ConfigRet")) {
+putst("coco2\r\n");
+					DLCMatConfigRet();
+				}
+// fota				if( strstr( DLC_MatResBuf,"Status" )){
+// fota					if (strstr(DLC_MatResBuf, "\"LTEVersion\":")) {	// fota StatusでF/W version指定されたらFOTA起動?
+// fota						DLC_MatFotaExe = true;
+// fota						// フラグを維持したまま再起動したい
+// fota					}
+// fota				}
 			}
 			else {
 //				strcpy( &DLC_MatResBuf[DLC_MatResIdx],"★" );
@@ -1735,6 +2003,47 @@ void DLCMatMain()
 		case 'R':
 			if( CheckPasswd() )
 				DLCRomTest();
+			break;
+		case 'C':
+			WPFM_readSettingParameter( &config );
+			putcrlf();
+			putst("LoggerSerialNo:");puthxw(config.serialNumber);putcrlf();
+			putst("Interval:");puthxw(config.measurementInterval);putcrlf();
+			putst("ReprotInterval:");puthxw(config.communicationInterval);putcrlf();
+			putst("IntervalAlert:");puthxw(config.measurementIntervalOnAlert);putcrlf();
+			putst("ReprotIntervalAlert:");puthxw(config.communicationIntervalOnAlert);putcrlf();
+			putst("Measurment:");puthxw(config.Measurment);putcrlf();
+			putst("Select_ch1:");puthxb(config.sensorKinds[0]);putcrlf();
+			putst("Select_ch2:");puthxb(config.sensorKinds[1]);putcrlf();
+			putst("Upper0_ch1:");puthxb(config.upperLimits[0]);putcrlf();
+			putst("Upper0_ch2:");puthxb(config.upperLimits[1]);putcrlf();
+			putst("Lower0_ch1:");puthxb(config.lowerLimits[0]);putcrlf();
+			putst("Lower0_ch2:");puthxb(config.lowerLimits[1]);putcrlf();
+			putst("AlertSw_U2_ch1:");puthxb(config.alertEnableKinds[0][0][1]);putcrlf();
+			putst("AlertSw_U1_ch1:");puthxb(config.alertEnableKinds[0][0][0]);putcrlf();
+			putst("AlertSw_L1_ch1:");puthxb(config.alertEnableKinds[0][1][0]);putcrlf();
+			putst("AlertSw_L2_ch1:");puthxb(config.alertEnableKinds[0][1][1]);putcrlf();
+			putst("AlertSw_U2_ch2:");puthxb(config.alertEnableKinds[1][0][1]);putcrlf();
+			putst("AlertSw_U1_ch2:");puthxb(config.alertEnableKinds[1][0][0]);putcrlf();
+			putst("AlertSw_L1_ch2:");puthxb(config.alertEnableKinds[1][1][0]);putcrlf();
+			putst("AlertSw_L2_ch2:");puthxb(config.alertEnableKinds[1][1][1]);putcrlf();
+			putst("Upper2_ch1:");puthxb(config.alertUpperLimits[0][1]);putcrlf();
+			putst("Upper1_ch1:");puthxb(config.alertUpperLimits[0][0]);putcrlf();
+			putst("Lower1_ch1:");puthxb(config.alertLowerLimits[0][0]);putcrlf();
+			putst("Lower2_ch1:");puthxb(config.alertLowerLimits[0][1]);putcrlf();
+			putst("Upper2_ch2:");puthxb(config.alertUpperLimits[1][1]);putcrlf();
+			putst("Upper1_ch2:");puthxb(config.alertUpperLimits[1][0]);putcrlf();
+			putst("Lower1_ch2:");puthxb(config.alertLowerLimits[1][0]);putcrlf();
+			putst("Lower2_ch2:");puthxb(config.alertLowerLimits[1][1]);putcrlf();
+			putst("Measure_ch1:");putst(config.Measure_ch1);putcrlf();
+			putst("MeaKind_ch1:");putst(config.MeaKind_ch1);putcrlf();
+			putst("Chattering_ch1:");puthxb(config.alertChatteringTimes[0]);putcrlf();
+			putst("Measure_ch2:");putst(config.Measure_ch2);putcrlf();
+			putst("MeaKind_ch2:");putst(config.MeaKind_ch2);putcrlf();
+			putst("Chattering_ch2:");puthxb(config.alertChatteringTimes[1]);putcrlf();
+			putst("Chattering_type:");puthxb(config.Chattering_type);putcrlf();
+			putst("AlertPause:");putst(config.AlertPause);putcrlf();
+			putst("AlertTimeOut:");puthxb(config.AlertTimeOut);putcrlf();
 			break;
 		case 0x01:												/* CTRL+A */
 			if( CheckPasswd() )
