@@ -889,10 +889,10 @@ void DLCMatPostConfig()
 	strcpy( http_tmp,http_config );
 	strcat( http_tmp,"{\"Config\":{" );
 	sprintf( tmp,"\"LoggerSerialNo\":%d,"		,(int)config.serialNumber );				strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Interval\":%d,"				,config.measurementInterval );				strcat( http_tmp,tmp );
-	sprintf( tmp,"\"ReprotInterval\":%d,"		,config.communicationInterval );			strcat( http_tmp,tmp );
-	sprintf( tmp,"\"IntervalAlert\":%d,"		,config.measurementIntervalOnAlert  );		strcat( http_tmp,tmp );
-	sprintf( tmp,"\"ReprotIntervalAlert\":%d,"	,config.communicationIntervalOnAlert );		strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Interval\":%ld,"			,config.measurementInterval );				strcat( http_tmp,tmp );
+	sprintf( tmp,"\"ReprotInterval\":%ld,"		,config.communicationInterval );			strcat( http_tmp,tmp );
+	sprintf( tmp,"\"IntervalAlert\":%ld,"		,config.measurementIntervalOnAlert  );		strcat( http_tmp,tmp );
+	sprintf( tmp,"\"ReprotIntervalAlert\":%ld,"	,config.communicationIntervalOnAlert );		strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Measurment\":%d,"			,0 );										strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Select_ch1\":%d,"			,config.sensorKinds[0] )		;			strcat( http_tmp,tmp );		/* ch1 センサ種別 */
 	sprintf( tmp,"\"Upper0_ch1\":%d,"			,config.upperLimits[0] );					strcat( http_tmp,tmp );		/* ch1 センサ出力の上限値 */
@@ -1088,12 +1088,16 @@ void DLCMatWgetFile()	// fota
 	strcat( DLC_MatSendBuff,"\"\r" );
 	DLCMatSend( DLC_MatSendBuff );
 }
-void DLCMatINTParamSet(char *config_p)
+void DLCMatINTParamSet(char *config_p, bool end)
 {
 	char	*config_ps;
 	int		config_len;
 	config_ps = strstr(config_p, ":");
-	config_len = strstr(config_p, ",") - strstr(config_p, ":");
+	if (end) {
+		config_len = strstr(config_p, "}") - strstr(config_p, ":");
+	} else {
+		config_len = strstr(config_p, ",") - strstr(config_p, ":");
+	}
 	memset(DLC_MatConfigItem, 0, sizeof(DLC_MatConfigItem));
 	if (config_len > 1) {
 		strncpy(DLC_MatConfigItem, config_ps+1, config_len-1);
@@ -1121,172 +1125,174 @@ void DLCMatConfigRet()
 	char	*config_p;
 	WPFM_readSettingParameter( &config );
 	if (strstr(DLC_MatResBuf, "\"Change\":true")) {
+putst("coco3\r\n");
+#if 0
 		config_p = strstr(DLC_MatResBuf, "LoggerSerialNo");
 		if (config_p) {
-putst("coco3\r\n");
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.serialNumber = atoi(DLC_MatConfigItem);
 //			putst("LoggerSerialNo:");puthxw(config.serialNumber);putcrlf();
 		}
+#endif
 		config_p = strstr(DLC_MatResBuf, "Interval");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.measurementInterval = atoi(DLC_MatConfigItem);
 //			putst("Interval:");puthxw(config.measurementInterval);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "ReprotInterval");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.communicationInterval = atoi(DLC_MatConfigItem);
 //			putst("ReprotInterval:");puthxw(config.communicationInterval);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "IntervalAlert");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.measurementIntervalOnAlert = atoi(DLC_MatConfigItem);
 //			putst("IntervalAlert:");puthxw(config.measurementIntervalOnAlert);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "ReprotIntervalAlert");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.communicationIntervalOnAlert = atoi(DLC_MatConfigItem);
 //			putst("ReprotIntervalAlert:");puthxw(config.communicationIntervalOnAlert);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Measurment");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.Measurment = atoi(DLC_MatConfigItem);
 //			putst("Measurment:");puthxw(config.Measurment);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Select_ch1");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.sensorKinds[0] = atoi(DLC_MatConfigItem);
 //			putst("Select_ch1:");puthxb(config.sensorKinds[0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Select_ch2");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.sensorKinds[1] = atoi(DLC_MatConfigItem);
 //			putst("Select_ch2:");puthxb(config.sensorKinds[1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Upper0_ch1");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.upperLimits[0] = atoi(DLC_MatConfigItem);
 //			putst("Upper0_ch1:");puthxb(config.upperLimits[0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Upper0_ch2");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.upperLimits[1] = atoi(DLC_MatConfigItem);
 //			putst("Upper0_ch2:");puthxb(config.upperLimits[1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Lower0_ch1");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.lowerLimits[0] = atoi(DLC_MatConfigItem);
 //			putst("Lower0_ch1:");puthxb(config.lowerLimits[0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Lower0_ch2");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.lowerLimits[1] = atoi(DLC_MatConfigItem);
 //			putst("Lower0_ch2:");puthxb(config.lowerLimits[1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "AlertSw_U2_ch1");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertEnableKinds[0][0][1] = atoi(DLC_MatConfigItem);
 //			putst("AlertSw_U2_ch1:");puthxb(config.alertEnableKinds[0][0][1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "AlertSw_U1_ch1");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertEnableKinds[0][0][0] = atoi(DLC_MatConfigItem);
 //			putst("AlertSw_U1_ch1:");puthxb(config.alertEnableKinds[0][0][0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "AlertSw_L1_ch1");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertEnableKinds[0][1][0] = atoi(DLC_MatConfigItem);
 //			putst("AlertSw_L1_ch1:");puthxb(config.alertEnableKinds[0][1][0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "AlertSw_L2_ch1");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertEnableKinds[0][1][1] = atoi(DLC_MatConfigItem);
 //			putst("AlertSw_L2_ch1:");puthxb(config.alertEnableKinds[0][1][1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "AlertSw_U2_ch2");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertEnableKinds[1][0][1] = atoi(DLC_MatConfigItem);
 //			putst("AlertSw_U2_ch2:");puthxb(config.alertEnableKinds[1][0][1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "AlertSw_U1_ch2");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertEnableKinds[1][0][0] = atoi(DLC_MatConfigItem);
 //			putst("AlertSw_U1_ch2:");puthxb(config.alertEnableKinds[1][0][0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "AlertSw_L1_ch2");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertEnableKinds[1][1][0] = atoi(DLC_MatConfigItem);
 //			putst("AlertSw_L1_ch2:");puthxb(config.alertEnableKinds[1][1][0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "AlertSw_L2_ch2");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertEnableKinds[1][1][1] = atoi(DLC_MatConfigItem);
 //			putst("AlertSw_L2_ch2:");puthxb(config.alertEnableKinds[1][1][1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Upper2_ch1");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertUpperLimits[0][1] = atoi(DLC_MatConfigItem);
 //			putst("Upper2_ch1:");puthxb(config.alertUpperLimits[0][1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Upper1_ch1");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertUpperLimits[0][0] = atoi(DLC_MatConfigItem);
 //			putst("Upper1_ch1:");puthxb(config.alertUpperLimits[0][0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Lower1_ch1");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertLowerLimits[0][0] = atoi(DLC_MatConfigItem);
 //			putst("Lower1_ch1:");puthxb(config.alertLowerLimits[0][0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Lower2_ch1");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertLowerLimits[0][1] = atoi(DLC_MatConfigItem);
 //			putst("Lower2_ch1:");puthxb(config.alertLowerLimits[0][1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Upper2_ch2");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertUpperLimits[1][1] = atoi(DLC_MatConfigItem);
 //			putst("Upper2_ch2:");puthxb(config.alertUpperLimits[1][1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Upper1_ch2");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertUpperLimits[1][0] = atoi(DLC_MatConfigItem);
 //			putst("Upper1_ch2:");puthxb(config.alertUpperLimits[1][0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Lower1_ch2");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertLowerLimits[1][0] = atoi(DLC_MatConfigItem);
 //			putst("Lower1_ch2:");puthxb(config.alertLowerLimits[1][0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Lower2_ch2");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertLowerLimits[1][1] = atoi(DLC_MatConfigItem);
 //			putst("Lower2_ch2:");puthxb(config.alertLowerLimits[1][1]);putcrlf();
 		}
@@ -1304,7 +1310,7 @@ putst("coco3\r\n");
 		}
 		config_p = strstr(DLC_MatResBuf, "Chattering_ch1");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertChatteringTimes[0] = atoi(DLC_MatConfigItem);
 //			putst("Chattering_ch1:");puthxb(config.alertChatteringTimes[0]);putcrlf();
 		}
@@ -1322,13 +1328,13 @@ putst("coco3\r\n");
 		}
 		config_p = strstr(DLC_MatResBuf, "Chattering_ch2");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.alertChatteringTimes[1] = atoi(DLC_MatConfigItem);
 //			putst("Chattering_ch2:");puthxb(config.alertChatteringTimes[1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Chattering_type");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, false);
 			config.Chattering_type = atoi(DLC_MatConfigItem);
 //			putst("Chattering_type:");puthxb(config.Chattering_type);putcrlf();
 		}
@@ -1340,7 +1346,7 @@ putst("coco3\r\n");
 		}
 		config_p = strstr(DLC_MatResBuf, "AlertTimeOut");
 		if (config_p) {
-			DLCMatINTParamSet(config_p);
+			DLCMatINTParamSet(config_p, true);
 			config.AlertTimeOut = atoi(DLC_MatConfigItem);
 //			putst("AlertTimeOut:");puthxb(config.AlertTimeOut);putcrlf();
 		}
@@ -1381,7 +1387,7 @@ int DLCMatRecvDisp()
 				DLC_MatResBuf[DLC_MatResIdx] = 0;
 				putst( DLC_MatResBuf );
 				DLC_MatResIdx = 0;
-putst("coco1\r\n");
+putst("\r\ncoco1\r\n");
 				if (strstr(DLC_MatResBuf,"ConfigRet")) {
 putst("coco2\r\n");
 					DLCMatConfigRet();
