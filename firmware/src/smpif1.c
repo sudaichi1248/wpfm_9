@@ -2,7 +2,7 @@
  * File:    smpif1.c
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project Smartphone interface implementation file.
- * Date:    2022/08/18 (R0)
+ * Date:    2022/09/02 (R0)
  * Note:    Operational condition related functions.
  */
 
@@ -27,7 +27,7 @@ static int parseParameterTypeA(const char *param, WPFM_SETTING_PARAMETER *q);
 void SMPIF_getOperationalCondition(const char *param, char *resp)
 {
     snprintf(resp + 6, SMPIF_MAX_RESPONSE_LENGTH - 1,
-        "%u,%u,%u,%u,",
+        "%lu,%lu,%lu,%lu,",
         WPFM_settingParameter.measurementInterval, WPFM_settingParameter.communicationInterval,
         WPFM_settingParameter.measurementIntervalOnAlert, WPFM_settingParameter.communicationIntervalOnAlert
     );

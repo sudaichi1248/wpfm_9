@@ -2,7 +2,7 @@
  * File:    wpfm.h
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project common header file.
- * Date:    2022/08/24 (R0)
+ * Date:    2022/09/02 (R0)
  * Note:    Defined values ​​need to be reviewed according to specifications!
  */
 
@@ -104,10 +104,10 @@ typedef struct
     // Serial number
     uint32_t        serialNumber;                       // シリアルNo(装置固有の識別番号)
     // Operational condition
-    uint16_t        measurementInterval;                // 平時の測定間隔 [Sec]
-    uint16_t        communicationInterval;              // 平時の通信間隔 [Sec] - 60で割り切れること
-    uint16_t        measurementIntervalOnAlert;         // 警報時の測定間隔 [Sec]
-    uint16_t        communicationIntervalOnAlert;       // 警報時の通信間隔 [Sec] - 60で割り切れること
+    uint32_t        measurementInterval;                // 平時の測定間隔 [Sec]
+    uint32_t        communicationInterval;              // 平時の通信間隔 [Sec] - 60で割り切れること
+    uint32_t        measurementIntervalOnAlert;         // 警報時の測定間隔 [Sec]
+    uint32_t        communicationIntervalOnAlert;       // 警報時の通信間隔 [Sec] - 60で割り切れること
 	uint16_t		Measurment	;						// Measurement
     SENSOR_KIND     sensorKinds[2];                     // センサ種別[0:ch1/1:ch2]
     uint16_t        upperLimits[2];                     // 仕様上のセンサ出力の上限値[0:ch1/1:ch2] [-]
