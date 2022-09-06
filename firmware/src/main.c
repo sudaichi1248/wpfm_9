@@ -73,6 +73,7 @@ int main(void)
         if ((stat = W25Q128JV_eraseChip(true)) == W25Q128JV_ERR_NONE)
         {
             DEBUG_UART_printlnString("ERASE CHIP OK.");
+            WPFM_writeSettingParameter(&WPFM_settingParameterDefault);	// Config初期化
         }
         else
         {

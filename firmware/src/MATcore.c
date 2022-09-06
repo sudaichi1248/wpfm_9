@@ -855,13 +855,14 @@ void DLCMatConfigDefault()
 	config.communicationInterval 			= 300;
 	config.measurementIntervalOnAlert	 	= 30;
 	config.communicationIntervalOnAlert 	= 120;
+	config.Measurment						= 0;
 	config.sensorKinds[0]		 			= 1;
 	config.upperLimits[0]		 			= 1;
 	config.lowerLimits[0]		 			= 0;
-	config.alertEnableKinds[0][0][0]  		= 1;
-	config.alertUpperLimits[0][0] 			= 0.75;
-	config.alertEnableKinds[0][0][1] 		= 1;
-	config.alertUpperLimits[0][1] 			= 0.55;
+	config.alertEnableKinds[0][0][1]  		= 1;
+	config.alertUpperLimits[0][1] 			= 0.75;
+	config.alertEnableKinds[0][0][0] 		= 1;
+	config.alertUpperLimits[0][0] 			= 0.55;
 	config.alertEnableKinds[0][1][0]  		= 1;
 	config.alertLowerLimits[0][0]  			= 0.25;
 	config.alertEnableKinds[0][1][1]  		= 1;
@@ -869,17 +870,20 @@ void DLCMatConfigDefault()
 	strcpy( config.Measure_ch1,"水圧" );
 	strcpy( config.MeaKind_ch1,"MPa" );
 	config.alertChatteringTimes[0] 			= 100;
-	config.alertEnableKinds[1][0][0]		= 1;
-	config.alertUpperLimits[1][0]			= -25;
 	config.alertEnableKinds[1][0][1]		= 1;
-	config.alertUpperLimits[1][1]			= 90;
+	config.alertUpperLimits[1][1]			= -25;
+	config.alertEnableKinds[1][0][0]		= 1;
+	config.alertUpperLimits[1][0]			= 90;
 	config.alertEnableKinds[1][1][0]		= 1;
 	config.alertLowerLimits[1][0]			= 0;
 	config.alertEnableKinds[1][1][1] 		= 1;
 	config.alertLowerLimits[1][1]			= -10;
 	strcpy( config.Measure_ch2,"流量" );
 	strcpy( config.MeaKind_ch2,"m^3/hour" );
-	config.alertChatteringTimes[1] 		= 1;
+	config.alertChatteringTimes[1] 			= 1;
+	config.Chattering_type					= 1;
+	strcpy( config.AlertPause,"1970-01-01 09:00:01" );
+	config.AlertTimeOut						= 5;
 	WPFM_writeSettingParameter( &config );
 }
 void DLCMatReortDefault()
@@ -905,7 +909,7 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"ReprotInterval\":%ld,"		,config.communicationInterval );			strcat( http_tmp,tmp );
 	sprintf( tmp,"\"IntervalAlert\":%ld,"		,config.measurementIntervalOnAlert  );		strcat( http_tmp,tmp );
 	sprintf( tmp,"\"ReprotIntervalAlert\":%ld,"	,config.communicationIntervalOnAlert );		strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Measurment\":%d,"			,0 );										strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Measurment\":%d,"			,config.Measurment );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Select_ch1\":%d,"			,config.sensorKinds[0] )		;			strcat( http_tmp,tmp );		/* ch1 センサ種別 */
 	sprintf( tmp,"\"Upper0_ch1\":%d,"			,config.upperLimits[0] );					strcat( http_tmp,tmp );		/* ch1 センサ出力の上限値 */
 	sprintf( tmp,"\"Lower0_ch1\":%d,"			,config.lowerLimits[0] );					strcat( http_tmp,tmp );		/* ch1 センサ出力の下限値 */

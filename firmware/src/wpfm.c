@@ -34,7 +34,7 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     300,                    // communication interval on normal[sec]
     4,                      // measurement interval on alert[sec]
     60,                     // communication interval on alert[sec]
-    0,
+    0,                      // Measurment
     { SENSOR_KIND_1_3V, SENSOR_KIND_1_5V },   // sensor kinds
     { 3, 5 }, { 1, 1 },                   // upper/lower values
     {
@@ -57,10 +57,10 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     5,                          // timesLessThresholdVoltage
     30,                         // maximumBatteryExchangeTime[sec]
     "水圧", "MPa",              // Measure_ch1, MeaKind_ch1
-    "流量", "m3/h",              // Measure_ch2, MeaKind_ch2
-    1,
-    "1970-01-01 09:00:01",
-    30
+    "流量", "m3/h",             // Measure_ch2, MeaKind_ch2
+    1,                          // Chattering_type
+    "1970-01-01 09:00:01",      // AlertPause
+    5                           // AlertTimeOut
 };
 volatile uint16_t WPFM_measurementInterval;              // Current measurement interval[Sec]
 uint16_t WPFM_communicationInterval;            // Current communication interval[Sec]
@@ -190,6 +190,11 @@ void WPFM_dumpSettingParameter(WPFM_SETTING_PARAMETER *param_p)
 
     DEBUG_UART_printlnFormat("Measure_ch1/MeaKind_ch1: \"%s\", \"%s\"", param_p->Measure_ch1, param_p->MeaKind_ch1); APP_delay(10);
     DEBUG_UART_printlnFormat("Measure_ch2/MeaKind_ch2: \"%s\", \"%s\"", param_p->Measure_ch2, param_p->MeaKind_ch2); APP_delay(10);
+
+    DEBUG_UART_printlnFormat("Measurment: %u", (unsigned int)param_p->Measurment); APP_delay(10);
+    DEBUG_UART_printlnFormat("Chattering_type: %u", (unsigned int)param_p->Chattering_type); APP_delay(10);
+    DEBUG_UART_printlnFormat("AlertPause: \"%s\"", param_p->AlertPause); APP_delay(10);
+    DEBUG_UART_printlnFormat("AlertTimeOut: %u", (unsigned int)param_p->AlertTimeOut); APP_delay(10);
 
     DEBUG_UART_printlnFormat("--");
 }
