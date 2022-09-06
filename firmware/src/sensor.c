@@ -2,7 +2,7 @@
  * File:    sensor.c
  * Author:  Interark Corp.
  * Summary: Analog Sensor control implementation file.
- * Date:    2022/08/18 (R0)
+ * Date:    2022/09/04 (R0)
  * Note:    Points to be adjusted where ""@tune" is listed
  */
 
@@ -25,7 +25,7 @@
 /*
 *   Global variables
 */
-bool SENSOR_alwaysOnSensorPower = false;
+bool SENSOR_alwaysOnSensorPowers[2] = { false, false };
 
 const static float _SENSOR_conversionFactor                = 0.000990000;      // Conversion to voltage factor [V/LSB]
 const static float _SENSOR_dividedRatioOfExternalBattery   = 1.52710; //1.52308;          // 回路上は1.50000、実際には実測(Board $22-005)により補正
@@ -40,11 +40,11 @@ int SENSOR_readSensorOutput(int sensorNo, float *result_p)
     switch (sensorNo)
     {
         case 1:
-            ADC_ChannelSelect(SENDOR_CHANNEL_IN1, ADC_NEGINPUT_GND);
+            ADC_ChannelSelect(SENSOR_CHANNEL_IN1, ADC_NEGINPUT_GND);
             sensorIndex = 0;
             break;
         case 2:
-            ADC_ChannelSelect(SENDOR_CHANNEL_IN2, ADC_NEGINPUT_GND);
+            ADC_ChannelSelect(SENSOR_CHANNEL_IN2, ADC_NEGINPUT_GND);
             sensorIndex = 1;
             break;
         default:
@@ -182,29 +182,38 @@ void SENSOR_updateMeasurementInterval(uint16_t interval)
     // Always update regardless of previous settings
     WPFM_measurementInterval = interval;
 
-    if (interval >= WPFM_THRESHOLD_FOR_SENSOR_POWER_CONTROL)
+    for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
     {
-        SENSOR_alwaysOnSensorPower = false;
-
-        for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
+        uint8_t sensorKind = WPFM_settingParameter.sensorKinds[sensorIndex];
+        switch (sensorKind)
         {
-            if (WPFM_settingParameter.sensorKinds[sensorIndex] != SENSOR_KIND_NOT_PRESENT)
-            {
+            case SENSOR_KIND_NOT_PRESENT:
                 SENSOR_turnOffSensorCircuit(sensorIndex + 1);
-            }
-        }
-    }
-    else
-    {
-        SENSOR_alwaysOnSensorPower = true;
+                SENSOR_alwaysOnSensorPowers[sensorIndex] = false;
+                break;
 
-        for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
-        {
-            uint8_t sensorKind = WPFM_settingParameter.sensorKinds[sensorIndex];
-            if (sensorKind != SENSOR_KIND_NOT_PRESENT)
-            {
-                SENSOR_turnOnSensorCircuit(sensorIndex + 1, (sensorKind == SENSOR_KIND_1_3V));
-            }
+            case SENSOR_KIND_1_3V:
+                if (interval < WPFM_THRESHOLD_FOR_SENSOR_POWER_CONTROL)
+                {
+                    SENSOR_turnOnSensorCircuit(sensorIndex + 1, true);
+                    SENSOR_alwaysOnSensorPowers[sensorIndex] = true;
+                }
+                else
+                {
+                    SENSOR_turnOffSensorCircuit(sensorIndex + 1);
+                    SENSOR_alwaysOnSensorPowers[sensorIndex] = false;
+                }
+                break;
+
+            case SENSOR_KIND_1_5V:
+            case SENSOR_KIND_0_20MA:
+            case SENSOR_KIND_4_20MA:
+                SENSOR_turnOnSensorCircuit(sensorIndex + 1, false);
+                SENSOR_alwaysOnSensorPowers[sensorIndex] = true;
+                break;
+
+            default:
+                break;
         }
     }
 }

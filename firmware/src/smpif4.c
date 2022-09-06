@@ -156,12 +156,57 @@ void SMPIF_notifyCallibrationTarget(const char *param, char *resp)
 
 void SMPIF_readCallibrationValues(const char *param, char *resp)
 {
-    // Read current two sensors output value
-    ADC_ChannelSelect(SENDOR_CHANNEL_IN1, ADC_NEGINPUT_GND);
-    uint16_t valueChannel1 = SENSOR_readRawValue();
-    ADC_ChannelSelect(SENDOR_CHANNEL_IN2, ADC_NEGINPUT_GND);
-    uint16_t valueChannel2 = SENSOR_readRawValue();
-    snprintf(resp + 6, SMPIF_MAX_RESPONSE_LENGTH - 1, "%u,%u", valueChannel1, valueChannel2);
+    uint16_t valueChannels[2] = { 0, 0 };
+    for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
+    {
+        uint8_t sensorKind = WPFM_settingParameter.sensorKinds[sensorIndex];
+        if (sensorKind == SENSOR_KIND_NOT_PRESENT)
+        {
+            continue;   // Skip measurement if the sensor is not present
+        }
+
+        ADC_POSINPUT channel;
+        switch (sensorIndex)
+        {
+            case 0:     // Ch1
+                channel = SENSOR_CHANNEL_IN1;
+                break;
+            case 1:     // Ch2
+                channel = SENSOR_CHANNEL_IN2;
+                break;
+        }
+
+        if (SENSOR_alwaysOnSensorPowers[sensorIndex])
+        {
+            // Read current sensors output value
+            ADC_ChannelSelect(channel, ADC_NEGINPUT_GND);
+            valueChannels[sensorIndex] = SENSOR_readRawValue();
+        }
+        else
+        {
+            // Turn on sensor circuits
+            if  (sensorKind == SENSOR_KIND_1_3V)
+            {
+                SENSOR_turnOnSensorCircuit(sensorIndex + 1, true);
+                //SYSTICK_DelayMs(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);   
+                APP_delay(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);
+            }
+            else
+            {
+                SENSOR_turnOnSensorCircuit(sensorIndex + 1, false);
+                SYSTICK_DelayMs(10);        // wait a little
+            }
+
+            // Read current sensors output value
+            ADC_ChannelSelect(channel, ADC_NEGINPUT_GND);
+            valueChannels[sensorIndex] = SENSOR_readRawValue();
+
+            // Turn off sensor circuits
+            SENSOR_turnOffSensorCircuit(sensorIndex + 1);
+        }
+    }
+
+    snprintf(resp + 6, SMPIF_MAX_RESPONSE_LENGTH - 1, "%u,%u", valueChannels[0], valueChannels[1]);
 
     // Make response message
     int length = strlen(resp + 6);

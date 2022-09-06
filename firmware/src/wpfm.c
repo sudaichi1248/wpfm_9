@@ -2,7 +2,7 @@
  * File:    wpfm.c
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project common definition file.
- * Date:    2022/08/26 (R0)
+ * Date:    2022/09/03 (R0)
  * Note:
  */
 
@@ -34,7 +34,6 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     300,                    // communication interval on normal[sec]
     4,                      // measurement interval on alert[sec]
     60,                     // communication interval on alert[sec]
-    0,
     { SENSOR_KIND_1_3V, SENSOR_KIND_1_5V },   // sensor kinds
     { 3, 5 }, { 1, 1 },                   // upper/lower values
     {
@@ -57,16 +56,14 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     5,                          // timesLessThresholdVoltage
     30,                         // maximumBatteryExchangeTime[sec]
     "水圧", "MPa",              // Measure_ch1, MeaKind_ch1
-    "流量", "m3/h",              // Measure_ch2, MeaKind_ch2
-    1,
-    "1970-01-01 09:00:01",
-    30
+    "流量", "m3/h"              // Measure_ch2, MeaKind_ch2
 };
 volatile uint16_t WPFM_measurementInterval;              // Current measurement interval[Sec]
 uint16_t WPFM_communicationInterval;            // Current communication interval[Sec]
 
   // for alert
 time_t WPFM_lastAlertStartTimes[2][2];          // Time when the last alert(warnin or attention) was issued [0:ch1/1:ch2] [0:upper/1:lower]
+time_t WPFM_lastWarningStartTimes[2];           // Time when the last warnin was issued(0 means "not during warning") [0:ch1/1:ch2]
 
   // for battery
 uint8_t WPFM_batteryStatus = 0;                 // Last battery status (use MLOG_BAT_STATUS_BAT* bit flags defined in mlog.h)
@@ -119,7 +116,7 @@ bool WPFM_writeSettingParameter(WPFM_SETTING_PARAMETER *param_p)
     }
     while (NVMCTRL_IsBusy()) ;
 
-    for (int n = 0; n < (sizeof(WPFM_SETTING_PARAMETER) / FLASH_PAGE_SIZE) + 1; n++)
+    for (int n = 0; n < (sizeof(WPFM_SETTING_PARAMETER) / NVMCTRL_FLASH_PAGESIZE) + 1; n++)
     {
         NVMCTRL_CacheInvalidate();
         while (NVMCTRL_IsBusy()) ;
@@ -127,8 +124,8 @@ bool WPFM_writeSettingParameter(WPFM_SETTING_PARAMETER *param_p)
         NVMCTRL_PageWrite(data, address);
         while (NVMCTRL_IsBusy()) ;
 
-        data += FLASH_PAGE_SIZE / 4;
-        address += FLASH_PAGE_SIZE;
+        data += NVMCTRL_FLASH_PAGESIZE / sizeof(uint32_t);
+        address += NVMCTRL_FLASH_PAGESIZE;
     }
 
     // Verify original data and

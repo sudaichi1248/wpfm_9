@@ -2,7 +2,7 @@
  * File:    sensor.h
  * Author:  Interark Corp.
  * Summary: Analog Sensor control header file.
- * Date:    2022/08/13 (R0)
+ * Date:    2022/09/04 (R0)
  * Note:
  */
 
@@ -36,10 +36,13 @@ typedef enum {
 #define SENSOR_ERR_NOT_EXIST        (-10)       // Sensor is not exist
 
 // Channel number
-#define SENDOR_CHANNEL_IN1          ADC_POSINPUT_PIN3       // AIN[3]/PB09
-#define SENDOR_CHANNEL_IN2          ADC_POSINPUT_PIN4       // AIN[4]/PA04
+#define SENSOR_CHANNEL_IN1          ADC_POSINPUT_PIN3       // AIN[3]/PB09
+#define SENSOR_CHANNEL_IN2          ADC_POSINPUT_PIN4       // AIN[4]/PA04
 #define SENSOR_EXTERNAL_BATTERY1    ADC_POSINPUT_PIN0       // AIN[0]/PA02
 #define SENSOR_EXTERNAL_BATTERY2    ADC_POSINPUT_PIN2       // AIN[2]/PB08
+
+// Misc.
+#define SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR     1000     // Time to energize before reading a value from the sensor[mS]
 
 /*
 *   Global functions
@@ -54,7 +57,7 @@ extern void SENSOR_updateMeasurementInterval(uint16_t interval);
 /*
 *   Global variables
 */
-extern bool SENSOR_alwaysOnSensorPower;         // Keep the sensor power always on(true) or not(false)
+extern bool SENSOR_alwaysOnSensorPowers[2];         // Keep the each sensor power always on(true) or not(false)
 
 #ifdef	__cplusplus
 }

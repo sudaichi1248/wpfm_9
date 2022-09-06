@@ -2,7 +2,7 @@
  * File:    wpfm.h
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project common header file.
- * Date:    2022/09/02 (R0)
+ * Date:    2022/09/03 (R0)
  * Note:    Defined values ​​need to be reviewed according to specifications!
  */
 
@@ -108,7 +108,6 @@ typedef struct
     uint32_t        communicationInterval;              // 平時の通信間隔 [Sec] - 60で割り切れること
     uint32_t        measurementIntervalOnAlert;         // 警報時の測定間隔 [Sec]
     uint32_t        communicationIntervalOnAlert;       // 警報時の通信間隔 [Sec] - 60で割り切れること
-	uint16_t		Measurment	;						// Measurement
     SENSOR_KIND     sensorKinds[2];                     // センサ種別[0:ch1/1:ch2]
     uint16_t        upperLimits[2];                     // 仕様上のセンサ出力の上限値[0:ch1/1:ch2] [-]
     uint16_t        lowerLimits[2];                     // 仕様上のセンサ出力の下限値[0:ch1/1:ch2] [-]
@@ -128,9 +127,6 @@ typedef struct
     char            MeaKind_ch1[WPFM_MAX_UNIT_NAME];    // CH1の単位名
     char            Measure_ch2[WPFM_MAX_TARGET_NAME];  // CH2の計測対象名
     char            MeaKind_ch2[WPFM_MAX_UNIT_NAME];    // CH2の単位名
-	uint16_t		Chattering_type;					// Chattering_type
-	char			AlertPause[24];						// AlertPause
-	uint16_t		AlertTimeOut;						// AlertTimeOut
 } WPFM_SETTING_PARAMETER;
     // value of sensorKinds[] is used for index of calibrationUpperValues[] and calibrationLowerValues[]
 // index of each array -- common values
@@ -157,6 +153,7 @@ extern volatile uint16_t WPFM_measurementInterval;           // Current measurem
 extern uint16_t WPFM_communicationInterval;         // Current communication interval[Sec]
   // for alert
 extern time_t WPFM_lastAlertStartTimes[2][2];       // Time when the last alert(warnin or attention) was issued [0:ch1/1:ch2] [0:upper/1:lower]
+extern time_t WPFM_lastWarningStartTimes[2];        // Time when the last warnin was issued(0 means "not during warning") [0:ch1/1:ch2]
   // for battery
 extern uint8_t WPFM_batteryStatus;                  // Last battery status (use MLOG_BAT_STATUS_BAT* bit flags defined in mlog.h)
 extern int WPFM_externalBatteryNumberInUse;         // which battery is used (0:Undefined/1:Batter #1/2:Battery #2)

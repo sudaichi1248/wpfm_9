@@ -2,7 +2,7 @@
  * File:    measure.c
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project common definition file.
- * Date:    2022/08/13 (R0)
+ * Date:    2022/09/04 (R0)
  * Note:
  */
 
@@ -21,7 +21,6 @@
 /*
 *   Symbols
 */
-#define PRE_ENERGIZATION_TIME_OF_SENSOR     1000        // Time to energize before reading a value from the sensor[mS]
 
 /*
 *   Local variables and functions
@@ -55,12 +54,12 @@ void WPFM_measureRegularly(bool justMeasure)
         }
 
         // Power on sensor power if necessary
-        if (! SENSOR_alwaysOnSensorPower)
+        if (! SENSOR_alwaysOnSensorPowers[sensorIndex])
         {
             if  (sensorKind == SENSOR_KIND_1_3V)
             {
                 SENSOR_turnOnSensorCircuit(sensorIndex + 1, true);
-                SYSTICK_DelayMs(PRE_ENERGIZATION_TIME_OF_SENSOR);   // APP_delay(PRE_ENERGIZATION_TIME_OF_SENSOR);
+                SYSTICK_DelayMs(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);    // APP_delay(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);
             }
             else
             {
@@ -81,7 +80,7 @@ void WPFM_measureRegularly(bool justMeasure)
         WPFM_lastMeasuredValues[sensorIndex] = value;
 
         // Power off sensor power if necessary
-        if (! SENSOR_alwaysOnSensorPower)
+        if (! SENSOR_alwaysOnSensorPowers[sensorIndex])
         {
             SENSOR_turnOffSensorCircuit(sensorIndex + 1);
         }
@@ -159,13 +158,24 @@ static void _SENSOR_storeLog(uint32_t occurrenceTime, uint32_t mSec)
     DEBUG_UART_printlnFormat("+alertStaus Raw: %02Xh, Sup: %02Xh", WPFM_lastAlertStatus, WPFM_lastAlertStatusSuppressed);
 
     // Store in flash memory as mlog
-    int stat = MLOG_putLog(&mlog);
+    int stat;
+    if (MLOG_IsSwitchedSRAM())
+    {
+        // Store log into SRAM
+ //       stat = MLOG_putLogOnSRAM(&mlog);
+    }
+    else
+    {
+        // Store log into Flash
+        stat = MLOG_putLog(&mlog);
+    }
+
     if (stat >= 0)
     {
         DEBUG_UART_printlnFormat("MLOG_putLog() OK: %06Xh", stat);
     }
     else
     {
-        fatal("MLOG_putLog() ERROR: %d", stat);
+//        fatal("MLOG_putLog() ERROR: %d", stat);
     }
 }
