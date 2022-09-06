@@ -107,6 +107,24 @@ void IDLEputch( )
 		}
 	}
 }
+/*
+	MATcoreをWAKEUPさせる処理
+*/
+void DLCMatWake()
+{
+	int		i;
+	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
+	for(i=0;i<1000;i++){
+		APP_delay(1);
+		if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11))
+			break;
+		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );
+		APP_delay(1);
+		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );
+	}
+	if( i == 1000 )
+		putst("MATcode Wake Err!\r\n");
+}
 /* 
 	Function:通信タスクの変数初期化、TC5(内部タイマー)のコールバック登録
 */
@@ -114,7 +132,8 @@ void DLCMatInit()
 {
 	TC5_TimerCallbackRegister( (TC_TIMER_CALLBACK)DLCMatTimerInt, (uintptr_t)0 );
 	TC5_TimerStart();
-	DLCMatTimerset( 0,3000 );
+	DLCMatTimerset( 0,500 );
+	DLCMatWake();
 }
 /*
 	Function:通信タスクのTO通知の確認
@@ -318,6 +337,10 @@ void MTtime()
 void MTrsrp()
 {
 	DLC_MatLineIdx = 0;
+	if( strstr( DLC_MatVer,"01.04" ) )
+		;
+	else
+		DLCMatSend( "AT$CELLID\rAT$EARFCN\r" );
 	DLCMatSend( "AT$RSRP\rAT$RSRQ\rAT$RSSI\rAT$SINR\r" );
 }
 void MTopn1()
@@ -583,7 +606,7 @@ void DLCMatCall(int knd )
 		putst("★CALL!\r\n");										/* Alert */
 		break;
 	}
-	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
+	DLCMatWake();
 }
 void DLCMatSleepWait()
 {
@@ -819,14 +842,9 @@ void DLCMatState()
 		memset( DLC_MatLineBuf,0,sizeof( DLC_MatLineBuf ));
 }
 struct {
-	float	TxType;
+	int	TxType;
 } DLC_MatSgtatusPara;
 #define	REPORT_LIST_MAX	100
-struct {
-	float	Value_ch1;
-	float	Value_ch2;
-	char	Alert[2];
-} DLC_MatReportData[REPORT_LIST_MAX];
 int	DLC_MatReportStack;
 void DLCMatConfigDefault()
 {
@@ -866,12 +884,6 @@ void DLCMatConfigDefault()
 }
 void DLCMatReortDefault()
 {
-	for(int i=0;i<100;i++){
-		DLC_MatReportData[i].Value_ch1 = i+0.1;
-		DLC_MatReportData[i].Value_ch2 = i+0.2;
-		DLC_MatReportData[i].Alert[0] = '0';
-		DLC_MatReportData[i].Alert[1] = '0';
-	}
 }
 static char http_config[] = "POST /config HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
 static char http_status[] = "POST /status HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
@@ -973,7 +985,7 @@ void DLCMatPostStatus()
 	sprintf( tmp,"\"RSSI\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSSI:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"SINR\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"SINR:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Temp\":%d,"				,WPFM_lastTemperatureOnBoard );					strcat( http_tmp,tmp );
- 	sprintf( tmp,"\"TxType\":%f"			,DLC_MatSgtatusPara.TxType );					strcat( http_tmp,tmp );
+ 	sprintf( tmp,"\"TxType\":%d"			,DLC_MatSgtatusPara.TxType );					strcat( http_tmp,tmp );
 	strcat( http_tmp,"}}" );
 	i = (int)(strchr(http_tmp,'}')-strstr(http_tmp,"{\"Status\":{"))+1;
 	if( i > 0 ){
@@ -1984,12 +1996,9 @@ void DLCMatMain()
 			PORT_GroupWrite( PORT_GROUP_1,0x1<<c_get32b(),-1 );
 			break;
 		case 'Y':
-			putcrlf();
+			putcrlf();putst("inPORT_GROUP0:1=");
+			puthxw( PORT_GroupRead( PORT_GROUP_0 ));putch(':');
 			puthxw( PORT_GroupRead( PORT_GROUP_1 ));
-			break;
-		case 'X':
-			putcrlf();
-			puthxw( PORT_GroupRead( PORT_GROUP_0 ));
 			break;
 		case 'E':												/* 強制本プロ削除 */
 			if( CheckPasswd() ){
