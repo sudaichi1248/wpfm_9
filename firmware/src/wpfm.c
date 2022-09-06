@@ -34,6 +34,7 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     300,                    // communication interval on normal[sec]
     4,                      // measurement interval on alert[sec]
     60,                     // communication interval on alert[sec]
+    0,
     { SENSOR_KIND_1_3V, SENSOR_KIND_1_5V },   // sensor kinds
     { 3, 5 }, { 1, 1 },                   // upper/lower values
     {
@@ -56,7 +57,10 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     5,                          // timesLessThresholdVoltage
     30,                         // maximumBatteryExchangeTime[sec]
     "水圧", "MPa",              // Measure_ch1, MeaKind_ch1
-    "流量", "m3/h"              // Measure_ch2, MeaKind_ch2
+    "流量", "m3/h",              // Measure_ch2, MeaKind_ch2
+    1,
+    "1970-01-01 09:00:01",
+    30
 };
 volatile uint16_t WPFM_measurementInterval;              // Current measurement interval[Sec]
 uint16_t WPFM_communicationInterval;            // Current communication interval[Sec]
