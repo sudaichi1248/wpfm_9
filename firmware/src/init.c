@@ -1,9 +1,8 @@
-void DLCMatSleepWait();
 /*
  * File:    init.c
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project initialization implementation file.
- * Date:    2022/08/18 (R0)
+ * Date:    2022/09/04 (R0)
  * Note:
  */
 
@@ -19,7 +18,6 @@ void DLCMatSleepWait();
 #include "s5851a.h"
 #include "w25q128jv.h"
 #include "mlog.h"
-#include "moni.h"
 
 /*
 *   Local variables and functions
@@ -81,10 +79,8 @@ void WPFM_initializeApplication(void)
     {
         DEBUG_UART_printlnString("parameter read error.");
     }
-    if( WPFM_settingParameter.isInvalid )
-    	DEBUG_UART_printlnString("('„D')('„D')('„D')..");
-    if (true)
-//  if (WPFM_settingParameter.isInvalid)
+    //if (true)
+    if (WPFM_settingParameter.isInvalid)
     {
         // Set default values
         DEBUG_UART_printlnString("Set default parameter.");
@@ -189,7 +185,7 @@ void WPFM_initializeApplication(void)
     S5851A_setMode(S5851A_MODE_SHUTDOWN);
 
     //- Sleep MATcore
- //   RF_INT_IN_Clear();
+    RF_INT_IN_Clear();
 
     //- Set interrupt handler for tact-switch
     EIC_CallbackRegister(WPFM_TACTSW_INTERRUPT_PIN, (EIC_CALLBACK)WPFM_onPressed, (uintptr_t)NULL);
@@ -345,12 +341,13 @@ void WPFM_reboot(void)
 void WPFM_sleep(void)
 {
     // (1) Make settings to save power before going to sleep.
-    DLCMatSleepWait();
+    RF_INT_IN_Clear();      // sleep MATcore
     UTIL_setLED1();         // turn off LED1
     UTIL_setEXT1LED();      // turn off EXT1_LED
-    UTIL_setEXT2LED();      // turn off EXT2_LED
+//    UTIL_setEXT2LED();      // turn off EXT2_LED
 
     // (2) Control sensors power
+/**
     for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
     {
         if (SENSOR_alwaysOnSensorPower)
@@ -358,6 +355,7 @@ void WPFM_sleep(void)
             SENSOR_turnOffSensorCircuit(sensorIndex + 1);
         }
     }
+**/
 
     /** ENTER STAND-BY MODE **/
     // (3) Fall asleep..
@@ -365,7 +363,9 @@ void WPFM_sleep(void)
     /** WAKED UP **/
 
     // (4) Restore sensors power
+/**
     SENSOR_updateMeasurementInterval(WPFM_measurementInterval);
+**/
 
     // (5) Restore settings if nessesary
 
