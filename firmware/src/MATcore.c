@@ -32,9 +32,9 @@ int DLCMatRecvDisp();
 int DLCMatRecvWriteFota();	// fota FOTAÉfÅ[É^èëçûÇ›èàóù
 char 	zLogOn=1;
 char	DLC_MatVer[8];
-char 	DLC_MatResBuf[2048];
+char 	DLC_MatResBuf[1024];
 int	 	DLC_MatResIdx;
-uchar	DLC_MatLineBuf[4000];
+uchar	DLC_MatLineBuf[2100];
 int		DLC_MatLineIdx;
 uchar	DLC_Matfact,DLC_MatState;
 char	DLC_MatDateTime[32];
@@ -386,7 +386,7 @@ void MTwget()	// fota
 }
 void MTrrcv()
 {
-	DLCMatTimerset( 0,300 );
+	DLCMatTimerset( 0,1000 );
 }
 void MTrvTO()
 {
@@ -892,7 +892,7 @@ void DLCMatReortDefault()
 static char http_config[] = "POST /config HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
 static char http_status[] = "POST /status HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
 static char http_report[] = "POST /report HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
-static char http_tmp[10000];
+static char http_tmp[8600];
 char	DLC_MatSendBuff[1024*2+16];
 static WPFM_SETTING_PARAMETER	config;
 void DLCMatPostConfig()
@@ -1774,6 +1774,15 @@ void DLCSPIFlashTest()
 				W25Q128JV_eraseBlock64(((address / 0x10000) + k), true);
 				sprintf( line, "%X:ERASE OK\r\n",(unsigned int)((address / 0x10000) + k) );
 				putst( line );
+			}
+			break;
+		case 'A':
+  			rt = W25Q128JV_eraseChip(true);
+			if( !rt ){
+				putst("OK\r\n");
+			}
+			else {
+				puthxb( rt );putcrlf();
 			}
 			break;
 		case 0x03:
