@@ -528,6 +528,9 @@ void MTslep()
 	putst("ÅySleepÅz\r\n");
 	DLCMatTimerClr( 0 );
 	DLC_MatState = MATC_STATE_SLP;
+	if( DLC_Matknd ){
+		DLCMatWake();
+	}
 }
 void MTNoSlp()
 {
