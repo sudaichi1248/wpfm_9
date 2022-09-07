@@ -32,7 +32,7 @@ int DLCMatRecvDisp();
 int DLCMatRecvWriteFota();	// fota FOTAÉfÅ[É^èëçûÇ›èàóù
 char 	zLogOn=1;
 char	DLC_MatVer[8];
-char 	DLC_MatResBuf[1024];
+char 	DLC_MatResBuf[1050];
 int	 	DLC_MatResIdx;
 uchar	DLC_MatLineBuf[2100];
 int		DLC_MatLineIdx;
@@ -1270,50 +1270,50 @@ putst("coco3\r\n");
 		config_p = strstr(DLC_MatResBuf, "Upper2_ch1");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
-			config.alertUpperLimits[0][1] = atoi(DLC_MatConfigItem);
-//			putst("Upper2_ch1:");puthxb(config.alertUpperLimits[0][1]);putcrlf();
+			config.alertUpperLimits[0][1] = atof(DLC_MatConfigItem);
+//			putst("Upper2_ch1:");puthxs(config.alertUpperLimits[0][1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Upper1_ch1");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
-			config.alertUpperLimits[0][0] = atoi(DLC_MatConfigItem);
-//			putst("Upper1_ch1:");puthxb(config.alertUpperLimits[0][0]);putcrlf();
+			config.alertUpperLimits[0][0] = atof(DLC_MatConfigItem);
+//			putst("Upper1_ch1:");puthxs(config.alertUpperLimits[0][0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Lower1_ch1");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
-			config.alertLowerLimits[0][0] = atoi(DLC_MatConfigItem);
-//			putst("Lower1_ch1:");puthxb(config.alertLowerLimits[0][0]);putcrlf();
+			config.alertLowerLimits[0][0] = atof(DLC_MatConfigItem);
+//			putst("Lower1_ch1:");puthxs(config.alertLowerLimits[0][0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Lower2_ch1");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
-			config.alertLowerLimits[0][1] = atoi(DLC_MatConfigItem);
-//			putst("Lower2_ch1:");puthxb(config.alertLowerLimits[0][1]);putcrlf();
+			config.alertLowerLimits[0][1] = atof(DLC_MatConfigItem);
+//			putst("Lower2_ch1:");puthxs(config.alertLowerLimits[0][1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Upper2_ch2");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
-			config.alertUpperLimits[1][1] = atoi(DLC_MatConfigItem);
-//			putst("Upper2_ch2:");puthxb(config.alertUpperLimits[1][1]);putcrlf();
+			config.alertUpperLimits[1][1] = atof(DLC_MatConfigItem);
+//			putst("Upper2_ch2:");puthxs(config.alertUpperLimits[1][1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Upper1_ch2");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
-			config.alertUpperLimits[1][0] = atoi(DLC_MatConfigItem);
-//			putst("Upper1_ch2:");puthxb(config.alertUpperLimits[1][0]);putcrlf();
+			config.alertUpperLimits[1][0] = atof(DLC_MatConfigItem);
+//			putst("Upper1_ch2:");puthxs(config.alertUpperLimits[1][0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Lower1_ch2");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
-			config.alertLowerLimits[1][0] = atoi(DLC_MatConfigItem);
-//			putst("Lower1_ch2:");puthxb(config.alertLowerLimits[1][0]);putcrlf();
+			config.alertLowerLimits[1][0] = atof(DLC_MatConfigItem);
+//			putst("Lower1_ch2:");puthxs(config.alertLowerLimits[1][0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Lower2_ch2");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
-			config.alertLowerLimits[1][1] = atoi(DLC_MatConfigItem);
-//			putst("Lower2_ch2:");puthxb(config.alertLowerLimits[1][1]);putcrlf();
+			config.alertLowerLimits[1][1] = atof(DLC_MatConfigItem);
+//			putst("Lower2_ch2:");puthxs(config.alertLowerLimits[1][1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Measure_ch1");
 		if (config_p) {
@@ -1370,6 +1370,8 @@ putst("coco3\r\n");
 //			putst("AlertTimeOut:");puthxb(config.AlertTimeOut);putcrlf();
 		}
 		WPFM_writeSettingParameter( &config );
+//		WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
+//		SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
 	}
 }
 int DLCMatRecvDisp()
