@@ -1,4 +1,4 @@
-//#define	__DAIKOKU
+#define	__DAIKOKU
 /*
 	通信タスク
 */
@@ -45,6 +45,7 @@ int		DLC_MatTmid;
 uchar	DLC_BigState,DLC_Matknd;
 uchar	DLC_MatRetry;
 char	DLC_MatConfigItem[32];
+uchar	DLC_MatTxType;
 
 #define		TIMER_NUM	2
 bool	DLC_MatFotaExe=false;	// fota FOTA実行フラグ
@@ -123,7 +124,7 @@ void DLCMatWake()
 		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );
 	}
 	if( i == 1000 )
-		putst("MATcode Wake Err!\r\n");
+		putst("MATcore Wake Err!\r\n");
 }
 /* 
 	Function:通信タスクの変数初期化、TC5(内部タイマー)のコールバック登録
@@ -844,9 +845,6 @@ void DLCMatState()
 	if( DLC_MatLineIdx == 0 )
 		memset( DLC_MatLineBuf,0,sizeof( DLC_MatLineBuf ));
 }
-struct {
-	int	TxType;
-} DLC_MatSgtatusPara;
 #define	REPORT_LIST_MAX	100
 int	DLC_MatReportStack;
 void DLCMatConfigDefault()
@@ -884,9 +882,9 @@ void DLCMatConfigDefault()
 	strcpy( config.Measure_ch2,"流量" );
 	strcpy( config.MeaKind_ch2,"m^3/hour" );
 	config.alertChatteringTimes[1] 			= 1;
-	config.Chattering_type					= 1;
+	config.alertChatteringKind					= 1;
 	strcpy( config.AlertPause,"1970-01-01 09:00:01" );
-	config.AlertTimeOut						= 5;
+	config.alertTimeout						= 5;
 	WPFM_writeSettingParameter( &config );
 }
 void DLCMatReortDefault()
@@ -902,8 +900,6 @@ void DLCMatPostConfig()
 {
 	char	tmp[48],n,*p;
 	int		i;
-	char	s[32];
-	strcpy( s,"\"1970-01-01 09:00:01\"" );
 	WPFM_readSettingParameter( &config );
 	strcpy( http_tmp,http_config );
 	strcat( http_tmp,"{\"Config\":{" );
@@ -941,9 +937,9 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"Measure_ch2\":\"%s\","		,config.Measure_ch2 );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"MeaKind_ch2\":\"%s\","		,config.MeaKind_ch2 );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Chattering_ch2\":%d,"		,config.alertChatteringTimes[1] );			strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Chattering_type\":%d,"		,config.Chattering_type );					strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Chattering_type\":%d,"		,config.alertChatteringKind );				strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertPause\":\"%s\","		,config.AlertPause );						strcat( http_tmp,tmp );
-	sprintf( tmp,"\"AlertTimeOut\":%d"			,config.AlertTimeOut );						strcat( http_tmp,tmp );
+	sprintf( tmp,"\"AlertTimeOut\":%d"			,config.alertTimeout );						strcat( http_tmp,tmp );
 	strcat( http_tmp,"}}" );
 	i = (int)(strchr(http_tmp,'}')-strstr(http_tmp,"{\"Config\":{"))+1;
 	if( i > 0 ){
@@ -976,6 +972,14 @@ void DLCMatPostStatus()
 	ver[5] = 0;
 	strcpy( http_tmp,http_status );
 	strcat( http_tmp,"{\"Status\":{" );
+	putst("Alter=");puthxb( WPFM_lastAlertStatus );putcrlf();
+	DLC_MatTxType = 0;
+	if( WPFM_lastAlertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_WARNING|MLOG_ALERT_STATUS_CH1_LOWER_WARNING|MLOG_ALERT_STATUS_CH2_UPPER_WARNING|MLOG_ALERT_STATUS_CH2_LOWER_WARNING))
+		DLC_MatTxType = 12;
+	if( WPFM_lastAlertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION|MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION|MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION|MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION))
+		DLC_MatTxType = 11;
+	if( DLC_Matknd == 2 )				/* Push SW */
+		DLC_MatTxType = 1;
 	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );					strcat( http_tmp,tmp );
 	sprintf( tmp,"\"IMEI\":\"%s\","			,DLC_MatIMEI );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"MSISDN\":\"%s\","		,DLC_MatNUM );									strcat( http_tmp,tmp );
@@ -992,7 +996,7 @@ void DLCMatPostStatus()
 	sprintf( tmp,"\"RSSI\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSSI:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"SINR\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"SINR:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Temp\":%d,"				,WPFM_lastTemperatureOnBoard );					strcat( http_tmp,tmp );
- 	sprintf( tmp,"\"TxType\":%d"			,DLC_MatSgtatusPara.TxType );					strcat( http_tmp,tmp );
+ 	sprintf( tmp,"\"TxType\":%d"			,DLC_MatTxType );								strcat( http_tmp,tmp );
 	strcat( http_tmp,"}}" );
 	i = (int)(strchr(http_tmp,'}')-strstr(http_tmp,"{\"Status\":{"))+1;
 	if( i > 0 ){
@@ -1037,7 +1041,7 @@ void DLCMatPostSndSub()
 		tmp[1] = outhex( v&0x0f );
 		strcat( DLC_MatSendBuff,tmp );
 		DLC_MatSndCnt++;
-		if( i == 512 ){
+		if( i == 1000 ){
 			putst("■");
 			break;
 		}
@@ -1354,8 +1358,8 @@ putst("coco3\r\n");
 		config_p = strstr(DLC_MatResBuf, "Chattering_type");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
-			config.Chattering_type = atoi(DLC_MatConfigItem);
-//			putst("Chattering_type:");puthxb(config.Chattering_type);putcrlf();
+			config.alertChatteringKind = atoi(DLC_MatConfigItem);
+//			putst("Chattering_type:");puthxb(config.alertChatteringKind);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "AlertPause");
 		if (config_p) {
@@ -1366,8 +1370,8 @@ putst("coco3\r\n");
 		config_p = strstr(DLC_MatResBuf, "AlertTimeOut");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, true);
-			config.AlertTimeOut = atoi(DLC_MatConfigItem);
-//			putst("AlertTimeOut:");puthxb(config.AlertTimeOut);putcrlf();
+			config.alertTimeout = atoi(DLC_MatConfigItem);
+//			putst("AlertTimeOut:");puthxb(config.alertTimeout);putcrlf();
 		}
 		WPFM_writeSettingParameter( &config );
 //		WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
@@ -2074,9 +2078,9 @@ void DLCMatMain()
 			putst("Measure_ch2:");putst(config.Measure_ch2);putcrlf();
 			putst("MeaKind_ch2:");putst(config.MeaKind_ch2);putcrlf();
 			putst("Chattering_ch2:");puthxb(config.alertChatteringTimes[1]);putcrlf();
-			putst("Chattering_type:");puthxb(config.Chattering_type);putcrlf();
+			putst("Chattering_type:");puthxb(config.alertChatteringKind);putcrlf();
 			putst("AlertPause:");putst(config.AlertPause);putcrlf();
-			putst("AlertTimeOut:");puthxb(config.AlertTimeOut);putcrlf();
+			putst("AlertTimeOut:");puthxb(config.alertTimeout);putcrlf();
 			break;
 		case 0x01:												/* CTRL+A */
 			if( CheckPasswd() )
@@ -2088,4 +2092,10 @@ void DLCMatMain()
 		putst("\r\nDLC>");
 	}
 	_GO_IDLE();
+}
+int DLCMatIsSleep()
+{
+	if( DLC_MatState == MATC_STATE_SLP )
+		return 1;
+	return 0;
 }

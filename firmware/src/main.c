@@ -40,6 +40,7 @@
 /* temporary */
 #include "w25q128jv.h"
 #include "mlog.h"
+#include "Moni.h"
 void  	    DLCMatMain();
 
 /*
@@ -125,6 +126,7 @@ int main(void)
 /*
 *   測定モード時のメインループ処理
 */
+int	DLCMatIsSleep();
 static void eventLoopOnMeasurementMode(void)
 {
     while (true)
@@ -288,18 +290,14 @@ static void eventLoopOnMeasurementMode(void)
         {
             // タクトスイッチの押下中なので、スリープしない
         }
-        else
-        {
+        else if( DLCMatIsSleep() ){
             // USBが接続されていないとき
             WPFM_isInSendingRegularly = false;  // USBケーブルがVEなしで抜かれた時のために
-
             // Fall asleep if there is no work to do
             WPFM_status = WPFM_STATUS_SLEEP;
-            DEBUG_UART_printlnString(">SLEEP");
-            APP_delay(1);
+            putst(">\r\n");
             WPFM_sleep();       // MCUをスタンバイモードにする
-            APP_delay(1);
-            DEBUG_UART_printlnString("<WAKE UP");
+            putst("<\r\n");
             WPFM_status = WPFM_STATUS_IDLE;
         }
     } // end-of-while-loop
