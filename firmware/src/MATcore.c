@@ -1,4 +1,4 @@
-#define	__DAIKOKU
+//#define	__DAIKOKU
 /*
 	通信タスク
 */
@@ -882,7 +882,7 @@ void DLCMatConfigDefault()
 	strcpy( config.Measure_ch2,"流量" );
 	strcpy( config.MeaKind_ch2,"m^3/hour" );
 	config.alertChatteringTimes[1] 			= 1;
-	config.alertChatteringKind					= 1;
+	config.alertChatteringKind				= 1;
 	strcpy( config.AlertPause,"1970-01-01 09:00:01" );
 	config.alertTimeout						= 5;
 	WPFM_writeSettingParameter( &config );

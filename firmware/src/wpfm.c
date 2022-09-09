@@ -2,7 +2,7 @@
  * File:    wpfm.c
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project common definition file.
- * Date:    2022/09/03 (R0)
+ * Date:    2022/09/07 (R0)
  * Note:
  */
 
@@ -58,9 +58,7 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     30,                         // maximumBatteryExchangeTime[sec]
     "水圧", "MPa",              // Measure_ch1, MeaKind_ch1
     "流量", "m3/h",             // Measure_ch2, MeaKind_ch2
-    1,                          // Chattering_type
-    "1970-01-01 09:00:01",      // AlertPause
-    5                           // AlertTimeOut
+    "1970-01-01 09:00:01"       // AlertPause
 };
 volatile uint16_t WPFM_measurementInterval;              // Current measurement interval[Sec]
 uint16_t WPFM_communicationInterval;            // Current communication interval[Sec]
@@ -192,9 +190,7 @@ void WPFM_dumpSettingParameter(WPFM_SETTING_PARAMETER *param_p)
     DEBUG_UART_printlnFormat("Measure_ch2/MeaKind_ch2: \"%s\", \"%s\"", param_p->Measure_ch2, param_p->MeaKind_ch2); APP_delay(10);
 
     DEBUG_UART_printlnFormat("Measurment: %u", (unsigned int)param_p->Measurment); APP_delay(10);
-    DEBUG_UART_printlnFormat("Chattering_type: %u", (unsigned int)param_p->Chattering_type); APP_delay(10);
     DEBUG_UART_printlnFormat("AlertPause: \"%s\"", param_p->AlertPause); APP_delay(10);
-    DEBUG_UART_printlnFormat("AlertTimeOut: %u", (unsigned int)param_p->AlertTimeOut); APP_delay(10);
 
     DEBUG_UART_printlnFormat("--");
 }
