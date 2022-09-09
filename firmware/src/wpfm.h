@@ -194,6 +194,7 @@ extern bool WPFM_isInSendingRegularly;              //
 extern void WPFM_measureRegularly(bool justMeasure);
   // defined in alert.c
 extern uint8_t WPFM_judegAlert(uint32_t ot);
+extern void WPFM_cancelAlert();
   // defined in communicate.c
 extern void WPFM_uploadRegularly(void);
 extern void WPFM_uploadOneShot(bool unsentOrEmpty);

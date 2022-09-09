@@ -941,6 +941,7 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"AlertPause\":\"%s\","		,config.AlertPause );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertTimeOut\":%d"			,config.alertTimeout );						strcat( http_tmp,tmp );
 	strcat( http_tmp,"}}" );
+	config.Measurment = 0;	// =1‚¾‚Á‚½ê‡A1“xConfig‘—M‚µ‚½‚ç–ß‚·
 	i = (int)(strchr(http_tmp,'}')-strstr(http_tmp,"{\"Config\":{"))+1;
 	if( i > 0 ){
 		p = strstr( http_tmp,"Length:    " );
@@ -1186,6 +1187,10 @@ putst("coco3\r\n");
 			DLCMatINTParamSet(config_p, false);
 			config.Measurment = atoi(DLC_MatConfigItem);
 //			putst("Measurment:");puthxw(config.Measurment);putcrlf();
+			if (config.Measurment == 1) {
+putst("coco4\r\n");
+				WPFM_cancelAlert();
+			}
 		}
 		config_p = strstr(DLC_MatResBuf, "Select_ch1");
 		if (config_p) {

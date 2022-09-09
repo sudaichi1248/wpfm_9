@@ -75,15 +75,15 @@ typedef struct
 // Alert status(CH1/CH2)
 #define MLOG_ALERT_STATUS_BOTH_NORMAL           0x00    // Both channels Normal status
 #define MLOG_ALERT_STATUS_CH1_NORMAL            0x00    // CH1 Normal status
-#define MLOG_ALERT_STATUS_CH1_UPPER_WARNING     0x80    // CH1 Warning status(upper-side)
-#define MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION   0x40    // CH1 Attention status(upper-side)
-#define MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION   0x20    // CH1 Attention status(lower-side)
-#define MLOG_ALERT_STATUS_CH1_LOWER_WARNING     0x10    // CH1 Warning status(lower-side)
+#define MLOG_ALERT_STATUS_CH1_UPPER_WARNING     0x01    // CH1 Warning status(upper-side)
+#define MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION   0x02    // CH1 Attention status(upper-side)
+#define MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION   0x04    // CH1 Attention status(lower-side)
+#define MLOG_ALERT_STATUS_CH1_LOWER_WARNING     0x08    // CH1 Warning status(lower-side)
 #define MLOG_ALERT_STATUS_CH2_NORMAL            0x00    // CH2 Normal status
-#define MLOG_ALERT_STATUS_CH2_UPPER_WARNING     0x08    // CH2 Warning status(upper-side)
-#define MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION   0x04    // CH2 Attention status(upper-side)
-#define MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION   0x02    // CH2 Attention status(lower-side)
-#define MLOG_ALERT_STATUS_CH2_LOWER_WARNING     0x01    // CH2 Warning status(lower-side)
+#define MLOG_ALERT_STATUS_CH2_UPPER_WARNING     0x10    // CH2 Warning status(upper-side)
+#define MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION   0x20    // CH2 Attention status(upper-side)
+#define MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION   0x40    // CH2 Attention status(lower-side)
+#define MLOG_ALERT_STATUS_CH2_LOWER_WARNING     0x80    // CH2 Warning status(lower-side)
 
 // Battery status(#1/#2)
 #define MLOG_BAT_STATUS_BAT1_NOT_USE            0x00    // Battery #1 not used
