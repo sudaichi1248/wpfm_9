@@ -1164,6 +1164,59 @@ void DLCMatSTRParamSet(char *config_p)
 		DLC_MatConfigItem[0] = 0;
 	}
 }
+void DLCMatReflectionConfig()
+{
+	WPFM_settingParameter.measurementInterval = config.measurementInterval;
+	WPFM_settingParameter.communicationInterval = config.communicationInterval;
+	WPFM_settingParameter.measurementIntervalOnAlert = config.measurementIntervalOnAlert;
+	WPFM_settingParameter.communicationIntervalOnAlert = config.communicationIntervalOnAlert;
+
+	WPFM_settingParameter.sensorKinds[0] = config.sensorKinds[0];
+	WPFM_settingParameter.sensorKinds[1] = config.sensorKinds[1];
+	WPFM_settingParameter.upperLimits[0] = config.upperLimits[0];
+	WPFM_settingParameter.upperLimits[1] = config.upperLimits[1];
+	WPFM_settingParameter.lowerLimits[0] = config.lowerLimits[0];
+	WPFM_settingParameter.lowerLimits[1] = config.lowerLimits[1];
+
+	WPFM_settingParameter.alertEnableKinds[0][0][1] = config.alertEnableKinds[0][0][1];
+	WPFM_settingParameter.alertEnableKinds[0][0][0] = config.alertEnableKinds[0][0][0];
+	WPFM_settingParameter.alertEnableKinds[0][1][0] = config.alertEnableKinds[0][1][0];
+	WPFM_settingParameter.alertEnableKinds[0][1][1] = config.alertEnableKinds[0][1][1];
+	WPFM_settingParameter.alertEnableKinds[1][0][1] = config.alertEnableKinds[1][0][1];
+	WPFM_settingParameter.alertEnableKinds[1][0][0] = config.alertEnableKinds[1][0][0];
+	WPFM_settingParameter.alertEnableKinds[1][1][0] = config.alertEnableKinds[1][1][0];
+	WPFM_settingParameter.alertEnableKinds[1][1][1] = config.alertEnableKinds[1][1][1];
+
+	WPFM_settingParameter.alertUpperLimits[0][1] = config.alertUpperLimits[0][1];
+	WPFM_settingParameter.alertUpperLimits[0][0] = config.alertUpperLimits[0][0];
+	WPFM_settingParameter.alertLowerLimits[0][0] = config.alertLowerLimits[0][0];
+	WPFM_settingParameter.alertLowerLimits[0][1] = config.alertLowerLimits[0][1];
+	WPFM_settingParameter.alertUpperLimits[1][1] = config.alertUpperLimits[1][1];
+	WPFM_settingParameter.alertUpperLimits[1][0] = config.alertUpperLimits[1][0];
+	WPFM_settingParameter.alertLowerLimits[1][0] = config.alertLowerLimits[1][0];
+	WPFM_settingParameter.alertLowerLimits[1][1] = config.alertLowerLimits[1][1];
+
+	strcpy(WPFM_settingParameter.Measure_ch1, config.Measure_ch1);
+	strcpy(WPFM_settingParameter.MeaKind_ch1, config.MeaKind_ch1);
+	strcpy(WPFM_settingParameter.Measure_ch2, config.Measure_ch2);
+	strcpy(WPFM_settingParameter.MeaKind_ch2, config.MeaKind_ch2);
+
+	WPFM_settingParameter.alertChatteringTimes[0] = config.alertChatteringTimes[0];
+	WPFM_settingParameter.alertChatteringTimes[1] = config.alertChatteringTimes[1];
+
+	WPFM_settingParameter.alertChatteringKind = config.alertChatteringKind;
+	WPFM_settingParameter.alertTimeout = config.alertTimeout;
+	strcpy(WPFM_settingParameter.AlertPause, config.AlertPause);
+
+	if (WPFM_lastAlertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_WARNING|MLOG_ALERT_STATUS_CH1_LOWER_WARNING|MLOG_ALERT_STATUS_CH2_UPPER_WARNING|MLOG_ALERT_STATUS_CH2_LOWER_WARNING)) {	// ÉAÉâÅ[ÉgèÛë‘ÇÕåxïÒ?
+		SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
+		WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
+	} else {	// í èÌ
+		SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
+		WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
+	}
+	WPFM_dumpSettingParameter(&WPFM_settingParameter);
+}
 void DLCMatConfigRet()
 {
 	char	*config_p;
@@ -1399,8 +1452,7 @@ putst("coco4\r\n");
 //			putst("AlertTimeOut:");puthxb(config.alertTimeout);putcrlf();
 		}
 		WPFM_writeSettingParameter( &config );
-//		WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
-//		SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
+		DLCMatReflectionConfig();
 	}
 }
 int DLCMatRecvDisp()
@@ -1992,6 +2044,9 @@ void DLCMatMain()
 {
 	char key;
 	char *VerPrint();
+	RTC_DATETIME dt;
+	char time[32],tmp[3] = {0, 0, 0};
+	uint8_t ap_year, ap_month, ap_day, ap_hour, ap_minute, ap_second;
 //	PORT_GroupWrite( PORT_GROUP_1,0x1<<22,0 );
 	if( DLC_BigState == 0 ){
 		putst( VerPrint() );
@@ -2106,6 +2161,67 @@ void DLCMatMain()
 			putst("Chattering_type:");puthxb(config.alertChatteringKind);putcrlf();
 			putst("AlertPause:");putst(config.AlertPause);putcrlf();
 			putst("AlertTimeOut:");puthxb(config.alertTimeout);putcrlf();
+			break;
+		case 'T':
+			RTC_getDatetime( &dt );
+			sprintf( time,"%02d/%02d/%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+			putst("\r\nCulentTime:  ");putst(time);putcrlf();
+			putst("AlertPause:");putst(WPFM_settingParameter.AlertPause);putcrlf();
+			tmp[0] = WPFM_settingParameter.AlertPause[0];
+			tmp[1] = WPFM_settingParameter.AlertPause[1];
+			ap_year = atoi(tmp);
+			puthxs(ap_year);putcrlf();
+			if (20 > ap_year) {
+				putst("return normal1\r\n");
+			} else if (20 == ap_year) {
+				tmp[0] = WPFM_settingParameter.AlertPause[2];
+				tmp[1] = WPFM_settingParameter.AlertPause[3];
+				ap_year = atoi(tmp);
+				puthxs(ap_year);putcrlf();
+				if (dt.year > ap_year) {
+					putst("return normal2\r\n");
+				} else if (dt.year == ap_year) {
+					tmp[0] = WPFM_settingParameter.AlertPause[5];
+					tmp[1] = WPFM_settingParameter.AlertPause[6];
+					ap_month = atoi(tmp);
+					puthxs(ap_month);putcrlf();
+					if (dt.month > ap_month) {
+						putst("return normal3\r\n");
+					} else if (dt.month == ap_month) {
+						tmp[0] = WPFM_settingParameter.AlertPause[8];
+						tmp[1] = WPFM_settingParameter.AlertPause[9];
+						ap_day = atoi(tmp);
+						puthxs(ap_day);putcrlf();
+						if (dt.day > ap_day) {
+							putst("return normal4\r\n");
+						} else if (dt.day == ap_day) {
+							tmp[0] = WPFM_settingParameter.AlertPause[11];
+							tmp[1] = WPFM_settingParameter.AlertPause[12];
+							ap_hour = atoi(tmp);
+							puthxs(ap_hour);putcrlf();
+							if (dt.hour > ap_hour) {
+								putst("return normal5\r\n");
+							} else if (dt.hour == ap_hour) {
+								tmp[0] = WPFM_settingParameter.AlertPause[14];
+								tmp[1] = WPFM_settingParameter.AlertPause[15];
+								ap_minute = atoi(tmp);
+								puthxs(ap_minute);putcrlf();
+								if (dt.minute > ap_minute) {
+									putst("return normal6\r\n");
+								} else if (dt.minute == ap_minute) {
+									tmp[0] = WPFM_settingParameter.AlertPause[17];
+									tmp[1] = WPFM_settingParameter.AlertPause[18];
+									ap_second = atoi(tmp);
+									puthxs(ap_second);putcrlf();
+									if (dt.second >= ap_second) {
+										putst("return normal7\r\n");
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 			break;
 		case 0x01:												/* CTRL+A */
 			if( CheckPasswd() )
