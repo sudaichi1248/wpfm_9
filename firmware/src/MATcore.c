@@ -109,6 +109,7 @@ void IDLEputch( )
 #define		TIMER_1000ms	1000
 #define		TIMER_3000ms	3000
 #define		TIMER_5000ms	5000
+#define		TIMER_7000ms	7000
 #define		TIMER_12s		12000
 #define		TIMER_15s		15000
 #define		TIMER_30s		30000
@@ -394,7 +395,7 @@ void MTwget()	// fota
 void MTrrcv()
 {
 	putst("Åö");
-	DLCMatTimerset( 0,TIMER_3000ms );
+	DLCMatTimerset( 0,TIMER_7000ms );
 }
 void MTrvTO()
 {
@@ -552,13 +553,6 @@ void MTslep()
 		DLCMatWake();
 	}
 }
-void MTNoSlp()
-{
-	putst("Sleep Rtry!\r\n");
-	DLC_MatLineIdx = 0;
-	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
-	DLCMatTimerset( 0,TIMER_3000ms );
-}
 void MTslp1()
 {
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
@@ -566,7 +560,7 @@ void MTslp1()
 void MTwake()
 {
 	putst("ÅyWakeÅz\r\n");
-	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
+	DLCMatWake();
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT\r" );
 	DLCMatTimerset( 0,TIMER_12s );
@@ -583,6 +577,8 @@ struct {
 	uchar	rx;
 	int		msg[0x20];
 } DLC_MatMsg;
+#define		MSGID_TIMER		1
+#define		MSGID_WAKEUP	2
 int	 MatGetMsgStack()
 {
 	int msg;
@@ -629,7 +625,7 @@ void DLCMatCall(int knd )
 		putst("ÅöCALL!\r\n");										/* Alert */
 		break;
 	}
-	DLCMatWake();
+	MatMsgSend( MSGID_WAKEUP );
 }
 void DLCMatSleepWait()
 {
@@ -694,7 +690,7 @@ void	 (*MTjmp[18][19])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTcls1, ______, MTcls2, ______, MTcls3, ______, MTclsF, ______, ______, ______, ______ },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______ },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTdisc, ______, ______, ______, ______, ______, ______ },
-/* TimOut1    12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTserv, MTserv, MTNoSlp,______, MTrvTO, ______, MTrvTO, MTcls2, MTcls3, MTRSlp, MTtoF,  ______, ______, ______, ______ },
+/* TimOut1    12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTserv, MTserv, ______,______, MTrvTO, ______, MTrvTO, MTcls2, MTcls3, MTRSlp, MTtoF,  ______, ______, ______, ______ },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, ______, ______ },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
@@ -850,10 +846,10 @@ void DLCMatState()
 		}
 		else {
 			switch( MatGetMsgStack() ){
-			case 1:
+			case MSGID_TIMER:
 				DLC_Matfact = MATC_FACT_TO1;
 				break;
-			case 2:
+			case MSGID_WAKEUP:
 				DLC_Matfact = MATC_FACT_WUP;
 				break;
 			default:
