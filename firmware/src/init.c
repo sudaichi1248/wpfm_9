@@ -18,7 +18,8 @@
 #include "s5851a.h"
 #include "w25q128jv.h"
 #include "mlog.h"
-
+#include "Moni.h"
+void DLCMatTimerset();
 /*
 *   Local variables and functions
 */
@@ -74,13 +75,41 @@ void WPFM_initializeApplication(void)
     DEBUG_UART_printlnFormat("** DLC-04(F/W Ver%s) **", WPFM_FW_VERSION);
     DEBUG_UART_printlnString("Initialize..");
 
+    DEBUG_UART_printString("RESET CAUSE is ");
+    PM_RESET_CAUSE cause = PM_ResetCauseGet();
+    switch (cause)
+    {
+        case PM_RESET_CAUSE_POR_RESET:
+            DEBUG_UART_printlnString("POR");
+            break;
+        case PM_RESET_CAUSE_BOD12_RESET:
+            DEBUG_UART_printlnString("BOD12");
+            break;
+        case PM_RESET_CAUSE_BOD33_RESET:
+            DEBUG_UART_printlnString("BOD33");
+            break;
+        case PM_RESET_CAUSE_EXT_RESET:
+            DEBUG_UART_printlnString("EXT_RESET");
+            break;
+        case PM_RESET_CAUSE_WDT_RESET:
+            DEBUG_UART_printlnString("WDT_RESET");
+            break;
+        case PM_RESET_CAUSE_SYST_RESET:
+            DEBUG_UART_printlnString("SYS_RESET");
+            break;
+        default:
+            DEBUG_UART_printlnString("UNKNOWN");
+            break;
+    }
+    SYSTICK_DelayMs(10);
+
     // Load setting parameter from internal-flash
     if (! WPFM_readSettingParameter(&WPFM_settingParameter))
     {
         DEBUG_UART_printlnString("parameter read error.");
     }
-    //if (true)
-    if (WPFM_settingParameter.isInvalid)
+    if (true)
+    //if (WPFM_settingParameter.isInvalid)
     {
         // Set default values
         DEBUG_UART_printlnString("Set default parameter.");
@@ -250,6 +279,7 @@ void WPFM_onPressed(uintptr_t p)
 {
     if (TEST_SW_Get() == 0)
     {
+		putst("Push+\r\n");
         // on Pressed (HIGH -> LOW Edge)
         switch (WPFM_tactSwStatus)
         {
@@ -260,12 +290,17 @@ void WPFM_onPressed(uintptr_t p)
             case WPFM_TACTSW_STATUS_PRESSED:
                 break;
         }
-        TC5_TimerStart();
+#if _DAIKOKU_ORG
+       TC5_TimerStart();
+#else
+		DLCMatTimerset( 2,20 );
+#endif
         WPFM_tactSwStatus = WPFM_TACTSW_STATUS_PRESSING;
         WPFM_lastButtonPressedTime = SYS_tick;
     }
     else
     {
+		putst("Push-\r\n");
         // on Released (LOW -> HIGH Edge)
         switch (WPFM_tactSwStatus)
         {
@@ -276,7 +311,11 @@ void WPFM_onPressed(uintptr_t p)
             case WPFM_TACTSW_STATUS_PRESSED:
                 break;
         }
-        TC5_TimerStart();
+#if _DAIKOKU_ORG
+       TC5_TimerStart();
+#else
+		DLCMatTimerset( 2,20 );
+#endif
         WPFM_tactSwStatus = WPFM_TACTSW_STATUS_RELEASING;
         WPFM_lastButtonReleasedTime = SYS_tick;
     }
@@ -344,7 +383,7 @@ void WPFM_sleep(void)
     RF_INT_IN_Clear();      // sleep MATcore
     UTIL_setLED1();         // turn off LED1
     UTIL_setEXT1LED();      // turn off EXT1_LED
-//    UTIL_setEXT2LED();      // turn off EXT2_LED
+    UTIL_setEXT2LED();      // turn off EXT2_LED
 
     // (2) Control sensors power
 /**
@@ -358,8 +397,34 @@ void WPFM_sleep(void)
 **/
 
     /** ENTER STAND-BY MODE **/
+
+    //SYSTICK_DelayUs(300);
+    SYSTICK_TimerStop();
+
     // (3) Fall asleep..
     PM_StandbyModeEnter();
+    //PM_IdleModeEnter();
+
+    //SYSTICK_DelayUs(300);
+    SYSTICK_TimerStart();
+
+#if 0
+    // Do not sleep BVMCTRL
+//    NVMCTRL_REGS->NVMCTRL_CTRLB &= ~NVMCTRL_CTRLB_SLEEPPRM_Msk;
+//    NVMCTRL_REGS->NVMCTRL_CTRLB |= NVMCTRL_CTRLB_SLEEPPRM_WAKEUPINSTANT_Val; //NVMCTRL_CTRLB_SLEEPPRM_DISABLED_Val;
+
+    NVIC_INT_Disable();
+    __DMB();
+
+    SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+
+    __DSB();
+    __WFI();
+
+    __DMB();
+    NVIC_INT_Enable();
+#endif
+
     /** WAKED UP **/
 
     // (4) Restore sensors power
