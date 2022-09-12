@@ -591,7 +591,7 @@ int	 MatGetMsgStack()
 }
 void MatMsgSend( int msg )
 {
-	DLC_MatMsg.msg[DLC_MatMsg.wx] = msg;
+	DLC_MatMsg.msg[DLC_MatMsg.wx++] = msg;
 	DLC_MatMsg.wx &= 0x1F;
 }
 void DLCMatClockDisplay(char *s)
