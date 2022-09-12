@@ -108,8 +108,8 @@ void WPFM_initializeApplication(void)
     {
         DEBUG_UART_printlnString("parameter read error.");
     }
-    if (true)
-    //if (WPFM_settingParameter.isInvalid)
+//    if (true)
+    if (WPFM_settingParameter.isInvalid)
     {
         // Set default values
         DEBUG_UART_printlnString("Set default parameter.");
