@@ -60,10 +60,12 @@ bool command_sci_get_line(void)
 	}
 	return result;
 }
-void command_software_reset(void)
+void command_software_reset( uchar mode )
 {
-	NVMCTRL_RowErase( 0x8000 );
 #if 1
+	uchar	*p;
+	p = (uchar*)0x20007fff;
+	*p = mode;
 	uint32_t app_start_address;
 	app_start_address = *(uint32_t *) (4);
 	SYS_INT_Disable(); /* 割り込み禁止 */
@@ -74,24 +76,21 @@ void command_software_reset(void)
 	/* Jump to application Reset Handler in the application */
 	asm("bx %0"::"r"(app_start_address));
 #else
+	NVMCTRL_RowErase( 0x8000 );
 	__NVIC_SystemReset();
 #endif
 }
 void command_main(void)
 {
-	unsigned char *p;
-	p = (unsigned char*)0x20007fff;
 	while (command_sci_get_line() == true) {   // コマンドバッファから１line取得
 		if (strcmp(s_command_command.buffer , "!!DOWNLOADFIRM\r") == 0) {
-			*p = 1;
 			APP_printlnUSB("\r\nOK\r\n");
-			command_software_reset();
+			command_software_reset(1);
 			break;
 		}
 		if (strcmp(s_command_command.buffer , "!!DOWNLOADBOOT\r") == 0) {
-			*p = 2;
 			APP_printlnUSB("\r\nOK\r\n");
-			command_software_reset();
+			command_software_reset(2);
 			break;
 		}
 		if (strcmp(s_command_command.buffer , "!!VERSION\r") == 0) {
@@ -100,7 +99,7 @@ void command_main(void)
 		}
 		if (strcmp(s_command_command.buffer , "!!RESET\r") == 0) {
 			APP_printlnUSB("\r\nOK\r\n");
-			command_software_reset();
+			command_software_reset(0);
 			break;
 		}
 		if (memcmp(s_command_command.buffer , "AT", 2) == 0) {

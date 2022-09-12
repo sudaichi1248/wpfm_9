@@ -16,7 +16,7 @@
 #include "debug.h"
 #include "uart_debug.h"
 #include "smpif.h"
-
+void DLCMatUpdate();
 
 /*
 *   Symbols
@@ -55,6 +55,7 @@ static SMPIF_COMMAND_TABLE _SMPIF_commandTables[] =
         { "CS", SMPIF_setCallibrationValues },
         { "CN", SMPIF_notifyCallibrationTarget },
         { "CR", SMPIF_readCallibrationValues },
+        { "UP", DLCMatUpdate },
         { NULL, NULL }
     };
 

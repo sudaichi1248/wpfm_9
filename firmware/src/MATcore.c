@@ -47,7 +47,6 @@ uchar	DLC_MatRetry;
 char	DLC_MatConfigItem[32];
 uchar	DLC_MatTxType;
 
-#define		TIMER_NUM	2
 bool	DLC_MatFotaExe=false;	// fota FOTA実行フラグ
 // bool	DLC_MatFotaExe=true;	// fota FOTA実行フラグ
 bool	DLC_MatFotaWriteNG=false;	// fota FOTA書込みNGフラグ
@@ -60,10 +59,6 @@ static	char wget_Head[] = "GET /wpfm.bin HTTP/1.1\r\nHost:harvest-files.soracom.
 // static char wget_Head[] = "GET /2048.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// fota
 // static char wget_Head[] = "GET /256.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// fota
 #define	 	DLC_MatSPIFlashAddrFota		0xE00000;	// fota SPIフラッシュ書込みアドレス
-struct {
-	int		cnt;
-	uchar	TO;
-} DLC_MatTimer[TIMER_NUM];
 char getkey()
 {
 	char	c;
@@ -109,6 +104,52 @@ void IDLEputch( )
 	}
 }
 /*
+	Function:通信タスクのタイマー登録
+*/
+#define		TIMER_3000ms	3000
+#define		TIMER_5000ms	5000
+#define		TIMER_12s		12000
+#define		TIMER_15s		15000
+#define		TIMER_30s		30000
+#define		TIMER_NUM		3
+struct {
+	int		cnt;
+	uchar	TO;
+} DLC_MatTimer[TIMER_NUM];
+void DLCMatTimerset(int tmid,int cnt )
+{
+	DLC_MatTimer[tmid].cnt = cnt;
+}
+void DLCMatTimerClr(int tmid )
+{
+	DLC_MatTimer[tmid].cnt = 0;
+	DLC_MatTimer[tmid].TO = 0;
+}
+/*
+	Function:通信タスクのTO通知の確認
+*/
+int	DLCMatTmChk(int tmid)
+{
+	if( DLC_MatTimer[tmid].TO ){
+		if( DLC_MatTimer[tmid].cnt == 0 ){
+			DLC_MatTimer[tmid].TO = 0;
+			return 1;
+		}
+	}
+	return 0;
+}
+void DLCMatTimerInt()
+{
+	for(int i=0;i<TIMER_NUM;i++ ){
+		if( DLC_MatTimer[i].cnt != 0 ){
+			DLC_MatTimer[i].cnt--;
+			if( DLC_MatTimer[i].cnt == 0 )
+				DLC_MatTimer[i].TO = 1;
+		}
+	}
+//	putch('t');
+}
+/*
 	MATcoreをWAKEUPさせる処理
 */
 void DLCMatWake()
@@ -131,46 +172,10 @@ void DLCMatWake()
 */
 void DLCMatInit()
 {
-	TC5_TimerCallbackRegister( (TC_TIMER_CALLBACK)DLCMatTimerInt, (uintptr_t)0 );
-	TC5_TimerStart();
-	DLCMatTimerset( 0,500 );
-	DLCMatWake();
-}
-/*
-	Function:通信タスクのTO通知の確認
-*/
-int	DLCMatTmChk(int tmid)
-{
-	if( DLC_MatTimer[tmid].TO ){
-		if( DLC_MatTimer[tmid].cnt == 0 ){
-			DLC_MatTimer[tmid].TO = 0;
-			return 1;
-		}
-	}
-	return 0;
-}
-void DLCMatTimerInt()
-{
-	for(int i=0;i<TIMER_NUM;i++ ){
-		if( DLC_MatTimer[i].cnt != 0 ){
-			DLC_MatTimer[i].cnt--;
-			if( DLC_MatTimer[i].cnt == 0 )
-				DLC_MatTimer[i].TO = 1;
-	//	putch('t');
-		}
-	}
-}
-/*
-	Function:通信タスクのタイマー登録
-*/
-void DLCMatTimerset(int tmid,int cnt )
-{
-	DLC_MatTimer[tmid].cnt = cnt;
-}
-void DLCMatTimerClr(int tmid )
-{
-	DLC_MatTimer[tmid].cnt = 0;
-	DLC_MatTimer[tmid].TO = 0;
+    TC5_TimerCallbackRegister( (TC_TIMER_CALLBACK)DLCMatTimerInt, (uintptr_t)0 );
+ 	TC5_TimerStart();
+	DLCMatTimerset( 0,TIMER_5000ms );
+	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
 }
 void DLCMatLog(int len)
 {
@@ -268,14 +273,14 @@ void MTRdy()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$VER\r" );
-	DLCMatTimerset( 0,300 );
+	DLCMatTimerset( 0,TIMER_3000ms );
 	DLC_MatState = MATC_STATE_IDLE;
 }
 void MTVrT()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$VER\r" );
-	DLCMatTimerset( 0,100 );
+	DLCMatTimerset( 0,TIMER_3000ms );
 }
 void MTVer()
 {
@@ -285,14 +290,14 @@ void MTVer()
 		;
 	else
 		DLCMatSend( "AT$NUM\r" );
-	DLCMatTimerset( 0,500 );
+	DLCMatTimerset( 0,TIMER_5000ms );
 	DLC_MatState = MATC_STATE_IMEI;
 }
 void MTimei()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$SETAPN,soracom.io,sora,sora,PAP\r" );
-	DLCMatTimerset( 0,300 );
+	DLCMatTimerset( 0,TIMER_3000ms );
 	DLC_MatState = MATC_STATE_APN;
 }
 void MTapn()
@@ -307,21 +312,21 @@ void MTapn()
 	} else {	// FOTA実行時
 		DLCMatSend( "AT$SETSERVER,harvest-files.soracom.io,80\r" );	// fota soracom harvest指定
 	}
-	DLCMatTimerset( 0,300 );
+	DLCMatTimerset( 0,TIMER_3000ms );
 	DLC_MatState = MATC_STATE_SVR;
 }
 void MTserv()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT\r" );
-	DLCMatTimerset( 0,12000 );
+	DLCMatTimerset( 0,TIMER_12s );
 	DLC_MatState = MATC_STATE_CONN;
 }
 void MTconn()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT?\r" );
-	DLCMatTimerset( 0,3000 );
+	DLCMatTimerset( 0,TIMER_30s );
 	if (DLC_MatFotaExe == false) {	// fota 運用時
 		DLC_MatState = MATC_STATE_COND;
 	} else {	//  FOTA実行時
@@ -333,7 +338,7 @@ void MTtime()
 	memcpy( DLC_MatDateTime,DLC_MatLineBuf,DLC_MatLineIdx );
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$TIME\r" );
-	DLCMatTimerset( 0,300 );
+	DLCMatTimerset( 0,TIMER_3000ms );
 }
 void MTrsrp()
 {
@@ -349,14 +354,14 @@ void MTopn1()
 	memcpy( DLC_MatRadioDensty,DLC_MatLineBuf,DLC_MatLineIdx );
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$OPEN\r" );
-	DLCMatTimerset( 0,1500 );
+	DLCMatTimerset( 0,TIMER_15s );
 	DLC_MatState = MATC_STATE_OPN1;
 }
 void MTopnF()	// fota
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$OPEN\r" );
-	DLCMatTimerset( 0,1500 );
+	DLCMatTimerset( 0,TIMER_15s );
 }
 void MTGslp()
 {
@@ -364,12 +369,12 @@ void MTGslp()
 	DLC_MatLineIdx = 0;
 	if( DLC_Matknd ){													/* 発呼要求保持 */
 		DLCMatSend( "AT$OPEN\r" );
-		DLCMatTimerset( 0,1500 );
+		DLCMatTimerset( 0,TIMER_15s );
 		DLC_MatState = MATC_STATE_OPN1;
 	}
 	else {
 		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
-		DLCMatTimerset( 0,600 );
+		DLCMatTimerset( 0,TIMER_3000ms );
 	}
 }
 void MTcnfg()
@@ -377,23 +382,23 @@ void MTcnfg()
 	DLC_MatLineIdx = 0;
 	DLCMatPostConfig();
 	DLC_MatState = MATC_STATE_CNFG;
-	DLCMatTimerset( 0,3000 );
+	DLCMatTimerset( 0,TIMER_30s );
 }
 void MTwget()	// fota
 {
 	DLC_MatLineIdx = 0;
 	DLCMatWgetFile();
-	DLCMatTimerset( 0,3000 );
+	DLCMatTimerset( 0,TIMER_30s );
 }
 void MTrrcv()
 {
-	DLCMatTimerset( 0,1000 );
+	DLCMatTimerset( 0,TIMER_12s );
 }
 void MTrvTO()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CLOSE\r" );
-	DLCMatTimerset( 0,100 );
+	DLCMatTimerset( 0,TIMER_3000ms );
 }
 void MTdata()
 {
@@ -403,7 +408,7 @@ void MTdata()
 	if( rt == 0 ){
 		DLC_MatLineIdx = 0;
 		zLogOn = 1;
-		DLCMatTimerset( 0,1000 );
+		DLCMatTimerset( 0,TIMER_12s);
 	}
 	else {
 		DLC_MatLineIdx = 0;
@@ -414,7 +419,7 @@ void MTfirm()	// fota
 {
 	int	rt;
 	if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし */
-		DLCMatTimerset( 0,1000 );	/* 10秒タイマー起動(値要検討) */
+		DLCMatTimerset( 0,TIMER_12s);
 	}
 	rt = DLCMatRecvWriteFota();	/* SPIへ受信データ書込み処理 */
 	putst("RecvRet=");puthxs( rt );putcrlf();
@@ -439,34 +444,34 @@ void MTstst()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatPostStatus();
-	DLCMatTimerset( 0,3000 );
+	DLCMatTimerset( 0,TIMER_30s );
 	DLC_MatState = MATC_STATE_STAT;
 }
 void MTcls2()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$OPEN\r" );
-	DLCMatTimerset( 0,1500 );
+	DLCMatTimerset( 0,TIMER_15s );
 	DLC_MatState = MATC_STATE_OPN3;
 }
 void MTrprt()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatPostReport();
-	DLCMatTimerset( 0,3000 );
+	DLCMatTimerset( 0,TIMER_30s );
 	DLC_MatState = MATC_STATE_RPT;
 }
 void MTrpOk()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatPostSndSub();
-	DLCMatTimerset( 0,300 );
+	DLCMatTimerset( 0,TIMER_3000ms );
 	DLC_MatState = MATC_STATE_RPT;
 }
 void MTdisc()
 {
 	DLC_MatLineIdx = 0;
-	DLCMatTimerset( 0,300 );
+	DLCMatTimerset( 0,TIMER_3000ms );
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
 	DLC_MatState = MATC_STATE_SLP;
 }
@@ -478,7 +483,7 @@ void MTcls3()
 		return;
 	}
 	DLCMatSend( "AT$DISCONNECT\r" );
-	DLCMatTimerset( 0,300 );
+	DLCMatTimerset( 0,TIMER_3000ms );
 }
 void MTclsF()	// fota
 {
@@ -538,7 +543,7 @@ void MTNoSlp()
 	putst("Sleep Rtry!\r\n");
 	DLC_MatLineIdx = 0;
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
-	DLCMatTimerset( 0,300 );
+	DLCMatTimerset( 0,TIMER_3000ms );
 }
 void MTslp1()
 {
@@ -550,7 +555,7 @@ void MTwake()
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT\r" );
-	DLCMatTimerset( 0,12000 );
+	DLCMatTimerset( 0,TIMER_12s );
 	DLC_MatState = MATC_STATE_CONN;
 }
 void MTtoF()	// fota T/O
@@ -627,7 +632,7 @@ uchar	DLC_MatLedTest;
 void MTtim2()
 {
 	if( DLC_MatLedTest ){
-		DLCMatTimerset( 1,50 );
+		DLCMatTimerset( 1,500 );
 		if( DLC_MatLedTest & 0x10 ){
 			if( DLC_MatLedTest & 0x01 ){
 				DLC_MatLedTest &= ~0x01;
@@ -1820,28 +1825,29 @@ void DLCRomTest()
 	char	key,buff[256];
 	int		address=0;
 	while(1){
-		switch( toupper( getch() ) ){
-		case 'w':
+		key = toupper( getch() );
+		switch( key ){
+		case 'W':
 			NVMCTRL_PageWrite( (uint32_t *)buff,address );
 			break;
-	    case 'e':
+	    case 'E':
 			NVMCTRL_RowErase( address );
 			break;
-		case 'f':
+		case 'F':
 			putst("Fill char=>");
 			key = getch();
 			memset( buff,key,sizeof( buff ));
 			putst("\r\n");
 			Dump( (char*)buff,sizeof( buff ) );
 			break;
-		case 'r':
+		case 'R':
 			address+=0x100;
 			putch('@');puthxw( address );putcrlf();
 			NVMCTRL_Read( (uint32_t *)buff,sizeof( buff ),address );
 			putcrlf();
 			Dump( buff,sizeof( buff ) );
 			break;
-		case 'a':
+		case 'A':
 			putst("Read mem Address=>" );
 			address = c_get32b();
 			break;
@@ -1966,6 +1972,7 @@ void MATRts()
 	if( PORT_GroupRead( PORT_GROUP_1 )&(0x1<<22))
 		putch('@');
 }
+void command_software_reset(uchar);
 void DLCMatMain()
 {
 	char key;
@@ -2009,7 +2016,7 @@ void DLCMatMain()
 			case '3':
 				DLC_MatLedTest |= (1<<key);
 				DLC_MatLedTest |= (1<<(key+4));
-				DLCMatTimerset( 1,50 );
+				DLCMatTimerset( 1,500 );
 				GPIOEXP_set(key);
 				break;
 			}
@@ -2029,9 +2036,7 @@ void DLCMatMain()
 			break;
 		case 'E':												/* 強制本プロ削除 */
 			if( CheckPasswd() ){
-				putst("Address=0x8000 Erased!\r\n");
 				NVMCTRL_RowErase( 0x8000 );
-				__NVIC_SystemReset();
 			}
 			break;
 		case 'F':
@@ -2103,4 +2108,8 @@ int DLCMatIsSleep()
 	if( DLC_MatState == MATC_STATE_SLP )
 		return 1;
 	return 0;
+}
+void DLCMatUpdate()
+{
+	command_software_reset(1);
 }

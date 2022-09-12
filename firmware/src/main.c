@@ -41,8 +41,8 @@
 #include "w25q128jv.h"
 #include "mlog.h"
 #include "Moni.h"
-void  	    DLCMatMain();
-
+void	DLCMatMain();
+int		DLCMatIsSleep();
 /*
 *   Local functions
 */
@@ -126,7 +126,6 @@ int main(void)
 /*
 *   測定モード時のメインループ処理
 */
-int	DLCMatIsSleep();
 static void eventLoopOnMeasurementMode(void)
 {
     while (true)

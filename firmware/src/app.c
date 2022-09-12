@@ -49,7 +49,6 @@
  *******************************************************************************/
 // DOM-IGNORE-END
 
-
 // *****************************************************************************
 // *****************************************************************************
 // Section: Included Files
@@ -59,7 +58,8 @@
 #include <string.h>
 #include "app.h"
 #include "wpfm.h"
-
+#include "Moni.h"
+int DLCMatTmChk();
 // *****************************************************************************
 // *****************************************************************************
 // Section: Symbol Definitions
@@ -541,10 +541,14 @@ void APP_Tasks(void)
 
             break;
     }
-#if 0
     // Tact switch handling @add
+#if _DAIKOKU_ORG
     if (TC5_TimerPeriodHasExpired())
+#else
+	if( DLCMatTmChk(2))
+#endif
     {
+		putst("APP_TC5TO!\r\n");
         switch (WPFM_tactSwStatus)
         {
             case WPFM_TACTSW_STATUS_PRESSING:
@@ -558,7 +562,6 @@ void APP_Tasks(void)
                 break;
         }
     }
-#endif
 }
 
 /******************************************************************************
