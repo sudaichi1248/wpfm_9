@@ -34,8 +34,8 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     300,                    // communication interval on normal[sec]
     4,                      // measurement interval on alert[sec]
     60,                     // communication interval on alert[sec]
-    0,                      // Measurment
-    { SENSOR_KIND_1_3V, SENSOR_KIND_1_5V },   // sensor kinds
+    0,
+    { SENSOR_KIND_1_3V, SENSOR_KIND_NOT_PRESENT },   // sensor kinds
     { 3, 5 }, { 1, 1 },                   // upper/lower values
     {
         {       // ch1 alert enabled kind
@@ -51,14 +51,14 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     WPFM_CHATTERING_KIND_IGNORE,    // chattering kind
     300,                    // emergency alart timeout[sec]
     // Calibration
-    { { 1793, 4080, 4070, 4060 }, { 1793, 2995, 4070, 4060 } },     // calibration upper values[LSB]
-    { { 566, 20,  30,  40 }, { 566, 566,  20,  40  } },                // calibration lower values[LSB]
+    { { 1793, 2996, 4070, 4060 }, { 1793, 2995, 4070, 4060 } },     // calibration upper values[LSB]
+    { { 566, 566,  30,  40 }, { 566, 566,  20,  40  } },                // calibration lower values[LSB]
     2400,                       // lowThresholdVoltage[mV]
     5,                          // timesLessThresholdVoltage
-    30,                         // maximumBatteryExchangeTime[sec]
+    60,                         // maximumBatteryExchangeTime[sec]
     "水圧", "MPa",              // Measure_ch1, MeaKind_ch1
     "流量", "m3/h",             // Measure_ch2, MeaKind_ch2
-    "1970-01-01 09:00:01"       // AlertPause
+    "1970-01-01 09:00:01"      // AlertPause
 };
 volatile uint16_t WPFM_measurementInterval;              // Current measurement interval[Sec]
 uint16_t WPFM_communicationInterval;            // Current communication interval[Sec]

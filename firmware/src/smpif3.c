@@ -3,6 +3,7 @@
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project Smartphone interface implementation file.
  * Date:    2022/08/16 (R0)
+ *          2022/09/07 (R0.1) modify SMPIF_getData() response message format
  * Note:    LOg data related functions.
  */
 
@@ -71,7 +72,7 @@ void SMPIF_getStatus(const char *param, char *resp)
 void SMPIF_getData(const char *param, char *resp)
 {
     uint32_t sequentialNumber = (uint32_t)atoi(param);
-    bool failed = false;
+    bool failed = false, first = true;
     MLOG_T mlog;
     int stat, number = 0;
     while ((stat = MLOG_findLog(sequentialNumber, &mlog)) == MLOG_ERR_NONE)
@@ -87,13 +88,26 @@ void SMPIF_getData(const char *param, char *resp)
             break;
         }
         static char buf[80];
-        snprintf(buf, sizeof(buf) - 1,
-                (number == 0) ? "%lu,%s,%.3f,%.3f,%08ld" : "/%lu,%s,%.3f,%.3f,%08ld",
-                mlog.sequentialNumber,
-                datetime,
-                mlog.measuredValues[0], mlog.measuredValues[1],
-                alertStatusFormat(mlog.alertStatus)
-        );
+        if (first)
+        {
+            snprintf(buf, sizeof(buf) - 1,
+                    (number == 0) ? "%lu,%s,%.3f,%.3f,%08ld" : "/%lu,%s,%.3f,%.3f,%08ld",
+                    mlog.sequentialNumber,
+                    datetime,
+                    mlog.measuredValues[0], mlog.measuredValues[1],
+                    alertStatusFormat(mlog.alertStatus)
+            );
+            first = false;
+        }
+        else
+        {
+            snprintf(buf, sizeof(buf) - 1,
+                    (number == 0) ? "%s,%.3f,%.3f,%08ld" : "/%s,%.3f,%.3f,%08ld",
+                    datetime,
+                    mlog.measuredValues[0], mlog.measuredValues[1],
+                    alertStatusFormat(mlog.alertStatus)
+            );
+        }
         strcat(resp + 6, buf);
         DEBUG_UART_printlnFormat("[%08lXh] \"%s\"", mlog.sequentialNumber, buf); APP_delay(20);
 

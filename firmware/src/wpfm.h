@@ -25,7 +25,7 @@ extern "C" {
 *   Symbols
 */
   // Version
-#define WPFM_FW_VERSION                 "0.10"
+#define WPFM_FW_VERSION                 "1.00"
   // EIC pin
 #define WPFM_RTC_INTERRUPT_PINA         EIC_PIN_13      // INTRA: Alarm_Mo interrupt pin
 #define WPFM_RTC_INTERRUPT_PINB         EIC_PIN_14      // INTRB: Time update and Alarm_Wk interrupt pin
@@ -40,7 +40,7 @@ extern "C" {
 #define WPFM_GPIO_CH1_PWR               6               // Control sensor #1 power (low:off/High:on)
 #define WPFM_GPIO_CH2_PWR               7               // Control sensor #2 power (low:off/High:on)
   // Timing
-#define WPFM_LONG_PRESSED_TIME          3000            // Threshold of time to determine that it is long pressed[mS]
+#define WPFM_LONG_PRESSED_TIME          5000            // Threshold of time to determine that it is long pressed[mS]
   // Sensor control
 #define WPFM_THRESHOLD_FOR_SENSOR_POWER_CONTROL     10  // Threshold for sensor power on/off each time[Sec]
   // Missing values
@@ -65,9 +65,9 @@ typedef enum
 
 typedef enum
 {
-    WPFM_ALERT_KIND_DISABLED = 0,
-    WPFM_ALERT_KIND_ENABLED = 1,
-    WPFM_ALERT_KIND_PAUSED = 2
+    WPFM_ALERT_KIND_DISABLED = 0,           // アラート無効
+    WPFM_ALERT_KIND_ENABLED = 1,            // アラート有効
+    WPFM_ALERT_KIND_PAUSED = 2              // 未使用
 } WPFM_ALERT_KIND;          // アラート有効種別（アラート有効無効）
 
 typedef enum
