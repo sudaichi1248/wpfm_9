@@ -15,6 +15,7 @@
 #include "debug.h"
 #include "mlog.h"
 #include "sensor.h"
+#include "moni.h"
 
 #ifdef DEBUG_DETAIL
 #   define  DBG_PRINT(...)  { char _line[80]; snprintf(_line, sizeof(_line),  __VA_ARGS__); UART_DEBUG_writeBytes(_line, strlen(_line)); UART_DEBUG_writeBytes("\n", 1); APP_delay(3); }
@@ -38,6 +39,13 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
         if (WPFM_settingParameter.sensorKinds[channelIndex] == SENSOR_KIND_NOT_PRESENT)
         {
             continue;   // 未使用のセンサはスキップする
+        }
+
+        if (WPFM_isAlertPause == true)
+        {
+            putst("Alert Pause\r\n");
+            WPFM_cancelAlert();
+            continue;   // AlertPause中はスキップする
         }
 
         switch (channelIndex)

@@ -156,6 +156,7 @@ extern uint16_t WPFM_communicationInterval;         // Current communication int
   // for alert
 extern time_t WPFM_lastAlertStartTimes[2][2];       // Time when the last alert(warnin or attention) was issued [0:ch1/1:ch2] [0:upper/1:lower]
 extern time_t WPFM_lastWarningStartTimes[2];        // Time when the last warnin was issued(0 means "not during warning") [0:ch1/1:ch2]
+extern bool WPFM_isAlertPause;
   // for battery
 extern uint8_t WPFM_batteryStatus;                  // Last battery status (use MLOG_BAT_STATUS_BAT* bit flags defined in mlog.h)
 extern int WPFM_externalBatteryNumberInUse;         // which battery is used (0:Undefined/1:Batter #1/2:Battery #2)

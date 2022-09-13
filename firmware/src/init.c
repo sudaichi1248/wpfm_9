@@ -18,8 +18,10 @@
 #include "s5851a.h"
 #include "w25q128jv.h"
 #include "mlog.h"
-#include "Moni.h"
+#include "moni.h"
 void DLCMatTimerset();
+bool DLCMatWatchAlertPause();
+
 /*
 *   Local variables and functions
 */
@@ -591,6 +593,7 @@ void WPFM_onTimeupdate(void)
     {
         WPFM_doMeasure = true;
     }
+    WPFM_isAlertPause = DLCMatWatchAlertPause();
 }
 
 /*******************************************************************************
