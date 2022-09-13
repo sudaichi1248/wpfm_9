@@ -3,7 +3,7 @@
  * Author:  Interark Corp.
  * Summary: Measure log header file.
  * Date:    2022/08/17 (R0)
- *          2022/08/XX (R1) Support temporary SRAM log
+ *          2022/09/09 (R1) Support temporary SRAM log
  * Note:
  *          Use 2KB of SRAM for temporary SRAM log (R1)
  */
@@ -36,7 +36,7 @@ extern "C" {
 #define MLOG_ADDRESS_RESERVED_TOP       0xC00000    // Reserved region top
 #define MLOG_ADDRESS_RESERVED_LAST      0xFFFFFF    // Reserved region last
   // (3) SRAM
-#define MLOG_SRAM_SIZE                  2048        // Temporary Mlog storage region size on SRAM
+#define MLOG_SRAM_SIZE                  2048        // Temporary Mlog storage region size on SRAM [bytes]
 
 // Error codes
 #define MLOG_ERR_NONE                   0           // Success(no error)
@@ -75,15 +75,15 @@ typedef struct
 // Alert status(CH1/CH2)
 #define MLOG_ALERT_STATUS_BOTH_NORMAL           0x00    // Both channels Normal status
 #define MLOG_ALERT_STATUS_CH1_NORMAL            0x00    // CH1 Normal status
-#define MLOG_ALERT_STATUS_CH1_UPPER_WARNING     0x01    // CH1 Warning status(upper-side)
-#define MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION   0x02    // CH1 Attention status(upper-side)
-#define MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION   0x04    // CH1 Attention status(lower-side)
-#define MLOG_ALERT_STATUS_CH1_LOWER_WARNING     0x08    // CH1 Warning status(lower-side)
+#define MLOG_ALERT_STATUS_CH1_UPPER_WARNING     0x80    // CH1 Warning status(upper-side)
+#define MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION   0x40    // CH1 Attention status(upper-side)
+#define MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION   0x20    // CH1 Attention status(lower-side)
+#define MLOG_ALERT_STATUS_CH1_LOWER_WARNING     0x10    // CH1 Warning status(lower-side)
 #define MLOG_ALERT_STATUS_CH2_NORMAL            0x00    // CH2 Normal status
-#define MLOG_ALERT_STATUS_CH2_UPPER_WARNING     0x10    // CH2 Warning status(upper-side)
-#define MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION   0x20    // CH2 Attention status(upper-side)
-#define MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION   0x40    // CH2 Attention status(lower-side)
-#define MLOG_ALERT_STATUS_CH2_LOWER_WARNING     0x80    // CH2 Warning status(lower-side)
+#define MLOG_ALERT_STATUS_CH2_UPPER_WARNING     0x08    // CH2 Warning status(upper-side)
+#define MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION   0x04    // CH2 Attention status(upper-side)
+#define MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION   0x02    // CH2 Attention status(lower-side)
+#define MLOG_ALERT_STATUS_CH2_LOWER_WARNING     0x01    // CH2 Warning status(lower-side)
 
 // Battery status(#1/#2)
 #define MLOG_BAT_STATUS_BAT1_NOT_USE            0x00    // Battery #1 not used
@@ -109,10 +109,10 @@ typedef struct
   // set up function
 extern int MLOG_begin(bool checkLogs);          // check chip's ID and check all logs(takes a few seconds)
   // log operations
-extern int MLOG_putLog(MLOG_T *log_p);          // put log in fifo buffer
-extern int MLOG_getLog(MLOG_T *log_p);          // get oldest unuploaded log from fifo buffer
-extern uint32_t MLOG_countUploadableLog(void);  // count number of unuploaded logs in fifo buffer
-extern int MLOG_findLog(uint32_t sn, MLOG_T *log_p);    //
+extern int MLOG_putLog(MLOG_T *log_p, bool specifySN);  // put log in fifo buffer(on Flash)
+extern int MLOG_getLog(MLOG_T *log_p);          // get oldest unuploaded log from fifo buffer(on Flash)
+extern uint32_t MLOG_countUploadableLog(void);  // count number of unuploaded logs in fifo buffer(on Flash)
+extern int MLOG_findLog(uint32_t sn, MLOG_T *log_p);    // find log by seqential number
   // Control functions
 extern int MLOG_format(void);                   // format chip(takes a few seconds)
 extern int MLOG_checkLogs(bool oldestOnly);     // full scan the chip to restore the head and tail(takes a few seconds)
@@ -121,6 +121,7 @@ extern int MLOG_getStatus(MLOG_STATUS_T *stat_p);   // get log status
 extern int MLOG_switchToSRAM(void);             // temporarily switch the log storage to SRAM
 extern int MLOG_returnToFlash(void);            // return the log storage to Flash memory
 extern bool MLOG_IsSwitchedSRAM(void);          // Has the log storage destination been switched to SRAM?
+extern int MLOG_putLogOnSRAM(MLOG_T *log_p);    // put log in fifo buffer(on SRAM)
   // Debug function
 extern void MLOG_dump(void);                    // Dump all logs in Mlog region to debug uart port
 

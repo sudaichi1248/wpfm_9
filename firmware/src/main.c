@@ -8,7 +8,7 @@
     main.c
 
   Date:
-    2022/08/18 (R0)
+    2022/09/10 (R0)
 
   Summary:
     This file contains the "main" function for a project.
@@ -74,7 +74,6 @@ int main(void)
         if ((stat = W25Q128JV_eraseChip(true)) == W25Q128JV_ERR_NONE)
         {
             DEBUG_UART_printlnString("ERASE CHIP OK.");
-            WPFM_writeSettingParameter(&WPFM_settingParameterDefault);	// Config初期化
         }
         else
         {
@@ -98,10 +97,6 @@ int main(void)
     {
         // Execute on non-measurement mode processing
         DEBUG_UART_printlnString("RUN AS NON-MEASUREMENT MODE");
-        UTIL_LED1_ON();
-        APP_delay(3000);
-        //SYSTICK_DelayMs(1000);
-        UTIL_LED1_OFF();
 
         WPFM_status = WPFM_STATUS_WAIT_COMMAND;
         SENSOR_updateMeasurementInterval(1);
@@ -162,6 +157,11 @@ static void eventLoopOnMeasurementMode(void)
                     {
                         // 電池交換の終了に成功したとき
                         DEBUG_UART_printlnString(" - OK");
+                        if ((stat = MLOG_returnToFlash()) != MLOG_ERR_NONE)
+                        {
+                            DEBUG_UART_printlnFormat("MLOG_returnToFlash() error: %d", stat);
+                        }
+
                         WPFM_isBeingReplacedBattery = false;
                     }
                     else
@@ -180,6 +180,10 @@ static void eventLoopOnMeasurementMode(void)
                     {
                         // 電池交換の開始に成功したとき
                         DEBUG_UART_printlnString(" - OK");
+                        if ((stat = MLOG_switchToSRAM()) != MLOG_ERR_NONE)
+                        {
+                            DEBUG_UART_printlnFormat("MLOG_switchToSRAM() error: %d", stat);
+                        }
                         WPFM_isBeingReplacedBattery = true;
                         WPFM_startExchangingBatteryTime = RTC_now;
                     }
@@ -247,6 +251,11 @@ static void eventLoopOnMeasurementMode(void)
             if (RTC_now - WPFM_startExchangingBatteryTime > WPFM_settingParameter.maximumBatteryExchangeTime)
             {
                 // 電池交換に要する時間が長すぎる時は、一旦、電池交換モードから抜ける
+                int stat;
+                if ((stat = MLOG_returnToFlash()) != MLOG_ERR_NONE)
+                {
+                    DEBUG_UART_printlnFormat("MLOG_returnToFlash() error: %d", stat);
+                }
                 WPFM_isBeingReplacedBattery = false;
                 WPFM_startExchangingBatteryTime = 0;
                 BATTERY_turnOffExtLed();
@@ -289,14 +298,17 @@ static void eventLoopOnMeasurementMode(void)
         {
             // タクトスイッチの押下中なので、スリープしない
         }
-        else if( DLCMatIsSleep() ){
+       else if( DLCMatIsSleep() ){
             // USBが接続されていないとき
             WPFM_isInSendingRegularly = false;  // USBケーブルがVEなしで抜かれた時のために
+
             // Fall asleep if there is no work to do
             WPFM_status = WPFM_STATUS_SLEEP;
-            putst(">\r\n");
+            DEBUG_UART_printlnString(">SLEEP");
+            APP_delay(1);
             WPFM_sleep();       // MCUをスタンバイモードにする
-            putst("<\r\n");
+            APP_delay(1);
+            DEBUG_UART_printlnString("<WAKE UP");
             WPFM_status = WPFM_STATUS_IDLE;
         }
     } // end-of-while-loop
@@ -310,7 +322,7 @@ static void eventLoopOnNonMeasurementMode(void)
     while (true)
     {
         SYS_Tasks();
- 	    DLCMatMain();
+	    DLCMatMain();
 
         // スライドスイッチの設定が変更されたか否かをチェックする
         if (UTIL_getPowerModeSW() != WPFM_operationMode)

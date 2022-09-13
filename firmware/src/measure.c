@@ -2,7 +2,7 @@
  * File:    measure.c
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project common definition file.
- * Date:    2022/09/04 (R0)
+ * Date:    2022/09/09 (R0)
  * Note:
  */
 
@@ -155,19 +155,19 @@ static void _SENSOR_storeLog(uint32_t occurrenceTime, uint32_t mSec)
     mlog.alertStatus = WPFM_lastAlertStatusSuppressed;
     mlog.batteryStatus = WPFM_batteryStatus;
 
-    DEBUG_UART_printlnFormat("+alertStaus Raw: %02Xh, Sup: %02Xh", WPFM_lastAlertStatus, WPFM_lastAlertStatusSuppressed);
+    DEBUG_UART_printlnFormat("[ALERT STATUS] Raw: %02Xh, Sup: %02Xh", WPFM_lastAlertStatus, WPFM_lastAlertStatusSuppressed);
 
     // Store in flash memory as mlog
     int stat;
     if (MLOG_IsSwitchedSRAM())
     {
         // Store log into SRAM
- //       stat = MLOG_putLogOnSRAM(&mlog);
+        stat = MLOG_putLogOnSRAM(&mlog);
     }
     else
     {
         // Store log into Flash
-        stat = MLOG_putLog(&mlog);
+        stat = MLOG_putLog(&mlog, false);
     }
 
     if (stat >= 0)
@@ -176,6 +176,6 @@ static void _SENSOR_storeLog(uint32_t occurrenceTime, uint32_t mSec)
     }
     else
     {
-//        fatal("MLOG_putLog() ERROR: %d", stat);
+        fatal("MLOG_putLog() ERROR: %d", stat);
     }
 }

@@ -3,7 +3,7 @@
  * Author:  Interark Corp.
  * Summary: Measure log implementation file.
  * Date:    2022/08/18 (R0)
- *          2022/08/XX (R1) Support temporary SRAM log
+ *          2022/09/09 (R1) Support temporary SRAM log
  * Note:
  *          Use 2KB of SRAM for temporary SRAM log (R1)
  */
@@ -36,16 +36,17 @@ static uint32_t     _MLOG_oldestAddress  = 0;           // oldest log address in
 static uint32_t     _MLOG_latestAddress  = 0;           // latest log address in chip
 static uint32_t     _MLOG_lastSequentialNumber = 0;     // last sequentila number (1..MAX_UINT32-1)
 static uint32_t     _MLOG_oldestSequentialNumber = 0;   // oldest sequentila number in flash-memory
-
+  // SRAM
 static bool         _MLOG_switchToSRAM   = false;       // is the storage destination SRAM ?
 static uint8_t      _MLOG_storages[MLOG_SRAM_SIZE];     // log buffer on SRAM (not ring buffer)
 static uint32_t     _MLOG_headAddressOnSRAM= 0;         // address of head log (point next address) on SRAM
 static uint32_t     _MLOG_tailAddressOnSRAM= 0;         // address of tail log for upload on SRAM
-
-static uint8_t      _MLOG_pageBuffer[W25Q128JV_PAGE_SIZE];  // Working buffer
+  // for work
+static uint8_t      _MLOG_pageBuffer[W25Q128JV_PAGE_SIZE];  // Working buffer(on SRAM)
 
 static void dumpLog(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p);
 static uint32_t findLogBySN(uint32_t sn);
+static int _MLOG_getLogOnSRAM(MLOG_T *log_p);
 
 
 int MLOG_begin(bool fullScan)
@@ -73,9 +74,9 @@ int MLOG_begin(bool fullScan)
     return (MLOG_ERR_NONE);
 }
 
-int MLOG_putLog(MLOG_T *log_p)
+int MLOG_putLog(MLOG_T *log_p, bool specifySN)
 {
-    DEBUG_UART_printlnFormat("_MLOG_headAddress=%06x", (unsigned int)_MLOG_headAddress);
+    DEBUG_UART_printlnFormat("_MLOG_headAddress=%06x,%d", (unsigned int)_MLOG_headAddress, specifySN); APP_delay(2);
     if ((_MLOG_headAddress & 0xfff) == 0)
     {
         // if page number and offset are zero - first log in current sector
@@ -90,13 +91,16 @@ int MLOG_putLog(MLOG_T *log_p)
     }
     uint16_t pageNo = _MLOG_headAddress >> 8;
     uint8_t offset = _MLOG_headAddress & 0xff;
-    _MLOG_lastSequentialNumber++;       // Increment sequential number
-    if (_MLOG_lastSequentialNumber == 0)
+    if (! specifySN)
     {
-        // Overflow sequential number
-        DEBUG_UART_printlnString("");
+        _MLOG_lastSequentialNumber++;       // Increment sequential number
+        if (_MLOG_lastSequentialNumber == 0)
+        {
+            // Overflow sequential number
+            DEBUG_UART_printlnString("MLOG_putLog(): Overflow sequential number");
+        }
+        log_p->sequentialNumber = _MLOG_lastSequentialNumber;
     }
-    log_p->sequentialNumber = _MLOG_lastSequentialNumber;
     DEBUG_UART_printlnFormat("programPage(%04Xh,%02Xh):", (unsigned int)pageNo, (unsigned int)offset);
     if (W25Q128JV_programPage(pageNo, offset, (uint8_t *)log_p, MLOG_RECORD_SIZE, true) != W25Q128JV_ERR_NONE)
     {
@@ -459,6 +463,8 @@ int MLOG_checkLogs(bool oldestOnly)
 
 int MLOG_switchToSRAM(void)
 {
+    DEBUG_UART_printlnFormat(">MLOG_switchToSRAM(): %lu", SYS_tick); APP_delay(10);
+
     _MLOG_switchToSRAM = true;
 
     return (MLOG_ERR_NONE);
@@ -466,16 +472,72 @@ int MLOG_switchToSRAM(void)
 
 int MLOG_returnToFlash(void)
 {
-    // log data on SRAM write to Flash
+    DEBUG_UART_printlnFormat(">MLOG_returnToFlash(): %lu", SYS_tick); APP_delay(10);
 
     _MLOG_switchToSRAM = false;
 
+    // log data on SRAM write to Flash
+    int stat, errorCount = 0;
+    MLOG_T mlog;
+    while ((stat = _MLOG_getLogOnSRAM(&mlog)) > 0)
+    {
+        if ((stat = MLOG_putLog(&mlog, true)) < 0)
+        {
+            DEBUG_UART_printlnFormat("MLOG_putLog() error: %d", stat); APP_delay(10);
+            errorCount++;
+        }
+    }
+
+
+    if (stat != MLOG_ERR_EMPTY)
+    {
+        DEBUG_UART_printlnFormat("MLOG_getLogOnSRAM() error: %d", stat);
+        DEBUG_UART_printlnFormat("<MLOG_returnToFlash() error"); APP_delay(10);
+        return (MLOG_ERR_NONE);
+    }
+    if (errorCount > 0)
+    {
+        DEBUG_UART_printlnFormat("<MLOG_returnToFlash() error"); APP_delay(10);
+        return (MLOG_ERR_NONE);
+    }
+
+    DEBUG_UART_printlnFormat("<MLOG_returnToFlash() OK: %lu", SYS_tick); APP_delay(10);
     return (MLOG_ERR_NONE);
 }
 
 bool MLOG_IsSwitchedSRAM(void)
 {
     return (_MLOG_switchToSRAM);
+}
+
+int MLOG_putLogOnSRAM(MLOG_T *log_p)
+{
+    DEBUG_UART_printlnFormat("_MLOG_headAddressOnSRAM=%06lx", _MLOG_headAddressOnSRAM);
+
+    _MLOG_lastSequentialNumber++;       // Increment sequential number
+    if (_MLOG_lastSequentialNumber == 0)
+    {
+        // Overflow sequential number
+        DEBUG_UART_printlnString("MLOG_putLogOnSRAM(): Overflow sequential number");
+    }
+    log_p->sequentialNumber = _MLOG_lastSequentialNumber;
+
+    *((MLOG_T *)_MLOG_headAddressOnSRAM) = *log_p;
+    MLOG_ID_T mlogID = _MLOG_headAddressOnSRAM;
+    dumpLog(">", mlogID, log_p);
+
+    // update _MLOG_headAddressOnSRAM for next use
+    if ((uint8_t *)_MLOG_headAddressOnSRAM < _MLOG_storages + (MLOG_SRAM_SIZE - 1))
+    {
+        _MLOG_headAddressOnSRAM += MLOG_RECORD_SIZE;
+    }
+    else
+    {
+        _MLOG_headAddress = (uint32_t)_MLOG_storages;
+    }
+    DEBUG_UART_printlnFormat("_MLOG_headAddressOnSRAM=%06lx", _MLOG_headAddressOnSRAM);
+
+    return ((int)mlogID);       // return mlog ID when succeed
 }
 
 void MLOG_dump(void)
@@ -563,8 +625,7 @@ static void dumpLog(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p)
             (unsigned int)log_p->batteryStatus
     );
     DEBUG_UART_printlnString(line);
-    DEBUG_UART_FLUSH();
-    APP_delay(3);
+    APP_delay(10);
 #endif // DEBUG_UART
 }
 
@@ -605,4 +666,28 @@ static uint32_t findLogBySN(uint32_t sn)
 
     DEBUG_UART_printlnFormat("> findLogBySN(%ld) NOT FOUND", sn); APP_delay(10);
     return (0);     // Not found
+}
+
+static int _MLOG_getLogOnSRAM(MLOG_T *log_p)
+{
+    if (_MLOG_headAddressOnSRAM == _MLOG_tailAddressOnSRAM)
+    {
+        return (MLOG_ERR_EMPTY);
+    }
+
+    MLOG_ID_T mlogID = _MLOG_tailAddressOnSRAM;
+    *log_p = *((MLOG_T *)_MLOG_tailAddressOnSRAM);
+    //dumpLog("<", mlogID, log_p);
+
+    // update _MLOG_tailAddressOnSRAM for next use
+    if ((uint8_t *)_MLOG_tailAddressOnSRAM < _MLOG_storages + (MLOG_SRAM_SIZE - 1))
+    {
+        _MLOG_tailAddressOnSRAM += MLOG_RECORD_SIZE;
+    }
+    else
+    {
+        _MLOG_tailAddressOnSRAM = (uint32_t)_MLOG_storages;
+    }
+
+    return (mlogID);
 }
