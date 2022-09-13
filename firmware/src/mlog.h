@@ -4,6 +4,7 @@
  * Summary: Measure log header file.
  * Date:    2022/08/17 (R0)
  *          2022/09/09 (R1) Support temporary SRAM log
+ *			2022/09/13 Bitassign update  Alert status(CH1/CH2)
  * Note:
  *          Use 2KB of SRAM for temporary SRAM log (R1)
  */
