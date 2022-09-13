@@ -358,3 +358,12 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 
     return (alertStatus);       // return real(no-suppressed) alert status
 }
+
+void WPFM_cancelAlert()
+{
+    WPFM_lastAlertStatus = 0;
+    SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
+    WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
+    WPFM_lastAlertStartTimes[0][0] = WPFM_lastAlertStartTimes[1][0] = WPFM_lastAlertStartTimes[0][1] = WPFM_lastAlertStartTimes[1][1] = 0;
+    WPFM_setNextCommunicateAlarm();
+}
