@@ -25,7 +25,7 @@ void _GO_IDLE(){DLCMatState();IDLEputch();}
 void Moni();
 void DLCMatConfigDefault(),DLCMatStatusDefault(),DLCMatReortDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatPostSndSub(),DLCMatPostReport();
-void DLCMatTimerset(int tmid,int cnt );
+void DLCMatTimerset(int tmid,int cnt ),DLCMatError();
 void DLCMatWgetFile();	// fota FOTAファイルwget
 extern	char _Main_version[];
 int DLCMatRecvDisp();
@@ -39,7 +39,7 @@ int		DLC_MatLineIdx;
 uchar	DLC_Matfact,DLC_MatState;
 char	DLC_MatDateTime[32];
 char	DLC_MatRadioDensty[64];
-char	DLC_MatNUM[16] = "812001003404286";
+char	DLC_MatNUM[16];
 char	DLC_MatIMEI[16];
 int		DLC_MatTmid;
 uchar	DLC_BigState,DLC_Matknd;
@@ -281,6 +281,10 @@ void MTRdy()
 void MTVrT()
 {
 	DLC_MatLineIdx = 0;
+	if( DLC_MatRetry++ > 5 ){
+		DLCMatError(0);
+		return;
+	}
 	DLCMatSend( "AT$VER\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
 }
@@ -306,6 +310,17 @@ void MTapn()
 {
 	DLC_MatLineIdx = 0;
 	if (DLC_MatFotaExe == false) {	// fota 運用時
+		if( strstr( DLC_MatVer,"01.04" ) )
+			strcpy(	DLC_MatNUM,"812000000000000" );
+		else{
+			if( DLC_MatNUM[0] )
+				;
+			else {
+				DLCMatError(1);
+				DLCMatTimerClr( 0 );
+				return;
+			}
+		}
 #ifdef __DAIKOKU
 		DLCMatSend( "AT$SETSERVER,karugamosoft.ddo.jp,9999\r" );
 #else
@@ -682,6 +697,12 @@ void MTtim2()
 		}
 	}
 }
+void MTledQ()
+{
+	GPIOEXP_set(0);												/* LED全消灯 */
+	GPIOEXP_set(1);
+	GPIOEXP_set(2);
+}
 void	 (*MTjmp[18][19])() = {
 /*					  0         1       2      3       4       5       6       7       8       9       10      11      12      13      14      15      16      17   18     */
 /*				  	 INIT    IDLE    IMEI    APN     SVR     CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     MNT     ERR   */
@@ -697,7 +718,7 @@ void	 (*MTjmp[18][19])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTcls1, ______, MTcls2, ______, MTcls3, ______, MTclsF, ______, ______, ______, ______ },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______ },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTdisc, ______, ______, ______, ______, ______, ______ },
-/* TimOut1    12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTserv, MTserv, ______,______, MTrvTO, ______, MTrvTO, MTcls2, MTcls3,  MTRSlp, MTtoF,  ______, ______, ______, ______ },
+/* TimOut1    12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTserv, MTserv, ______,______, MTrvTO, ______, MTrvTO, MTcls2, MTcls3,  MTRSlp, MTtoF,  ______, ______, ______, MTledQ },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, ______, ______ },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
@@ -910,7 +931,7 @@ void DLCMatConfigDefault()
 	strcpy( config.MeaKind_ch2,"m^3/hour" );
 	config.alertChatteringTimes[1] 			= 1;
 	config.alertChatteringKind				= 1;
-	strcpy( config.AlertPause,"1970-01-01 09:00:01" );
+	strcpy( config.AlertPause,"2040-01-01 09:00:01" );
 	config.alertTimeout						= 5;
 	WPFM_writeSettingParameter( &config );
 }
@@ -2262,9 +2283,20 @@ int DLCMatIsSleep()
 {
 	if( DLC_MatState == MATC_STATE_SLP )
 		return 1;
+	if( DLC_MatState == MATC_STATE_ERR )
+		return 1;
 	return 0;
 }
 void DLCMatUpdate()
 {
 	command_software_reset(1);
+}
+void DLCMatError( int no )
+{
+	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
+	GPIOEXP_clear(0);												/* LED全点灯 */
+	GPIOEXP_clear(1);
+	GPIOEXP_clear(2);
+	DLCMatTimerset( 0,15000 );
+	DLC_MatState = MATC_STATE_ERR;
 }
