@@ -73,6 +73,7 @@ void __attribute__((noreturn)) HardFault_Handler(void)
 #endif
    while (true)
    {
+		__NVIC_SystemReset();
    }
 }
 

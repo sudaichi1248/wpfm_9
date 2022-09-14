@@ -59,7 +59,7 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     60,                         // maximumBatteryExchangeTime[sec]
     "水圧", "MPa",              // Measure_ch1, MeaKind_ch1
     "流量", "m3/h",             // Measure_ch2, MeaKind_ch2
-    "1970-01-01 09:00:01"      // AlertPause
+    "2040-01-01 09:00:01"      // AlertPause
 };
 volatile uint16_t WPFM_measurementInterval;              // Current measurement interval[Sec]
 uint16_t WPFM_communicationInterval;            // Current communication interval[Sec]
