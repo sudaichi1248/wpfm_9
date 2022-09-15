@@ -589,7 +589,8 @@ void WPFM_onTimeupdate(void)
 {
     SYS_mSec = 0;               // Reset mSec
 
-    if (RTC_now % WPFM_measurementInterval == 0)
+    if ((RTC_now - RTC_poweron) % WPFM_measurementInterval == 0)
+//    if (RTC_now % WPFM_measurementInterval == 0)
     {
         WPFM_doMeasure = true;
     }

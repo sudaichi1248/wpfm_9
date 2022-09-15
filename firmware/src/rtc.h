@@ -60,6 +60,7 @@ extern int RTC_readNVRAM(uint8_t *data_p);
 *   Variables
 */
 extern volatile uint32_t RTC_now;       // Current epoch time[Sec] - maintenanced by setDatatime() and _RTC_handlerB()
+extern volatile uint32_t RTC_poweron;   // Power ON epoch time[Sec]
 
 #ifdef	__cplusplus
 }
