@@ -20,8 +20,9 @@ void DLCMatTimerInt();
 void DLCMatState();
 void IDLEputch();
 void command_main();
+void DLCMatAlertTimeChk();
 //void _GO_IDLE(){command_main();DLCMatState();}
-void _GO_IDLE(){DLCMatState();IDLEputch();}
+void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatAlertTimeChk();}
 void Moni();
 void DLCMatConfigDefault(),DLCMatStatusDefault(),DLCMatReortDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatPostSndSub(),DLCMatPostReport();
@@ -1322,6 +1323,27 @@ bool DLCMatWatchAlertPause()
 		}
 	}
 	return false;
+}
+void DLCMatAlertTimeStart()
+{
+	if (DLC_MatTimer[4].cnt == 0) {	// AlertTime–³‹N“®?
+		DLCMatTimerset(4, (WPFM_settingParameter.alertTimeout * 1000));
+putst("\r\nAlertTime start:");puthxs(WPFM_settingParameter.alertTimeout * 1000);putcrlf();
+	}
+}
+void DLCMatAlertTimeChk()
+{
+	if (DLCMatTmChk(4)) {	// AlertTime T/O?
+		WPFM_cancelAlert();
+putst("\r\nAlertTime T/O");putcrlf();
+	}
+}
+void DLCMatAlertTimeClr()
+{
+	if (DLC_MatTimer[4].cnt != 0) {	// AlertTime‹N“®’†?
+		DLCMatTimerClr(4);
+putst("\r\nAlertTime clear");putcrlf();
+	}
 }
 void DLCMatConfigRet()
 {

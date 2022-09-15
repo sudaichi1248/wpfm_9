@@ -23,6 +23,8 @@
 #   define  DBG_PRINT()
 #endif
 
+void DLCMatAlertTimeClr();
+
 /*
 *   Local variables and functions
 */
@@ -244,6 +246,11 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
     {
         DBG_PRINT("[ALERT] Change next comminication alarm.");
         WPFM_setNextCommunicateAlarm();
+    }
+
+    // 通常か注意の場合はAlerttimeクリア
+    if ((alertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_WARNING|MLOG_ALERT_STATUS_CH1_LOWER_WARNING|MLOG_ALERT_STATUS_CH2_UPPER_WARNING|MLOG_ALERT_STATUS_CH2_LOWER_WARNING)) == 0) {
+        DLCMatAlertTimeClr();
     }
 
     // Suppress alerts during chattering time (pretend it didn't happen)

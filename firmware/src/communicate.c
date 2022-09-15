@@ -1,4 +1,5 @@
 void DLCMatCall(int);
+void DLCMatAlertTimeStart();
 /*
  * File:    communicate.c
  * Author:  Interark Corp.
@@ -98,6 +99,7 @@ void WPFM_notifyAlert(void)
 {
     APP_delay(10);
     DLCMatCall(3);
+    DLCMatAlertTimeStart();
     DEBUG_UART_printlnString("[[NOTIFY WARNING ALERT !!]]\n");
     APP_delay(5);
 }
