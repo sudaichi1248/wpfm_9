@@ -20,7 +20,9 @@ WPFM_OPERATION_MODE WPFM_operationMode = WPFM_OPERATION_MODE_MEASUREMENT;
 WPFM_STATUS WPFM_status = WPFM_STATUS_POWER_OFF;
 bool WPFM_isConnectingUSB = false;
 bool WPFM_isBeingReplacedBattery = false;
+#ifdef ADD_FUNCTION
 bool WPFM_isAlertPause = false;
+#endif
 
   // current settings and default settings
 WPFM_SETTING_PARAMETER WPFM_settingParameter;           // current setting parameters

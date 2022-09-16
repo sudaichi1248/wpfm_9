@@ -1,5 +1,3 @@
-void DLCMatCall(int);
-void DLCMatAlertTimeStart();
 /*
  * File:    communicate.c
  * Author:  Interark Corp.
@@ -15,6 +13,10 @@ void DLCMatAlertTimeStart();
 #include "util.h"
 #include "rtc.h"
 #include "mlog.h"
+void DLCMatCall(int);
+#ifdef ADD_FUNCTION
+void DLCMatAlertTimeStart();
+#endif
 
 void WPFM_uploadRegularly(void)
 {
@@ -99,7 +101,9 @@ void WPFM_notifyAlert(void)
 {
     APP_delay(10);
     DLCMatCall(3);
+#ifdef ADD_FUNCTION
     DLCMatAlertTimeStart();
+#endif
     DEBUG_UART_printlnString("[[NOTIFY WARNING ALERT !!]]\n");
     APP_delay(5);
 }

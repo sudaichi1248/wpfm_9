@@ -15,7 +15,10 @@
 #include "debug.h"
 #include "mlog.h"
 #include "sensor.h"
+#ifdef ADD_FUNCTION
 #include "moni.h"
+void DLCMatAlertTimeClr();
+#endif
 
 #ifdef DEBUG_DETAIL
 #   define  DBG_PRINT(...)  { char _line[80]; snprintf(_line, sizeof(_line),  __VA_ARGS__); UART_DEBUG_writeBytes(_line, strlen(_line)); UART_DEBUG_writeBytes("\n", 1); APP_delay(3); }
@@ -23,7 +26,6 @@
 #   define  DBG_PRINT()
 #endif
 
-void DLCMatAlertTimeClr();
 
 /*
 *   Local variables and functions
@@ -43,12 +45,14 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
             continue;   // 未使用のセンサはスキップする
         }
 
+#ifdef ADD_FUNCTION
         if (WPFM_isAlertPause == true)
         {
             putst("Alert Pause\r\n");
             WPFM_cancelAlert();
             continue;   // AlertPause中はスキップする
         }
+#endif
 
         switch (channelIndex)
         {
@@ -248,10 +252,12 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
         WPFM_setNextCommunicateAlarm();
     }
 
+#ifdef ADD_FUNCTION
     // 通常か注意の場合はAlerttimeクリア
     if ((alertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_WARNING|MLOG_ALERT_STATUS_CH1_LOWER_WARNING|MLOG_ALERT_STATUS_CH2_UPPER_WARNING|MLOG_ALERT_STATUS_CH2_LOWER_WARNING)) == 0) {
         DLCMatAlertTimeClr();
     }
+#endif
 
     // Suppress alerts during chattering time (pretend it didn't happen)
     uint8_t alertStatusSuppressed = alertStatus;
@@ -374,6 +380,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
     return (alertStatus);       // return real(no-suppressed) alert status
 }
 
+#ifdef ADD_FUNCTION
 void WPFM_cancelAlert()
 {
     WPFM_lastAlertStatus = 0;
@@ -382,3 +389,4 @@ void WPFM_cancelAlert()
     WPFM_lastAlertStartTimes[0][0] = WPFM_lastAlertStartTimes[1][0] = WPFM_lastAlertStartTimes[0][1] = WPFM_lastAlertStartTimes[1][1] = 0;
     WPFM_setNextCommunicateAlarm();
 }
+#endif

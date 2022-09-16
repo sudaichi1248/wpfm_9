@@ -20,9 +20,13 @@ void DLCMatTimerInt();
 void DLCMatState();
 void IDLEputch();
 void command_main();
-void DLCMatAlertTimeChk();
 //void _GO_IDLE(){command_main();DLCMatState();}
+#ifdef ADD_FUNCTION
+void DLCMatAlertTimeChk();
 void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatAlertTimeChk();}
+#else
+void _GO_IDLE(){DLCMatState();IDLEputch();}
+#endif
 void Moni();
 void DLCMatConfigDefault(),DLCMatStatusDefault(),DLCMatReortDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatPostSndSub(),DLCMatPostReport();
@@ -905,7 +909,9 @@ void DLCMatConfigDefault()
 	config.communicationInterval 			= 300;
 	config.measurementIntervalOnAlert	 	= 30;
 	config.communicationIntervalOnAlert 	= 120;
+#ifdef ADD_FUNCTION
 	config.Measurment						= 0;
+#endif
 	config.sensorKinds[0]		 			= 1;
 	config.upperLimits[0]		 			= 1;
 	config.lowerLimits[0]		 			= 0;
@@ -957,7 +963,9 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"ReprotInterval\":%ld,"		,config.communicationInterval );			strcat( http_tmp,tmp );
 	sprintf( tmp,"\"IntervalAlert\":%ld,"		,config.measurementIntervalOnAlert  );		strcat( http_tmp,tmp );
 	sprintf( tmp,"\"ReprotIntervalAlert\":%ld,"	,config.communicationIntervalOnAlert );		strcat( http_tmp,tmp );
+#ifdef ADD_FUNCTION
 	sprintf( tmp,"\"Measurment\":%d,"			,config.Measurment );						strcat( http_tmp,tmp );
+#endif
 	sprintf( tmp,"\"Select_ch1\":%d,"			,config.sensorKinds[0] )		;			strcat( http_tmp,tmp );		/* ch1 センサ種別 */
 	sprintf( tmp,"\"Upper0_ch1\":%d,"			,config.upperLimits[0] );					strcat( http_tmp,tmp );		/* ch1 センサ出力の上限値 */
 	sprintf( tmp,"\"Lower0_ch1\":%d,"			,config.lowerLimits[0] );					strcat( http_tmp,tmp );		/* ch1 センサ出力の下限値 */
@@ -990,7 +998,9 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"AlertPause\":\"%s\","		,config.AlertPause );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertTimeOut\":%d"			,config.alertTimeout );						strcat( http_tmp,tmp );
 	strcat( http_tmp,"}}" );
+#ifdef ADD_FUNCTION
 	config.Measurment = 0;	// =1だった場合、1度Config送信したら戻す
+#endif
 	i = (int)(strchr(http_tmp,'}')-strstr(http_tmp,"{\"Config\":{"))+1;
 	if( i > 0 ){
 		p = strstr( http_tmp,"Length:    " );
@@ -1246,6 +1256,7 @@ void DLCMatReflectionConfig()
 	}
 	WPFM_dumpSettingParameter(&WPFM_settingParameter);
 }
+#ifdef ADD_FUNCTION
 bool DLCMatWatchAlertPause()
 {
 	RTC_DATETIME dt;
@@ -1345,6 +1356,7 @@ void DLCMatAlertTimeClr()
 putst("\r\nAlertTime clear");putcrlf();
 	}
 }
+#endif
 void DLCMatConfigRet()
 {
 	char	*config_p;
@@ -1557,6 +1569,7 @@ putst("\r\ncoco3\r\n");
 			config.alertChatteringKind = atoi(DLC_MatConfigItem);
 //			putst("Chattering_type:");puthxb(config.alertChatteringKind);putcrlf();
 		}
+#ifdef ADD_FUNCTION
 		config_p = strstr(DLC_MatResBuf, "AlertPause");
 		if (config_p) {
 			DLCMatSTRParamSet(config_p);
@@ -1582,6 +1595,7 @@ putst("coco4\r\n");
 			config.alertTimeout = atoi(DLC_MatConfigItem);
 //			putst("AlertTimeOut:");puthxb(config.alertTimeout);putcrlf();
 		}
+#endif
 		WPFM_writeSettingParameter( &config );
 		DLCMatReflectionConfig();
 	}
@@ -2257,7 +2271,9 @@ void DLCMatMain()
 			putst("ReprotInterval:");puthxw(config.communicationInterval);putcrlf();
 			putst("IntervalAlert:");puthxw(config.measurementIntervalOnAlert);putcrlf();
 			putst("ReprotIntervalAlert:");puthxw(config.communicationIntervalOnAlert);putcrlf();
+#ifdef ADD_FUNCTION
 			putst("Measurment:");puthxw(config.Measurment);putcrlf();
+#endif
 			putst("Select_ch1:");puthxb(config.sensorKinds[0]);putcrlf();
 			putst("Select_ch2:");puthxb(config.sensorKinds[1]);putcrlf();
 			putst("Upper0_ch1:");puthxb(config.upperLimits[0]);putcrlf();
@@ -2287,8 +2303,10 @@ void DLCMatMain()
 			putst("MeaKind_ch2:");putst(config.MeaKind_ch2);putcrlf();
 			putst("Chattering_ch2:");puthxb(config.alertChatteringTimes[1]);putcrlf();
 			putst("Chattering_type:");puthxb(config.alertChatteringKind);putcrlf();
+#ifdef ADD_FUNCTION
 			putst("AlertPause:");putst(config.AlertPause);putcrlf();
 			putst("AlertTimeOut:");puthxb(config.alertTimeout);putcrlf();
+#endif
 			break;
 		case 0x01:												/* CTRL+A */
 			if( CheckPasswd() )

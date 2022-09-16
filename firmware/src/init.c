@@ -20,7 +20,9 @@
 #include "mlog.h"
 #include "moni.h"
 void DLCMatTimerset();
+#ifdef ADD_FUNCTION
 bool DLCMatWatchAlertPause();
+#endif
 
 /*
 *   Local variables and functions
@@ -594,7 +596,9 @@ void WPFM_onTimeupdate(void)
     {
         WPFM_doMeasure = true;
     }
+#ifdef ADD_FUNCTION
     WPFM_isAlertPause = DLCMatWatchAlertPause();
+#endif
 }
 
 /*******************************************************************************
