@@ -1586,6 +1586,7 @@ putst("\r\ncoco3\r\n");
 putst("coco4\r\n");
 				WPFM_cancelAlert();
 				if (WPFM_isAlertPause == true ) {	// AlertPause’†?
+					WPFM_isAlertPause = false;
 					strcpy(config.AlertPause, "");	// AlertPauseƒNƒŠƒA
 				}
 			}
