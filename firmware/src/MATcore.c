@@ -28,7 +28,7 @@ void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatAlertTimeChk();}
 void _GO_IDLE(){DLCMatState();IDLEputch();}
 #endif
 void Moni();
-void DLCMatConfigDefault(),DLCMatStatusDefault(),DLCMatReortDefault();
+void DLCMatConfigDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatPostSndSub(),DLCMatPostReport();
 void DLCMatTimerset(int tmid,int cnt ),DLCMatError();
 void DLCMatWgetFile();	// fota FOTAファイルwget
@@ -707,6 +707,7 @@ void MTledQ()
 	GPIOEXP_set(0);												/* LED全消灯 */
 	GPIOEXP_set(1);
 	GPIOEXP_set(2);
+	MTRdy();
 }
 void	 (*MTjmp[18][19])() = {
 /*					  0         1       2      3       4       5       6       7       8       9       10      11      12      13      14      15      16      17   18     */
@@ -722,8 +723,8 @@ void	 (*MTjmp[18][19])() = {
 /* $OPEN/$WAKE 8 */{ ______, ______, ______, ______, ______, ______, ______, MTcnfg, ______, MTstst, ______, MTrprt, ______, MTconW, MTwget, ______, ______, ______, ______ },
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTcls1, ______, MTcls2, ______, MTcls3, ______, MTclsF, ______, ______, ______, ______ },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______ },
-/* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTdisc, ______, ______, ______, ______, ______, ______ },
-/* TimOut1    12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTserv, MTserv, ______,______, MTrvTO, ______, MTrvTO, MTcls2, MTcls3,  MTRSlp, MTtoF,  ______, ______, ______, MTledQ },
+/* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, MTserv, ______, ______, ______, ______, ______, MTdisc, ______, ______, ______, ______, ______, ______ },
+/* TimOut1    12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTserv, MTserv, MTserv,______, MTrvTO, ______, MTrvTO, MTcls2, MTcls3,  MTRSlp, MTtoF,  ______, ______, ______, MTledQ },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, ______, ______ },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
@@ -1049,8 +1050,8 @@ void DLCMatPostStatus()
 	sprintf( tmp,"\"ExtCellPwr2\":%.3f,"	,(float)WPFM_lastBatteryVoltages[1]/1000 );		strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Batt1Use\":%d,"			,WPFM_externalBatteryNumberInUse );				strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Batt2Use\":%d,"			,WPFM_externalBatteryNumberToReplace );			strcat( http_tmp,tmp );
-	sprintf( tmp,"\"EARFCN\":%d,"			,123 );											strcat( http_tmp,tmp );
-	sprintf( tmp,"\"CellId\":%d,"			,192 );											strcat( http_tmp,tmp );
+	sprintf( tmp,"\"EARFCN\":%d,"			,DLCMatCharInt( DLC_MatRadioDensty,"EARFCN:"));	strcat( http_tmp,tmp );
+	sprintf( tmp,"\"CellId\":%d,"			,DLCMatCharInt( DLC_MatRadioDensty,"CELLID:"));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"RSRP\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSRP:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"RSRQ\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSRQ:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"RSSI\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSSI:" ));	strcat( http_tmp,tmp );
@@ -2241,6 +2242,14 @@ void DLCMatMain()
 			putst("\r\nNum=>");
 			PORT_GroupWrite( PORT_GROUP_1,0x1<<c_get32b(),-1 );
 			break;
+		case 'Z':
+			putst("\r\nNum=>");
+			PORT_GroupWrite( PORT_GROUP_0,0x1<<c_get32b(),0 );
+			break;
+		case 'W':
+			putst("\r\nNum=>");
+			PORT_GroupWrite( PORT_GROUP_0,0x1<<c_get32b(),-1 );
+			break;
 		case 'Y':
 			putcrlf();putst("inPORT_GROUP0:1=");
 			puthxw( PORT_GroupRead( PORT_GROUP_0 ));putch(':');
@@ -2255,7 +2264,7 @@ void DLCMatMain()
 			if( CheckPasswd() )
 				DLCSPIFlashTest();
 			break;
-		case 'W':
+		case 'G':
 			if( CheckPasswd() )
 				DLCMatConfigDefault();
 			break;
@@ -2311,6 +2320,13 @@ void DLCMatMain()
 		case 0x01:												/* CTRL+A */
 			if( CheckPasswd() )
 				__NVIC_SystemReset();
+			break;
+		case 'Q':												/* CTRL+A */
+			if( CheckPasswd() )
+           		 WPFM_sleep();       // MCUをスタンバイモードにする
+			break;
+		case 'S':												/* CTRL+A */
+			W25Q128JV_powerDown();
 			break;
 		default:
 			break;
