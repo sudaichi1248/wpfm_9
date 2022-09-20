@@ -1041,6 +1041,8 @@ void DLCMatPostStatus()
 		DLC_MatTxType = 11;
 	if( DLC_Matknd == 2 )				/* Push SW */
 		DLC_MatTxType = 1;
+	if ( WPFM_isAlertPause == true )
+		DLC_MatTxType = 20;
 	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );					strcat( http_tmp,tmp );
 	sprintf( tmp,"\"IMEI\":\"%s\","			,DLC_MatIMEI );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"MSISDN\":\"%s\","		,DLC_MatNUM );									strcat( http_tmp,tmp );
@@ -2009,7 +2011,7 @@ void DLCSPIFlashTest()
 				putst( line );
 			}
 			break;
-		case 'A':
+		case 'A':						/* チップイレーズ */
   			rt = W25Q128JV_eraseChip(true);
 			if( !rt ){
 				putst("OK\r\n");
@@ -2064,6 +2066,9 @@ void DLCRomTest()
 		case 'A':
 			putst("Read mem Address=>" );
 			address = c_get32b();
+			break;
+		case 'D':
+			NVMCTRL_RowErase( 0x0003FE00 );
 			break;
 		case 0x1b:
 		case 0x03:
@@ -2338,6 +2343,8 @@ void DLCMatMain()
 }
 int DLCMatIsSleep()
 {
+	if( DLC_Matdebug.wx != DLC_Matdebug.rx )
+		return 0;
 	if( DLC_MatState == MATC_STATE_SLP )
 		return 1;
 	if( DLC_MatState == MATC_STATE_ERR )
