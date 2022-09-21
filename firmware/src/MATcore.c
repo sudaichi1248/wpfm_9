@@ -230,7 +230,7 @@ int	DLCMatCharInt( char *p,char *title )
 		else {
 			q = strchr( p,'\r' );
 			if( q ){
-				str2int( &p[len+1],&wk );
+				str2int( &p[len],&wk );
 			}
 		}
 	}
