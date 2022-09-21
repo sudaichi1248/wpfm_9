@@ -1033,16 +1033,25 @@ void DLCMatPostStatus()
 	ver[5] = 0;
 	strcpy( http_tmp,http_status );
 	strcat( http_tmp,"{\"Status\":{" );
-	putst("Alter=");puthxb( WPFM_lastAlertStatus );putcrlf();
 	DLC_MatTxType = 0;
-	if( WPFM_lastAlertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_WARNING|MLOG_ALERT_STATUS_CH1_LOWER_WARNING|MLOG_ALERT_STATUS_CH2_UPPER_WARNING|MLOG_ALERT_STATUS_CH2_LOWER_WARNING))
-		DLC_MatTxType = 12;
-	if( WPFM_lastAlertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION|MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION|MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION|MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION))
-		DLC_MatTxType = 11;
-	if( DLC_Matknd == 2 )				/* Push SW */
-		DLC_MatTxType = 1;
+#ifdef ADD_FUNCTION
+	if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
+#endif
+		putst("Alter=");puthxb( WPFM_lastAlertStatus );putcrlf();
+		if( WPFM_lastAlertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_WARNING|MLOG_ALERT_STATUS_CH1_LOWER_WARNING|MLOG_ALERT_STATUS_CH2_UPPER_WARNING|MLOG_ALERT_STATUS_CH2_LOWER_WARNING))
+			DLC_MatTxType = 12;
+		if( WPFM_lastAlertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION|MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION|MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION|MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION))
+			DLC_MatTxType = 11;
+#ifdef ADD_FUNCTION
+	} else {	// チャタリングタイプ2
+		putst("Alter=");puthxb( WPFM_TxType );putcrlf();
+		DLC_MatTxType = WPFM_TxType;
+	}
 	if ( WPFM_isAlertPause == true )
 		DLC_MatTxType = 20;
+#endif
+	if( DLC_Matknd == 2 )				/* Push SW */
+		DLC_MatTxType = 1;
 	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );					strcat( http_tmp,tmp );
 	sprintf( tmp,"\"IMEI\":\"%s\","			,DLC_MatIMEI );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"MSISDN\":\"%s\","		,DLC_MatNUM );									strcat( http_tmp,tmp );
@@ -1250,6 +1259,7 @@ void DLCMatReflectionConfig()
 	WPFM_settingParameter.alertTimeout = config.alertTimeout;
 	strcpy(WPFM_settingParameter.AlertPause, config.AlertPause);
 
+#if 0	// 警報動作(測定・通知間隔)を戻す必要なし
 	if (WPFM_lastAlertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_WARNING|MLOG_ALERT_STATUS_CH1_LOWER_WARNING|MLOG_ALERT_STATUS_CH2_UPPER_WARNING|MLOG_ALERT_STATUS_CH2_LOWER_WARNING)) {	// アラート状態は警報?
 		SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
 		WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
@@ -1257,6 +1267,7 @@ void DLCMatReflectionConfig()
 		SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
 		WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
 	}
+#endif
 	WPFM_dumpSettingParameter(&WPFM_settingParameter);
 }
 #ifdef ADD_FUNCTION
