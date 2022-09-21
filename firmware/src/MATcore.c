@@ -429,10 +429,9 @@ void MTdata()
 	DLCMatTimerClr( 3 );									/* AT$RECV,1024リトライタイマークリア */
 	rt = DLCMatRecvDisp();
 	putst("RecvRet=");puthxs( rt );putcrlf();
-	DLC_MatLineIdx = 0;
 	if( rt == 0 ){
 		zLogOn = 1;
-		DLCMatTimerset( 0,TIMER_12s);
+		DLCMatTimerset( 0,TIMER_3000ms);						/* $CLOSE待ち */
 	}
 	else {
 		DLCMatSend( "AT$RECV,1024\r" );
@@ -855,7 +854,7 @@ void DLCMatState()
 			DLC_Matfact = MATC_FACT_OPN;
 		}
 	}
-	if( DLC_MatLineIdx >= 15 ){
+	if( DLC_MatLineIdx >= 19 ){				/* $RECVDATA:1,0,"41"\r */
 		DLC_MatLineBuf[DLC_MatLineIdx] = 0;
 		if( strstr( (char*)DLC_MatLineBuf,"$RECVDATA:" )){
 			p = strchr( (char*)DLC_MatLineBuf,'\"' );
@@ -863,7 +862,7 @@ void DLCMatState()
 				p++;
 				q = strstr( p,"\"\r" );
 				if( q ){
-					putst("RSZ=");puthxs(q-p);putcrlf();
+					putst("Size=");puthxs(q-p);putcrlf();
 					DLC_Matfact = MATC_FACT_DATA;
 				}
 			}
@@ -1630,16 +1629,23 @@ int DLCMatRecvDisp()
 			putst( "format err3\r\n" );
 			return -3;
 		}
-		putst("Ln=");puthxs(i);putst(" Rm=");puthxs(j);putcrlf();
+		putst("Ln=");putdecs(i);putst(" Rm=");putdecs(j);putcrlf();
 		p = strchr( p,'\"' );
 		if( p > 0 ){
 			p++;
 			q = strchr( p,'\"' );
-			putst("1024=");puthxs(q-p);putcrlf();
+			putst("1024=");putdecs(q-p);putcrlf();						/* "～"のレングス */
 			for( k=0;k<i;k++ ){
 				n = inhex( *p++ )<<4;
 				n += inhex( *p++ );
 				DLC_MatResBuf[DLC_MatResIdx++] = n;
+			}
+			k = q-(char*)DLC_MatLineBuf+2;
+			DLC_MatLineIdx -= k;
+			if( DLC_MatLineIdx ){
+				memcpy( DLC_MatLineBuf,q+1,DLC_MatLineIdx );
+				putst("Buf'Remain=");putdecs(DLC_MatLineIdx);putcrlf();
+				Dump( (char*)DLC_MatLineBuf,8);putcrlf();
 			}
 //			if( strstr( DLC_MatResBuf,"HTTP/1.1 200 OK" )){
 //				if( strstr( DLC_MatResBuf,"Connection: close" ))
