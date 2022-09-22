@@ -2,7 +2,7 @@
  * File:    smpif2.c
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project Smartphone interface implementation file.
- * Date:    2022/08/16 (R0)
+ * Date:    2022/09/21 (R0)
  * Note:    Periodic measure related functions.
  */
 
@@ -18,7 +18,7 @@ void SMPIF_sendRegularly(void)
     char buffer[50];
     // Make message
     snprintf(buffer + 6, sizeof(buffer) - 1,
-            "%u,%.3f,%.3f",
+            "%lu,%.3f,%.3f",
             WPFM_measurementInterval, WPFM_lastMeasuredValues[0], WPFM_lastMeasuredValues[1]);
     int length = strlen(buffer + 6);
 
@@ -54,7 +54,7 @@ void SMPIF_startSendRegularly(const char *param, char *resp)
         WPFM_measureRegularly(true);
 
         snprintf(resp + 6, SMPIF_MAX_RESPONSE_LENGTH - 1,
-                "%u,%.3f,%.3f",
+                "%lu,%.3f,%.3f",
                 WPFM_measurementInterval, WPFM_lastMeasuredValues[0], WPFM_lastMeasuredValues[1]);
         int length = strlen(resp + 6);
         resp[0] = SMPIF_STX;

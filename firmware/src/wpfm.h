@@ -2,7 +2,7 @@
  * File:    wpfm.h
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project common header file.
- * Date:    2022/09/07 (R0)
+ * Date:    2022/09/21 (R0)
  * Note:    Defined values ​​need to be reviewed according to specifications!
  */
 
@@ -153,8 +153,8 @@ extern bool WPFM_isBeingReplacedBattery;           // Is being exchanged battery
   // current settings
 extern WPFM_SETTING_PARAMETER WPFM_settingParameter; // Current setting parameters
 extern WPFM_SETTING_PARAMETER WPFM_settingParameterDefault;     // Default setting parameters
-extern volatile uint16_t WPFM_measurementInterval;           // Current measurement interval[Sec]
-extern uint16_t WPFM_communicationInterval;         // Current communication interval[Sec]
+extern volatile uint32_t WPFM_measurementInterval;           // Current measurement interval[Sec]
+extern uint32_t WPFM_communicationInterval;         // Current communication interval[Sec]
   // for alert
 extern time_t WPFM_lastAlertStartTimes[2][2];       // Time when the last alert(warnin or attention) was issued [0:ch1/1:ch2] [0:upper/1:lower]
 extern time_t WPFM_lastWarningStartTimes[2];        // Time when the last warnin was issued(0 means "not during warning") [0:ch1/1:ch2]

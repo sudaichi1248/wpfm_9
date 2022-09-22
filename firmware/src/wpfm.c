@@ -2,7 +2,7 @@
  * File:    wpfm.c
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project common definition file.
- * Date:    2022/09/07 (R0)
+ * Date:    2022/09/21 (R0)
  * Note:
  */
 
@@ -63,8 +63,8 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     "流量", "m3/h",             // Measure_ch2, MeaKind_ch2
     "2040-01-01 09:00:01"      // AlertPause
 };
-volatile uint16_t WPFM_measurementInterval;              // Current measurement interval[Sec]
-uint16_t WPFM_communicationInterval;            // Current communication interval[Sec]
+volatile uint32_t WPFM_measurementInterval;     // Current measurement interval[Sec]
+uint32_t WPFM_communicationInterval;            // Current communication interval[Sec]
 
   // for alert
 time_t WPFM_lastAlertStartTimes[2][2];          // Time when the last alert(warnin or attention) was issued [0:ch1/1:ch2] [0:upper/1:lower]

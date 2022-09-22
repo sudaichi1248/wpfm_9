@@ -2,7 +2,7 @@
  * File:    init.c
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project initialization implementation file.
- * Date:    2022/09/04 (R0)
+ * Date:    2022/09/19 (R0)
  * Note:
  */
 
@@ -112,7 +112,7 @@ void WPFM_initializeApplication(void)
     {
         DEBUG_UART_printlnString("parameter read error.");
     }
-//    if (true)
+    //if (true)
     if (WPFM_settingParameter.isInvalid)
     {
         // Set default values
@@ -389,55 +389,16 @@ void WPFM_sleep(void)
     UTIL_setEXT1LED();      // turn off EXT1_LED
     UTIL_setEXT2LED();      // turn off EXT2_LED
 
-    // (2) Control sensors power
-/**
-    for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
-    {
-        if (SENSOR_alwaysOnSensorPower)
-        {
-            SENSOR_turnOffSensorCircuit(sensorIndex + 1);
-        }
-    }
-**/
-
     /** ENTER STAND-BY MODE **/
 
-    //SYSTICK_DelayUs(300);
+    // (2) Fall asleep..
     SYSTICK_TimerStop();
-
-    // (3) Fall asleep..
     PM_StandbyModeEnter();
-    //PM_IdleModeEnter();
-
-    //SYSTICK_DelayUs(300);
     SYSTICK_TimerStart();
-
-#if 0
-    // Do not sleep BVMCTRL
-//    NVMCTRL_REGS->NVMCTRL_CTRLB &= ~NVMCTRL_CTRLB_SLEEPPRM_Msk;
-//    NVMCTRL_REGS->NVMCTRL_CTRLB |= NVMCTRL_CTRLB_SLEEPPRM_WAKEUPINSTANT_Val; //NVMCTRL_CTRLB_SLEEPPRM_DISABLED_Val;
-
-    NVIC_INT_Disable();
-    __DMB();
-
-    SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
-
-    __DSB();
-    __WFI();
-
-    __DMB();
-    NVIC_INT_Enable();
-#endif
 
     /** WAKED UP **/
 
-    // (4) Restore sensors power
-/**
-    SENSOR_updateMeasurementInterval(WPFM_measurementInterval);
-**/
-
-    // (5) Restore settings if nessesary
-
+    // (3) Restore settings if nessesary
 }
 
 /*******************************************************************************
