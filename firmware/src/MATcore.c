@@ -1058,8 +1058,8 @@ void DLCMatPostStatus()
 	sprintf( tmp,"\"LTEVersion\":\"%s\","	,DLC_MatVer );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"ExtCellPwr1\":%.3f,"	,(float)WPFM_lastBatteryVoltages[0]/1000 );		strcat( http_tmp,tmp );
 	sprintf( tmp,"\"ExtCellPwr2\":%.3f,"	,(float)WPFM_lastBatteryVoltages[1]/1000 );		strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Batt1Use\":%d,"			,WPFM_externalBatteryNumberInUse );				strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Batt2Use\":%d,"			,WPFM_externalBatteryNumberToReplace );			strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Batt1Use\":%d,"			,WPFM_batteryStatus>>4 );						strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Batt2Use\":%d,"			,WPFM_batteryStatus&0x0F );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"EARFCN\":%d,"			,DLCMatCharInt( DLC_MatRadioDensty,"EARFCN:"));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"CellId\":%d,"			,DLCMatCharInt( DLC_MatRadioDensty,"CELLID:"));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"RSRP\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSRP:" ));	strcat( http_tmp,tmp );
@@ -1254,13 +1254,25 @@ void DLCMatReflectionConfig()
 	WPFM_settingParameter.alertTimeout = config.alertTimeout;
 	strcpy(WPFM_settingParameter.AlertPause, config.AlertPause);
 
-#if 0	// 警報動作(測定・通知間隔)を戻す必要なし
-	if (WPFM_lastAlertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_WARNING|MLOG_ALERT_STATUS_CH1_LOWER_WARNING|MLOG_ALERT_STATUS_CH2_UPPER_WARNING|MLOG_ALERT_STATUS_CH2_LOWER_WARNING)) {	// アラート状態は警報?
-		SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
-		WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
-	} else {	// 通常
-		SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
-		WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
+#ifdef ADD_FUNCTION
+	if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
+#endif
+		if (WPFM_lastAlertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_WARNING|MLOG_ALERT_STATUS_CH1_LOWER_WARNING|MLOG_ALERT_STATUS_CH2_UPPER_WARNING|MLOG_ALERT_STATUS_CH2_LOWER_WARNING)) {	// アラート状態は警報?
+			SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
+			WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
+		} else {	// 通常
+			SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
+			WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
+		}
+#ifdef ADD_FUNCTION
+	} else {	// チャタリングタイプ2
+		if (WPFM_TxType == 11 || WPFM_TxType ==12) {	// 警報状態?
+			SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
+			WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
+		} else {	// 通常
+			SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
+			WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
+		}
 	}
 #endif
 	WPFM_dumpSettingParameter(&WPFM_settingParameter);
