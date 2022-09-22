@@ -26,7 +26,6 @@ void DLCMatAlertTimeClr();
 #   define  DBG_PRINT()
 #endif
 
-
 /*
 *   Local variables and functions
 */
