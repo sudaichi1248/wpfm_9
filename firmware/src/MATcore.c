@@ -1143,10 +1143,6 @@ void DLCMatPostReport()
 		sprintf( tmp,"\"Value_ch2\":%.3f,"	,log_p.measuredValues[1] );					strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Alert\":\"%02x\"}"	,log_p.alertStatus  );						strcat( http_tmp,tmp );
 	}
-	if( i == 0 ){
-		putst("Report is 0!\r\n");
-		return;
-	}
 	sprintf( tmp,"Report=%d\r\n",i );putst( tmp );
 	strcat( http_tmp,"]}}" );
 	i = (int)(strchr(http_tmp,']')-strstr(http_tmp,"{\"Report\":{"))+2;
