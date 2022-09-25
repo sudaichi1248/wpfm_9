@@ -329,7 +329,7 @@ int c_gethxs( short *val )
 /*--------------------------------------------------------------
 	Mdump( )メモリーダンプコマンド
 ---------------------------------------------------------------*/
-#define DefaultDmpSz	0x40
+#define DefaultDmpSz	0x100
 int	dmpadd,dmpsz;
 void Mdump( char buf[],int flg )
 {
@@ -364,12 +364,11 @@ void Mdump( char buf[],int flg )
 ---------------------------------------------------------------*/
 void MdmpDsp( int flg )
 {
-#ifdef	_PNCU
-	int		cnt = 0;
-#endif
+	void APP_delay(int);
 	int		i,j;
 	int		ln[4];
 	char		c;
+	uchar		*p;
 	j = 0;
 	for ( i = 0; i < dmpsz ;i+=4,dmpadd += 4 ){
 		if ( j == 0 ){
@@ -378,8 +377,13 @@ void MdmpDsp( int flg )
 		}
 		if(flg)
 			puthxw( *((int*)dmpadd ) );
-		else
-			Dump( (char *)dmpadd ,4 );
+		else {
+			p = (uchar*)dmpadd;
+			puthxb( p[0] );
+			puthxb( p[1] );
+			puthxb( p[2] );
+			puthxb( p[3] );
+		}
 		ln[j++] = *((int*)dmpadd);
 		putch( ' ' );
 		if ( j == 4 ){			/* 1行分? */
@@ -409,12 +413,7 @@ void MdmpDsp( int flg )
 			}
 			j = 0;
 		}
-#ifdef _PNCU
-		if( ++cnt >= 32 ){
-			Xdelay(0);
-			cnt = 0;
-		}
-#endif
+		APP_delay(1);
 	}
 	if ( j != 0 ){			/* １行分なかったの半端部分のASCII表示 */
 		for ( i = j; i < 4; i++ )
