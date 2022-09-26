@@ -183,6 +183,7 @@ void WPFM_initializeApplication(void)
     // Set dafault intervals
     SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
     WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
+	WPFM_InAlert = false;
     DEBUG_UART_printlnFormat("Intervales: %u,%u", WPFM_measurementInterval, WPFM_communicationInterval);
     DEBUG_UART_FLUSH();
 

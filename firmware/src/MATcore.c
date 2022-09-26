@@ -1246,27 +1246,13 @@ void DLCMatReflectionConfig()
 	WPFM_settingParameter.alertTimeout = config.alertTimeout;
 	strcpy(WPFM_settingParameter.AlertPause, config.AlertPause);
 
-#ifdef ADD_FUNCTION
-	if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
-#endif
-		if (WPFM_lastAlertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_WARNING|MLOG_ALERT_STATUS_CH1_LOWER_WARNING|MLOG_ALERT_STATUS_CH2_UPPER_WARNING|MLOG_ALERT_STATUS_CH2_LOWER_WARNING)) {	// アラート状態は警報?
-			SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
-			WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
-		} else {	// 通常
-			SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
-			WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
-		}
-#ifdef ADD_FUNCTION
-	} else {	// チャタリングタイプ2
-		if (WPFM_TxType == 11 || WPFM_TxType ==12) {	// 警報状態?
-			SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
-			WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
-		} else {	// 通常
-			SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
-			WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
-		}
+	if (WPFM_InAlert == true) {	// 警報状態?
+		SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
+		WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
+	} else {	// 通常
+		SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
+		WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
 	}
-#endif
 	WPFM_dumpSettingParameter(&WPFM_settingParameter);
 }
 #ifdef ADD_FUNCTION

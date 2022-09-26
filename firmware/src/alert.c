@@ -15,10 +15,11 @@
 #include "debug.h"
 #include "mlog.h"
 #include "sensor.h"
-#ifdef ADD_FUNCTION
 #include "moni.h"
+#ifdef ADD_FUNCTION
 void DLCMatAlertTimeClr();
 #endif
+uint8_t WPFM_suppressAlert(uint8_t chabgealert, bool changefirst, bool sw);
 
 #ifdef DEBUG_DETAIL
 #   define  DBG_PRINT(...)  { char _line[80]; snprintf(_line, sizeof(_line),  __VA_ARGS__); UART_DEBUG_writeBytes(_line, strlen(_line)); UART_DEBUG_writeBytes("\n", 1); APP_delay(3); }
@@ -37,6 +38,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
     bool hasCommunicationIntervalChanged = false;       // 定期通信間隔が変更されたか？
     uint8_t alertStatus = WPFM_lastAlertStatus;
     uint8_t upperWarning = 0, upperAttention = 0, lowerWarning = 0, lowerAttention = 0;
+	bool ChangeFirst = false;
     for (int channelIndex = 0; channelIndex < 2; channelIndex++)
     {
         if (WPFM_settingParameter.sensorKinds[channelIndex] == SENSOR_KIND_NOT_PRESENT)
@@ -127,6 +129,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                {
 	                    SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
 	                    WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
+						WPFM_InAlert = true;
 	                    WPFM_doNotifies[channelIndex] = true;
 	                    hasCommunicationIntervalChanged = true;
 	                }
@@ -173,6 +176,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                {
 	                    SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
 	                    WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
+						WPFM_InAlert = true;
 	                    WPFM_doNotifies[channelIndex] = true;
 	                    hasCommunicationIntervalChanged = true;
 	                }
@@ -262,6 +266,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                {
 	                    SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
 	                    WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
+						WPFM_InAlert = true;
 	                    WPFM_doNotifies[channelIndex] = true;
 	                    hasCommunicationIntervalChanged = true;
 	                }
@@ -308,6 +313,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                {
 	                    SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
 	                    WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
+						WPFM_InAlert = true;
 	                    WPFM_doNotifies[channelIndex] = true;
 	                    hasCommunicationIntervalChanged = true;
 	                }
@@ -353,6 +359,10 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	}
 #endif
 
+putst("1.alertStatus:");puthxb(alertStatus);putcrlf();
+		alertStatus = WPFM_suppressAlert(alertStatus, ChangeFirst, true);	// alertStatus抑制
+putst("2.alertStatus:");puthxb(alertStatus);putcrlf();
+
 #if 0	// クリアする必要なし
 #ifdef ADD_FUNCTION
     // 通常か注意の場合はAlerttimeクリア
@@ -364,16 +374,16 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 
     // Suppress alerts during chattering time (pretend it didn't happen)
     uint8_t alertStatusSuppressed = alertStatus;
+    if (WPFM_doNotifies[0] || WPFM_doNotifies[1])
+    {
+        DBG_PRINT("[ALERT] Do not supress alerts: %d/%d", WPFM_doNotifies[0], WPFM_doNotifies[1]);
+        ;   // Do not suppress when notifying
+    }
+    else
+    {
 #ifdef ADD_FUNCTION
-	if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
+		if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
 #endif
-	    if (WPFM_doNotifies[0] || WPFM_doNotifies[1])
-	    {
-	        DBG_PRINT("[ALERT] Do not supress alerts: %d/%d", WPFM_doNotifies[0], WPFM_doNotifies[1]);
-	        ;   // Do not suppress when notifying
-	    }
-	    else
-	    {
 	        for (int channelIndex = 0; channelIndex < 2; channelIndex++)
 	        {
 	            if (WPFM_settingParameter.sensorKinds[channelIndex] == SENSOR_KIND_NOT_PRESENT)
@@ -387,6 +397,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                if ((alertStatus & upperAttention) && ! (WPFM_lastAlertStatus & upperAttention))
 	                {
 	                    DBG_PRINT("[ALERT(%d)] Not Suppress upper attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][0]);
+						ChangeFirst = true;
 	                }
 	                else if (occurrenceTime < (WPFM_lastAlertStartTimes[channelIndex][0] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
 	                {
@@ -412,6 +423,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                if ((alertStatus & lowerAttention) && ! (WPFM_lastAlertStatus & lowerAttention))
 	                {
 	                    DBG_PRINT("[ALERT(%d)] Not Suppress lower attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][1]);
+						ChangeFirst = true;
 	                }
 	                else if (occurrenceTime < (WPFM_lastAlertStartTimes[channelIndex][1] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
 	                {
@@ -431,153 +443,303 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                }
 	            }
 	        }
-	    }
 #ifdef ADD_FUNCTION
-	} else {	// チャタリングタイプ2
-		for (int channelIndex = 0; channelIndex < 2; channelIndex++)
-		{
-			if (WPFM_settingParameter.sensorKinds[channelIndex] == SENSOR_KIND_NOT_PRESENT)
+		} else {	// チャタリングタイプ2
+			for (int channelIndex = 0; channelIndex < 2; channelIndex++)
 			{
-				continue;   // Skip unused sensor
-			}
+				if (WPFM_settingParameter.sensorKinds[channelIndex] == SENSOR_KIND_NOT_PRESENT)
+				{
+					continue;   // Skip unused sensor
+				}
 
-			// Check upper-side limit2
-			if (WPFM_lastAlertStartTimes2[channelIndex][0][1] > 0)
-			{
-				if (occurrenceTime < (WPFM_lastAlertStartTimes2[channelIndex][0][1] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
+				// Check upper-side limit2
+				if (WPFM_lastAlertStartTimes2[channelIndex][0][1] > 0)
 				{
-					DBG_PRINT("[ALERT(%d)] Suppress upper warning: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes2[channelIndex][0][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-					// Suppress upper limit alert
-					alertStatusSuppressed &= ~(upperWarning | upperAttention);
+					if ((alertStatus & upperAttention) && ! (WPFM_lastAlertStatus & upperAttention))
+					{
+					    DBG_PRINT("[ALERT(%d)] Not Suppress upper attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][0][1]);
+						ChangeFirst = true;
+					}
+					else if (occurrenceTime < (WPFM_lastAlertStartTimes2[channelIndex][0][1] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
+					{
+						DBG_PRINT("[ALERT(%d)] Suppress upper warning: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes2[channelIndex][0][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+						// Suppress upper limit alert
+						alertStatusSuppressed &= ~(upperWarning | upperAttention);
+					}
+					else
+					{
+						// Time out
+						DBG_PRINT("[ALERT(%d)] Not suppress upper warning: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][0][1], (WPFM_lastAlertStartTimes2[channelIndex][0][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+						WPFM_lastAlertStartTimes2[channelIndex][0][1] = 0;
+						WPFM_TxType = 12;
+						hasCommunicationIntervalChanged = true;	// 警報状態へ遷移
+						WPFM_doNotifies[channelIndex] = true;
+					}
 				}
-				else
-				{
-					// Time out
-					DBG_PRINT("[ALERT(%d)] Not suppress upper warning: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][0][1], (WPFM_lastAlertStartTimes2[channelIndex][0][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-					WPFM_lastAlertStartTimes2[channelIndex][0][1] = 0;
-					WPFM_TxType = 12;
-					hasCommunicationIntervalChanged = true;	// 警報状態へ遷移
-				}
-			}
 
-			// Check upper-side limit1
-			if (WPFM_lastAlertStartTimes2[channelIndex][0][0] > 0)
-			{
-				if (occurrenceTime < (WPFM_lastAlertStartTimes2[channelIndex][0][0] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
+				// Check upper-side limit1
+				if (WPFM_lastAlertStartTimes2[channelIndex][0][0] > 0)
 				{
-					DBG_PRINT("[ALERT(%d)] Suppress upper attention: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes2[channelIndex][0][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-					// Suppress upper limit alert
-					alertStatusSuppressed &= ~(upperWarning | upperAttention);
+					if ((alertStatus & upperAttention) && ! (WPFM_lastAlertStatus & upperAttention))
+					{
+					    DBG_PRINT("[ALERT(%d)] Not Suppress upper attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][0][0]);
+						ChangeFirst = true;
+					}
+					else if (occurrenceTime < (WPFM_lastAlertStartTimes2[channelIndex][0][0] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
+					{
+						DBG_PRINT("[ALERT(%d)] Suppress upper attention: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes2[channelIndex][0][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+						// Suppress upper limit alert
+						alertStatusSuppressed &= ~(upperWarning | upperAttention);
+					}
+					else
+					{
+						// Time out
+						DBG_PRINT("[ALERT(%d)] Not suppress upper attention: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][0][0], (WPFM_lastAlertStartTimes2[channelIndex][0][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+						WPFM_lastAlertStartTimes2[channelIndex][0][0] = 0;
+						WPFM_TxType = 11;
+					}
 				}
-				else
-				{
-					// Time out
-					DBG_PRINT("[ALERT(%d)] Not suppress upper attention: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][0][0], (WPFM_lastAlertStartTimes2[channelIndex][0][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-					WPFM_lastAlertStartTimes2[channelIndex][0][0] = 0;
-					WPFM_TxType = 11;
-					hasCommunicationIntervalChanged = true;	// 警報状態へ遷移
-				}
-			}
 
-			// Check lower -side limit2
-			if (WPFM_lastAlertStartTimes2[channelIndex][1][1] > 0)
-			{
-				if (occurrenceTime < (WPFM_lastAlertStartTimes2[channelIndex][1][1] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
+				// Check lower -side limit2
+				if (WPFM_lastAlertStartTimes2[channelIndex][1][1] > 0)
 				{
-					DBG_PRINT("[ALERT(%d)] Suppress lower warning: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes2[channelIndex][1][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-					// Suppress lower limit alert
-					alertStatusSuppressed &= ~(lowerWarning | lowerAttention);
+					if ((alertStatus & upperAttention) && ! (WPFM_lastAlertStatus & upperAttention))
+					{
+					    DBG_PRINT("[ALERT(%d)] Not Suppress lower attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][1][1]);
+						ChangeFirst = true;
+					}
+					else if (occurrenceTime < (WPFM_lastAlertStartTimes2[channelIndex][1][1] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
+					{
+						DBG_PRINT("[ALERT(%d)] Suppress lower warning: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes2[channelIndex][1][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+						// Suppress lower limit alert
+						alertStatusSuppressed &= ~(lowerWarning | lowerAttention);
+					}
+					else
+					{
+						// Time out
+						DBG_PRINT("[ALERT(%d)] Not suppress lower warning: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][1][1], (WPFM_lastAlertStartTimes2[channelIndex][1][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+						WPFM_lastAlertStartTimes2[channelIndex][1][1] = 0;
+						WPFM_TxType = 12;
+						hasCommunicationIntervalChanged = true;	// 警報状態へ遷移
+						WPFM_doNotifies[channelIndex] = true;
+					}
 				}
-				else
-				{
-					// Time out
-					DBG_PRINT("[ALERT(%d)] Not suppress lower warning: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][1][1], (WPFM_lastAlertStartTimes2[channelIndex][1][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-					WPFM_lastAlertStartTimes2[channelIndex][1][1] = 0;
-					WPFM_TxType = 12;
-					hasCommunicationIntervalChanged = true;	// 警報状態へ遷移
-				}
-			}
 
-			// Check lower -side limit1
-			if (WPFM_lastAlertStartTimes2[channelIndex][1][0] > 0)
-			{
-				if (occurrenceTime < (WPFM_lastAlertStartTimes2[channelIndex][1][0] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
+				// Check lower -side limit1
+				if (WPFM_lastAlertStartTimes2[channelIndex][1][0] > 0)
 				{
-					DBG_PRINT("[ALERT(%d)] Suppress lower attention: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes2[channelIndex][1][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-					// Suppress lower limit alert
-					alertStatusSuppressed &= ~(lowerWarning | lowerAttention);
-				}
-				else
-				{
-					// Time out
-					DBG_PRINT("[ALERT(%d)] Not suppress lower attention: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][1][0], (WPFM_lastAlertStartTimes2[channelIndex][1][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-					WPFM_lastAlertStartTimes2[channelIndex][1][0] = 0;
-					WPFM_TxType = 11;
-					hasCommunicationIntervalChanged = true;	// 警報状態へ遷移
+					if ((alertStatus & upperAttention) && ! (WPFM_lastAlertStatus & upperAttention))
+					{
+					    DBG_PRINT("[ALERT(%d)] Not Suppress lower attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][1][0]);
+						ChangeFirst = true;
+					}
+					else if (occurrenceTime < (WPFM_lastAlertStartTimes2[channelIndex][1][0] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
+					{
+						DBG_PRINT("[ALERT(%d)] Suppress lower attention: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes2[channelIndex][1][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+						// Suppress lower limit alert
+						alertStatusSuppressed &= ~(lowerWarning | lowerAttention);
+					}
+					else
+					{
+						// Time out
+						DBG_PRINT("[ALERT(%d)] Not suppress lower attention: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][1][0], (WPFM_lastAlertStartTimes2[channelIndex][1][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+						WPFM_lastAlertStartTimes2[channelIndex][1][0] = 0;
+						WPFM_TxType = 11;
+					}
 				}
 			}
 		}
-	}
 
-	// 必要に応じて、次回の定期通信のアラームを変更する
-	if (hasCommunicationIntervalChanged)
-	{
-		DBG_PRINT("[ALERT] Change next comminication alarm.");
-	    WPFM_setNextCommunicateAlarm();
-	}
+		// 必要に応じて、次回の定期通信のアラームを変更する
+		if (hasCommunicationIntervalChanged)
+		{
+			DBG_PRINT("[ALERT] Change next comminication alarm.");
+		    WPFM_setNextCommunicateAlarm();
+		}
 #endif
-
-    // Suppress CH1 alert and nitification according to disable specification
-    WPFM_ALERT_KIND enableKind = WPFM_settingParameter.alertEnableKinds[0][0][0];
-    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
-    {
-        alertStatusSuppressed &= ~MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION;
-    }
-    enableKind = WPFM_settingParameter.alertEnableKinds[0][0][1];
-    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
-    {
-        alertStatusSuppressed &= ~MLOG_ALERT_STATUS_CH1_UPPER_WARNING;
-        WPFM_doNotifies[0] = false;
-    }
-    enableKind = WPFM_settingParameter.alertEnableKinds[0][1][0];
-    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
-    {
-        alertStatusSuppressed &= ~MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION;
-    }
-    enableKind = WPFM_settingParameter.alertEnableKinds[0][1][1];
-    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
-    {
-        alertStatusSuppressed &= ~MLOG_ALERT_STATUS_CH1_LOWER_WARNING;
-        WPFM_doNotifies[0] = false;
     }
 
-    // Suppress CH2 alert and nitification according to disable specification
-    enableKind = WPFM_settingParameter.alertEnableKinds[1][0][0];
-    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
-    {
-        alertStatusSuppressed &= ~MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION;
-    }
-    enableKind = WPFM_settingParameter.alertEnableKinds[1][0][1];
-    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
-    {
-        alertStatusSuppressed &= ~MLOG_ALERT_STATUS_CH2_UPPER_WARNING;
-        WPFM_doNotifies[1] = false;
-    }
-    enableKind = WPFM_settingParameter.alertEnableKinds[1][1][0];
-    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
-    {
-        alertStatusSuppressed &= ~MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION;
-    }
-    enableKind = WPFM_settingParameter.alertEnableKinds[1][1][1];
-    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
-    {
-        alertStatusSuppressed &= ~MLOG_ALERT_STATUS_CH2_LOWER_WARNING;
-        WPFM_doNotifies[1] = false;
-    }
+putst("1.alertStatusSuppressed:");puthxb(alertStatusSuppressed);putcrlf();
+	alertStatusSuppressed = WPFM_suppressAlert(alertStatusSuppressed, ChangeFirst, false);	// alertStatusSuppressed抑制
+putst("2.alertStatusSuppressed:");puthxb(alertStatusSuppressed);putcrlf();
 
     WPFM_lastAlertStatusSuppressed = alertStatusSuppressed;
 
     return (alertStatus);       // return real(no-suppressed) alert status
+}
+
+uint8_t WPFM_suppressAlert(uint8_t changealert, bool changefirst, bool sw)
+{
+    // Suppress CH1 alert and nitification according to disable specification
+//putst("-> ktkr1\r\n");
+	if (sw == true) {	// alertStatus
+//putst("-> ktkr2\r\n");
+	    WPFM_ALERT_KIND enableKind = WPFM_settingParameter.alertEnableKinds[0][0][1];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+//putst("-> ktkr3\r\n");
+			if (enableKind == WPFM_ALERT_KIND_DISABLED) {
+//putst("-> ktkr4\r\n");
+				enableKind = WPFM_settingParameter.alertEnableKinds[0][0][0];
+				if ((enableKind == WPFM_ALERT_KIND_ENABLED) && (changealert & MLOG_ALERT_STATUS_CH1_UPPER_WARNING)) {	// 上限1がenableかつ、alertStatus=警報なら
+//putst("-> ktkr5\r\n");
+//putst("1.changealert:");puthxb(changealert);putcrlf();
+					changealert &= ~MLOG_ALERT_STATUS_CH1_UPPER_WARNING;	// 注意に変更
+					changealert |= MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION;
+//putst("2.changealert:");puthxb(changealert);putcrlf();
+				}
+			}
+	    }
+	    enableKind = WPFM_settingParameter.alertEnableKinds[0][0][0];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+//putst("-> ktkr6\r\n");
+			changealert &= ~MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION;
+		}
+	    enableKind = WPFM_settingParameter.alertEnableKinds[0][1][1];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+			if (enableKind == WPFM_ALERT_KIND_DISABLED) {
+				enableKind = WPFM_settingParameter.alertEnableKinds[0][1][0];
+				if ((enableKind == WPFM_ALERT_KIND_ENABLED) && (changealert & MLOG_ALERT_STATUS_CH1_LOWER_WARNING)) {	// 下限1がenableかつ、alertStatus=警報なら
+					changealert &= ~MLOG_ALERT_STATUS_CH1_LOWER_WARNING;	// 注意に変更
+					changealert |= MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION;
+				}
+			}
+	    }
+	    enableKind = WPFM_settingParameter.alertEnableKinds[0][1][0];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+			changealert &= ~MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION;
+		}
+
+	    // Suppress CH2 alert and nitification according to disable specification
+	    enableKind = WPFM_settingParameter.alertEnableKinds[1][0][1];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+			if (enableKind == WPFM_ALERT_KIND_DISABLED) {
+				enableKind = WPFM_settingParameter.alertEnableKinds[1][0][0];
+				if ((enableKind == WPFM_ALERT_KIND_ENABLED) && (changealert & MLOG_ALERT_STATUS_CH2_UPPER_WARNING)) {	// 上限1がenableかつ、alertStatus=警報なら
+					changealert &= ~MLOG_ALERT_STATUS_CH2_UPPER_WARNING;	// 注意に変更
+					changealert |= MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION;
+				}
+			}
+	    }
+	    enableKind = WPFM_settingParameter.alertEnableKinds[1][0][0];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+			changealert &= ~MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION;
+		}
+	    enableKind = WPFM_settingParameter.alertEnableKinds[1][1][1];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+			if (enableKind == WPFM_ALERT_KIND_DISABLED) {
+				enableKind = WPFM_settingParameter.alertEnableKinds[1][1][0];
+				if ((enableKind == WPFM_ALERT_KIND_ENABLED) && (changealert & MLOG_ALERT_STATUS_CH2_LOWER_WARNING)) {	// 下限1がenableかつ、alertStatus=警報なら
+					changealert &= ~MLOG_ALERT_STATUS_CH2_LOWER_WARNING;	// 注意に変更
+					changealert |= MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION;
+				}
+			}
+	    }
+	    enableKind = WPFM_settingParameter.alertEnableKinds[1][1][0];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+			changealert &= ~MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION;
+		}
+	} else {	// alertStatusSuppressed
+//putst("-> ktkrA\r\n");
+	    WPFM_ALERT_KIND enableKind = WPFM_settingParameter.alertEnableKinds[0][0][0];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+	        changealert &= ~MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION;
+	    }
+	    enableKind = WPFM_settingParameter.alertEnableKinds[0][0][1];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+//putst("-> ktkrB\r\n");
+			if (changealert & MLOG_ALERT_STATUS_CH1_UPPER_WARNING) {
+		        changealert &= ~MLOG_ALERT_STATUS_CH1_UPPER_WARNING;
+				if (enableKind == WPFM_ALERT_KIND_DISABLED) {
+//putst("-> ktkrC\r\n");
+					enableKind = WPFM_settingParameter.alertEnableKinds[0][0][0];
+					if (enableKind == WPFM_ALERT_KIND_ENABLED) {	// 上限1がenableなら
+//putst("-> ktkrD\r\n");
+						if (changefirst == true) {	// 初回変化の場合
+//putst("-> ktkrE\r\n");
+							changealert |= MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION;
+						}
+					}
+				}
+		        WPFM_doNotifies[0] = false;
+			}
+	    }
+	    enableKind = WPFM_settingParameter.alertEnableKinds[0][1][0];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+	        changealert &= ~MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION;
+	    }
+	    enableKind = WPFM_settingParameter.alertEnableKinds[0][1][1];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+			if (changealert & MLOG_ALERT_STATUS_CH1_LOWER_WARNING) {
+		        changealert &= ~MLOG_ALERT_STATUS_CH1_LOWER_WARNING;
+				if (enableKind == WPFM_ALERT_KIND_DISABLED) {
+					enableKind = WPFM_settingParameter.alertEnableKinds[0][1][0];
+					if (enableKind == WPFM_ALERT_KIND_ENABLED) {	// 下限1がenableなら
+						if (changefirst == true) {	// 初回変化の場合
+							changealert |= MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION;
+						}
+					}
+				}
+		        WPFM_doNotifies[0] = false;
+			}
+	    }
+
+	    // Suppress CH2 alert and nitification according to disable specification
+	    enableKind = WPFM_settingParameter.alertEnableKinds[1][0][0];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+	        changealert &= ~MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION;
+	    }
+	    enableKind = WPFM_settingParameter.alertEnableKinds[1][0][1];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+			if (changealert & MLOG_ALERT_STATUS_CH2_UPPER_WARNING) {
+		        changealert &= ~MLOG_ALERT_STATUS_CH2_UPPER_WARNING;
+				if (enableKind == WPFM_ALERT_KIND_DISABLED) {
+					enableKind = WPFM_settingParameter.alertEnableKinds[1][0][0];
+					if (enableKind == WPFM_ALERT_KIND_ENABLED) {	// 上限1がenableなら
+						if (changefirst == true) {	// 初回変化の場合
+							changealert |= MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION;
+						}
+					}
+				}
+		        WPFM_doNotifies[1] = false;
+			}
+	    }
+	    enableKind = WPFM_settingParameter.alertEnableKinds[1][1][0];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+	        changealert &= ~MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION;
+	    }
+	    enableKind = WPFM_settingParameter.alertEnableKinds[1][1][1];
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    {
+			if (changealert & MLOG_ALERT_STATUS_CH2_LOWER_WARNING) {
+		        changealert &= ~MLOG_ALERT_STATUS_CH2_LOWER_WARNING;
+				if (enableKind == WPFM_ALERT_KIND_DISABLED) {
+					enableKind = WPFM_settingParameter.alertEnableKinds[1][1][0];
+					if (enableKind == WPFM_ALERT_KIND_ENABLED) {	// 下限1がenableなら
+						if (changefirst == true) {	// 初回変化の場合
+							changealert |= MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION;
+						}
+					}
+				}
+		        WPFM_doNotifies[1] = false;
+			}
+	    }
+	}
+	return changealert;
 }
 
 #ifdef ADD_FUNCTION
@@ -587,6 +749,7 @@ void WPFM_cancelAlert()
 	WPFM_TxType = 0;
 	SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
 	WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
+	WPFM_InAlert = false;
 	WPFM_lastAlertStartTimes[0][0] = WPFM_lastAlertStartTimes[1][0] = WPFM_lastAlertStartTimes[0][1] = WPFM_lastAlertStartTimes[1][1] = 0;
 	WPFM_lastAlertStartTimes2[0][0][0] = WPFM_lastAlertStartTimes2[0][0][1] = WPFM_lastAlertStartTimes2[0][1][0] = WPFM_lastAlertStartTimes2[0][1][1] = 0;
 	WPFM_lastAlertStartTimes2[1][0][0] = WPFM_lastAlertStartTimes2[1][0][1] = WPFM_lastAlertStartTimes2[1][1][0] = WPFM_lastAlertStartTimes2[1][1][1] = 0;
