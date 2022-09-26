@@ -119,6 +119,7 @@ void IDLEputch( )
 #define		TIMER_12s		12000
 #define		TIMER_15s		15000
 #define		TIMER_30s		30000
+#define		TIMER_90s		90000
 #define		TIMER_NUM		5
 struct {
 	int		cnt;
@@ -441,7 +442,7 @@ void MTopn2()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$OPEN\r" );
-	DLCMatTimerset( 0,TIMER_12s );
+	DLCMatTimerset( 0,TIMER_15s );
 	DLC_MatState = MATC_STATE_OPN2;
 }
 void MTstst()
@@ -472,7 +473,7 @@ void MTrpOk()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatPostSndSub();
-	DLCMatTimerset( 0,TIMER_3000ms );
+	DLCMatTimerset( 0,TIMER_7000ms );
 	DLC_MatState = MATC_STATE_RPT;
 }
 void MTdisc()
@@ -494,6 +495,7 @@ void MTdisc()
 void MTcls3()
 {
 	DLC_MatLineIdx = 0;
+	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatSend( "AT$DISCONNECT\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
 	DLC_MatState = MATC_STATE_DISC;
@@ -571,7 +573,7 @@ void MTwake()
 	DLC_MatLineIdx = 0;
 	DLC_Matknd = 0;
 	DLCMatSend( "AT$CONNECT\r" );
-	DLCMatTimerset( 0,TIMER_12s );
+	DLCMatTimerset( 0,TIMER_90s );
  	TC5_TimerStart();
 	DLC_MatState = MATC_STATE_CONN;
 }
@@ -713,7 +715,7 @@ void	 (*MTjmp[18][19])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls3, ______, MTclsF, ______, ______, ______, ______ },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______ },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, ______, MTdisc, ______ },
-/* TimOut1    12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTdisc, MTdisc, MTdisc,MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3,  MTRSlp, MTtoF,  ______, ______, MTdisc, MTledQ },
+/* TimOut1    12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTdisc, MTdisc, MTdisc, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTdisc, MTledQ },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, ______, ______ },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
