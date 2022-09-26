@@ -95,7 +95,7 @@ void EIC_Initialize(void)
                               EIC_CONFIG_SENSE3_NONE  |
                               EIC_CONFIG_SENSE4_NONE  |
                               EIC_CONFIG_SENSE5_FALL  |
-                              EIC_CONFIG_SENSE6_FALL  |
+                              EIC_CONFIG_SENSE6_LOW  |
                               EIC_CONFIG_SENSE7_LOW ;
 
     /* External Interrupt Asynchronous Mode enable */
