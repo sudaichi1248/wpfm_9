@@ -89,10 +89,11 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 #ifdef ADD_FUNCTION
 				if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
 #endif
+					WPFM_TxType = 11;
 	                WPFM_lastAlertStartTimes[channelIndex][0] = occurrenceTime;
 #ifdef ADD_FUNCTION
 				} else {	// チャタリングタイプ2
-					WPFM_lastAlertStartTimes2[channelIndex][0][1] = 0;	// 上限2のチャタリング時間ストップ
+					WPFM_lastAlertStartTimes2[channelIndex][1] = 0;	// 限界2のチャタリング時間ストップ
 				}
 #endif
             }
@@ -102,12 +103,8 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
                 //- 上限1未満に収まっているので、アラート状態は通常に遷移する
                 alertStatus &= ~upperWarning;
 #ifdef ADD_FUNCTION
-				if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
-#endif
-	                WPFM_lastAlertStartTimes[channelIndex][0] = 0;
-#ifdef ADD_FUNCTION
-				} else {	// チャタリングタイプ2
-					WPFM_lastAlertStartTimes2[channelIndex][0][1] = 0;	// 上限2のチャタリング時間ストップ
+				if (WPFM_settingParameter.alertChatteringKind == 2) {	// チャタリングタイプ2
+					WPFM_lastAlertStartTimes2[channelIndex][1] = 0;	// 限界2のチャタリング時間ストップ
 				}
 #endif
             }
@@ -130,12 +127,13 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                    SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
 	                    WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
 						WPFM_InAlert = true;
+						WPFM_TxType = 12;
 	                    WPFM_doNotifies[channelIndex] = true;
 	                    hasCommunicationIntervalChanged = true;
 	                }
 #ifdef ADD_FUNCTION
 				} else {	// チャタリングタイプ2
-					WPFM_lastAlertStartTimes2[channelIndex][0][1] = occurrenceTime;	// 上限2のチャタリング時間スタート
+					WPFM_lastAlertStartTimes2[channelIndex][1] = occurrenceTime;	// 限界2のチャタリング時間スタート
 				}
 #endif
             }
@@ -150,12 +148,8 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
                 //- 上限1未満に収まっているので、アラート状態は通常に遷移する
                 alertStatus &= ~upperAttention;
 #ifdef ADD_FUNCTION
-				if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
-#endif
-	                WPFM_lastAlertStartTimes[channelIndex][0] = 0;
-#ifdef ADD_FUNCTION
-				} else {	// チャタリングタイプ2
-					WPFM_lastAlertStartTimes2[channelIndex][0][0] = 0;	// 上限1のチャタリング時間ストップ
+				if (WPFM_settingParameter.alertChatteringKind == 2) {	// チャタリングタイプ2
+					WPFM_lastAlertStartTimes2[channelIndex][0] = 0;	// 限界1のチャタリング時間ストップ
 				}
 #endif
             }
@@ -177,12 +171,13 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                    SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
 	                    WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
 						WPFM_InAlert = true;
+						WPFM_TxType = 12;
 	                    WPFM_doNotifies[channelIndex] = true;
 	                    hasCommunicationIntervalChanged = true;
 	                }
 #ifdef ADD_FUNCTION
 				} else {	// チャタリングタイプ2
-					WPFM_lastAlertStartTimes2[channelIndex][0][1] = occurrenceTime;	// 上限2のチャタリング時間スタート
+					WPFM_lastAlertStartTimes2[channelIndex][1] = occurrenceTime;	// 限界2のチャタリング時間スタート
 				}
 #endif
             }
@@ -194,10 +189,11 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 #ifdef ADD_FUNCTION
 				if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
 #endif
+					WPFM_TxType = 11;
 	                WPFM_lastAlertStartTimes[channelIndex][0] = occurrenceTime;
 #ifdef ADD_FUNCTION
 				} else {	// チャタリングタイプ2
-					WPFM_lastAlertStartTimes2[channelIndex][0][0] = occurrenceTime;	// 上限1のチャタリング時間スタート
+					WPFM_lastAlertStartTimes2[channelIndex][0] = occurrenceTime;	// 限界1のチャタリング時間スタート
 				}
 #endif
             }
@@ -226,10 +222,11 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 #ifdef ADD_FUNCTION
 				if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
 #endif
+					WPFM_TxType = 11;
 	                WPFM_lastAlertStartTimes[channelIndex][1] = occurrenceTime;
 #ifdef ADD_FUNCTION
 				} else {	// チャタリングタイプ2
-					WPFM_lastAlertStartTimes2[channelIndex][1][1] = 0;	// 下限2のチャタリング時間ストップ
+					WPFM_lastAlertStartTimes2[channelIndex][1] = 0;	// 限界2のチャタリング時間ストップ
 				}
 #endif
             }
@@ -239,12 +236,8 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
                 //- 下限1以上に収まっているので、アラート状態は通常に遷移する
                 alertStatus &= ~lowerWarning;
 #ifdef ADD_FUNCTION
-				if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
-#endif
-	                WPFM_lastAlertStartTimes[channelIndex][1] = 0;
-#ifdef ADD_FUNCTION
-				} else {	// チャタリングタイプ2
-					WPFM_lastAlertStartTimes2[channelIndex][1][1] = 0;	// 下限2のチャタリング時間ストップ
+				if (WPFM_settingParameter.alertChatteringKind == 2) {	// チャタリングタイプ2
+					WPFM_lastAlertStartTimes2[channelIndex][1] = 0;	// 限界2のチャタリング時間ストップ
 				}
 #endif
             }
@@ -267,12 +260,13 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                    SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
 	                    WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
 						WPFM_InAlert = true;
+						WPFM_TxType = 12;
 	                    WPFM_doNotifies[channelIndex] = true;
 	                    hasCommunicationIntervalChanged = true;
 	                }
 #ifdef ADD_FUNCTION
 				} else {	// チャタリングタイプ2
-					WPFM_lastAlertStartTimes2[channelIndex][1][1] = occurrenceTime;	// 下限2のチャタリング時間スタート
+					WPFM_lastAlertStartTimes2[channelIndex][1] = occurrenceTime;	// 限界2のチャタリング時間スタート
 				}
 #endif
             }
@@ -287,12 +281,8 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
                 //- 下限1以上に収まっているので、アラート状態は通常に遷移する
                 alertStatus &= ~lowerAttention;
 #ifdef ADD_FUNCTION
-				if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
-#endif
-	                WPFM_lastAlertStartTimes[channelIndex][1] = 0;
-#ifdef ADD_FUNCTION
-				} else {	// チャタリングタイプ2
-					WPFM_lastAlertStartTimes2[channelIndex][1][0] = 0;	// 下限1のチャタリング時間ストップ
+				if (WPFM_settingParameter.alertChatteringKind == 2) {	// チャタリングタイプ2
+					WPFM_lastAlertStartTimes2[channelIndex][0] = 0;	// 限界1のチャタリング時間ストップ
 				}
 #endif
             }
@@ -314,12 +304,13 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                    SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
 	                    WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
 						WPFM_InAlert = true;
+						WPFM_TxType = 12;
 	                    WPFM_doNotifies[channelIndex] = true;
 	                    hasCommunicationIntervalChanged = true;
 	                }
 #ifdef ADD_FUNCTION
 				} else {	// チャタリングタイプ2
-					WPFM_lastAlertStartTimes2[channelIndex][1][1] = occurrenceTime;	// 下限2のチャタリング時間スタート
+					WPFM_lastAlertStartTimes2[channelIndex][1] = occurrenceTime;	// 限界2のチャタリング時間スタート
 				}
 #endif
             }
@@ -331,10 +322,11 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 #ifdef ADD_FUNCTION
 				if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
 #endif
+					WPFM_TxType = 11;
 	                WPFM_lastAlertStartTimes[channelIndex][1] = occurrenceTime;
 #ifdef ADD_FUNCTION
 				} else {	// チャタリングタイプ2
-					WPFM_lastAlertStartTimes2[channelIndex][1][0] = occurrenceTime;	// 下限1のチャタリング時間スタート
+					WPFM_lastAlertStartTimes2[channelIndex][0] = occurrenceTime;	// 限界1のチャタリング時間スタート
 				}
 #endif
             }
@@ -352,7 +344,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	    // 必要に応じて、次回の定期通信のアラームを変更する
 	    if (hasCommunicationIntervalChanged)
 	    {
-	        DBG_PRINT("[ALERT] Change next comminication alarm.");
+	        DBG_PRINT("[ALERT_T1] Change next comminication alarm.");
 	        WPFM_setNextCommunicateAlarm();
 	    }
 #ifdef ADD_FUNCTION
@@ -362,15 +354,6 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 putst("1.alertStatus:");puthxb(alertStatus);putcrlf();
 		alertStatus = WPFM_suppressAlert(alertStatus, ChangeFirst, true);	// alertStatus抑制
 putst("2.alertStatus:");puthxb(alertStatus);putcrlf();
-
-#if 0	// クリアする必要なし
-#ifdef ADD_FUNCTION
-    // 通常か注意の場合はAlerttimeクリア
-    if ((alertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_WARNING|MLOG_ALERT_STATUS_CH1_LOWER_WARNING|MLOG_ALERT_STATUS_CH2_UPPER_WARNING|MLOG_ALERT_STATUS_CH2_LOWER_WARNING)) == 0) {
-        DLCMatAlertTimeClr();
-    }
-#endif
-#endif
 
     // Suppress alerts during chattering time (pretend it didn't happen)
     uint8_t alertStatusSuppressed = alertStatus;
@@ -396,19 +379,19 @@ putst("2.alertStatus:");puthxb(alertStatus);putcrlf();
 	            {
 	                if ((alertStatus & upperAttention) && ! (WPFM_lastAlertStatus & upperAttention))
 	                {
-	                    DBG_PRINT("[ALERT(%d)] Not Suppress upper attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][0]);
+	                    DBG_PRINT("[ALERT_T1(%d)] Not Suppress upper attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][0]);
 						ChangeFirst = true;
 	                }
 	                else if (occurrenceTime < (WPFM_lastAlertStartTimes[channelIndex][0] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
 	                {
-	                    DBG_PRINT("[ALERT(%d)] Suppress upper attention/warning: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes[channelIndex][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+	                    DBG_PRINT("[ALERT_T1(%d)] Suppress upper attention/warning: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes[channelIndex][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
 	                    // Suppress upper limit alert
 	                    alertStatusSuppressed &= ~(upperWarning | upperAttention);
 	                }
 	                else
 	                {
 	                    // Time out
-	                    DBG_PRINT("[ALERT(%d)] Not suppress upper attention/warning: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][0], (WPFM_lastAlertStartTimes[channelIndex][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+	                    DBG_PRINT("[ALERT_T1(%d)] Not suppress upper attention/warning: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][0], (WPFM_lastAlertStartTimes[channelIndex][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
 	                    WPFM_lastAlertStartTimes[channelIndex][0] += WPFM_settingParameter.alertChatteringTimes[channelIndex];  // Extend chattering time
 	                    if (alertStatus & upperWarning)
 	                    {
@@ -422,19 +405,19 @@ putst("2.alertStatus:");puthxb(alertStatus);putcrlf();
 	            {
 	                if ((alertStatus & lowerAttention) && ! (WPFM_lastAlertStatus & lowerAttention))
 	                {
-	                    DBG_PRINT("[ALERT(%d)] Not Suppress lower attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][1]);
+	                    DBG_PRINT("[ALERT_T1(%d)] Not Suppress lower attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][1]);
 						ChangeFirst = true;
 	                }
 	                else if (occurrenceTime < (WPFM_lastAlertStartTimes[channelIndex][1] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
 	                {
-	                    DBG_PRINT("[ALERT(%d)] Suppress lower attention/warning: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes[channelIndex][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+	                    DBG_PRINT("[ALERT_T1(%d)] Suppress lower attention/warning: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes[channelIndex][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
 	                    // Suppress lower limit alert
 	                    alertStatusSuppressed &= ~(lowerWarning | lowerAttention);
 	                }
 	                else
 	                {
 	                    // Time out
-	                    DBG_PRINT("[ALERT(%d)] Not suppress lower attention/warning: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][1], (WPFM_lastAlertStartTimes[channelIndex][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+	                    DBG_PRINT("[ALERT_T1(%d)] Not suppress lower attention/warning: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][1], (WPFM_lastAlertStartTimes[channelIndex][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
 	                    WPFM_lastAlertStartTimes[channelIndex][1] += WPFM_settingParameter.alertChatteringTimes[channelIndex];  // Extend chattering time
 	                    if (alertStatus & lowerWarning)
 	                    {
@@ -452,109 +435,41 @@ putst("2.alertStatus:");puthxb(alertStatus);putcrlf();
 					continue;   // Skip unused sensor
 				}
 
-				// Check upper-side limit2
-				if (WPFM_lastAlertStartTimes2[channelIndex][0][1] > 0)
+				// Check limit2
+				if (WPFM_lastAlertStartTimes2[channelIndex][1] > 0)
 				{
-					if ((alertStatus & upperAttention) && ! (WPFM_lastAlertStatus & upperAttention))
-					{
-					    DBG_PRINT("[ALERT(%d)] Not Suppress upper attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][0][1]);
-						ChangeFirst = true;
-					}
-					else if (occurrenceTime < (WPFM_lastAlertStartTimes2[channelIndex][0][1] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
-					{
-						DBG_PRINT("[ALERT(%d)] Suppress upper warning: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes2[channelIndex][0][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-						// Suppress upper limit alert
-						alertStatusSuppressed &= ~(upperWarning | upperAttention);
-					}
-					else
+					if (occurrenceTime >= (WPFM_lastAlertStartTimes2[channelIndex][1] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
 					{
 						// Time out
-						DBG_PRINT("[ALERT(%d)] Not suppress upper warning: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][0][1], (WPFM_lastAlertStartTimes2[channelIndex][0][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-						WPFM_lastAlertStartTimes2[channelIndex][0][1] = 0;
+						DBG_PRINT("[ALERT_T2(%d)] Not suppress upper/lower warning: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][1], (WPFM_lastAlertStartTimes2[channelIndex][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+						WPFM_lastAlertStartTimes2[channelIndex][1] = 0;
+						SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementIntervalOnAlert);
+						WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationIntervalOnAlert);
+						WPFM_InAlert = true;
 						WPFM_TxType = 12;
 						hasCommunicationIntervalChanged = true;	// 警報状態へ遷移
 						WPFM_doNotifies[channelIndex] = true;
 					}
 				}
 
-				// Check upper-side limit1
-				if (WPFM_lastAlertStartTimes2[channelIndex][0][0] > 0)
+				// Check limit1
+				if (WPFM_lastAlertStartTimes2[channelIndex][0] > 0)
 				{
-					if ((alertStatus & upperAttention) && ! (WPFM_lastAlertStatus & upperAttention))
-					{
-					    DBG_PRINT("[ALERT(%d)] Not Suppress upper attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][0][0]);
-						ChangeFirst = true;
-					}
-					else if (occurrenceTime < (WPFM_lastAlertStartTimes2[channelIndex][0][0] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
-					{
-						DBG_PRINT("[ALERT(%d)] Suppress upper attention: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes2[channelIndex][0][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-						// Suppress upper limit alert
-						alertStatusSuppressed &= ~(upperWarning | upperAttention);
-					}
-					else
+					if (occurrenceTime >= (WPFM_lastAlertStartTimes2[channelIndex][0] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
 					{
 						// Time out
-						DBG_PRINT("[ALERT(%d)] Not suppress upper attention: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][0][0], (WPFM_lastAlertStartTimes2[channelIndex][0][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-						WPFM_lastAlertStartTimes2[channelIndex][0][0] = 0;
-						WPFM_TxType = 11;
-					}
-				}
-
-				// Check lower -side limit2
-				if (WPFM_lastAlertStartTimes2[channelIndex][1][1] > 0)
-				{
-					if ((alertStatus & upperAttention) && ! (WPFM_lastAlertStatus & upperAttention))
-					{
-					    DBG_PRINT("[ALERT(%d)] Not Suppress lower attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][1][1]);
-						ChangeFirst = true;
-					}
-					else if (occurrenceTime < (WPFM_lastAlertStartTimes2[channelIndex][1][1] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
-					{
-						DBG_PRINT("[ALERT(%d)] Suppress lower warning: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes2[channelIndex][1][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-						// Suppress lower limit alert
-						alertStatusSuppressed &= ~(lowerWarning | lowerAttention);
-					}
-					else
-					{
-						// Time out
-						DBG_PRINT("[ALERT(%d)] Not suppress lower warning: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][1][1], (WPFM_lastAlertStartTimes2[channelIndex][1][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-						WPFM_lastAlertStartTimes2[channelIndex][1][1] = 0;
-						WPFM_TxType = 12;
-						hasCommunicationIntervalChanged = true;	// 警報状態へ遷移
-						WPFM_doNotifies[channelIndex] = true;
-					}
-				}
-
-				// Check lower -side limit1
-				if (WPFM_lastAlertStartTimes2[channelIndex][1][0] > 0)
-				{
-					if ((alertStatus & upperAttention) && ! (WPFM_lastAlertStatus & upperAttention))
-					{
-					    DBG_PRINT("[ALERT(%d)] Not Suppress lower attention: %lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][1][0]);
-						ChangeFirst = true;
-					}
-					else if (occurrenceTime < (WPFM_lastAlertStartTimes2[channelIndex][1][0] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
-					{
-						DBG_PRINT("[ALERT(%d)] Suppress lower attention: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes2[channelIndex][1][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-						// Suppress lower limit alert
-						alertStatusSuppressed &= ~(lowerWarning | lowerAttention);
-					}
-					else
-					{
-						// Time out
-						DBG_PRINT("[ALERT(%d)] Not suppress lower attention: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][1][0], (WPFM_lastAlertStartTimes2[channelIndex][1][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
-						WPFM_lastAlertStartTimes2[channelIndex][1][0] = 0;
+						DBG_PRINT("[ALERT_T2(%d)] Not suppress upper/lower attention: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes2[channelIndex][0], (WPFM_lastAlertStartTimes2[channelIndex][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+						WPFM_lastAlertStartTimes2[channelIndex][0] = 0;
 						WPFM_TxType = 11;
 					}
 				}
 			}
-		}
-
-		// 必要に応じて、次回の定期通信のアラームを変更する
-		if (hasCommunicationIntervalChanged)
-		{
-			DBG_PRINT("[ALERT] Change next comminication alarm.");
-		    WPFM_setNextCommunicateAlarm();
+			// 必要に応じて、次回の定期通信のアラームを変更する
+			if (hasCommunicationIntervalChanged)
+			{
+				DBG_PRINT("[ALERT_T2] Change next comminication alarm.");
+			    WPFM_setNextCommunicateAlarm();
+			}
 		}
 #endif
     }
@@ -571,29 +486,21 @@ putst("2.alertStatusSuppressed:");puthxb(alertStatusSuppressed);putcrlf();
 uint8_t WPFM_suppressAlert(uint8_t changealert, bool changefirst, bool sw)
 {
     // Suppress CH1 alert and nitification according to disable specification
-//putst("-> ktkr1\r\n");
 	if (sw == true) {	// alertStatus
-//putst("-> ktkr2\r\n");
 	    WPFM_ALERT_KIND enableKind = WPFM_settingParameter.alertEnableKinds[0][0][1];
 	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
 	    {
-//putst("-> ktkr3\r\n");
 			if (enableKind == WPFM_ALERT_KIND_DISABLED) {
-//putst("-> ktkr4\r\n");
 				enableKind = WPFM_settingParameter.alertEnableKinds[0][0][0];
 				if ((enableKind == WPFM_ALERT_KIND_ENABLED) && (changealert & MLOG_ALERT_STATUS_CH1_UPPER_WARNING)) {	// 上限1がenableかつ、alertStatus=警報なら
-//putst("-> ktkr5\r\n");
-//putst("1.changealert:");puthxb(changealert);putcrlf();
 					changealert &= ~MLOG_ALERT_STATUS_CH1_UPPER_WARNING;	// 注意に変更
 					changealert |= MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION;
-//putst("2.changealert:");puthxb(changealert);putcrlf();
 				}
 			}
 	    }
 	    enableKind = WPFM_settingParameter.alertEnableKinds[0][0][0];
 	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
 	    {
-//putst("-> ktkr6\r\n");
 			changealert &= ~MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION;
 		}
 	    enableKind = WPFM_settingParameter.alertEnableKinds[0][1][1];
@@ -647,7 +554,6 @@ uint8_t WPFM_suppressAlert(uint8_t changealert, bool changefirst, bool sw)
 			changealert &= ~MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION;
 		}
 	} else {	// alertStatusSuppressed
-//putst("-> ktkrA\r\n");
 	    WPFM_ALERT_KIND enableKind = WPFM_settingParameter.alertEnableKinds[0][0][0];
 	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
 	    {
@@ -656,16 +562,12 @@ uint8_t WPFM_suppressAlert(uint8_t changealert, bool changefirst, bool sw)
 	    enableKind = WPFM_settingParameter.alertEnableKinds[0][0][1];
 	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
 	    {
-//putst("-> ktkrB\r\n");
 			if (changealert & MLOG_ALERT_STATUS_CH1_UPPER_WARNING) {
 		        changealert &= ~MLOG_ALERT_STATUS_CH1_UPPER_WARNING;
 				if (enableKind == WPFM_ALERT_KIND_DISABLED) {
-//putst("-> ktkrC\r\n");
 					enableKind = WPFM_settingParameter.alertEnableKinds[0][0][0];
 					if (enableKind == WPFM_ALERT_KIND_ENABLED) {	// 上限1がenableなら
-//putst("-> ktkrD\r\n");
 						if (changefirst == true) {	// 初回変化の場合
-//putst("-> ktkrE\r\n");
 							changealert |= MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION;
 						}
 					}
@@ -750,9 +652,10 @@ void WPFM_cancelAlert()
 	SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
 	WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
 	WPFM_InAlert = false;
+	DLCMatAlertTimeClr();
 	WPFM_lastAlertStartTimes[0][0] = WPFM_lastAlertStartTimes[1][0] = WPFM_lastAlertStartTimes[0][1] = WPFM_lastAlertStartTimes[1][1] = 0;
-	WPFM_lastAlertStartTimes2[0][0][0] = WPFM_lastAlertStartTimes2[0][0][1] = WPFM_lastAlertStartTimes2[0][1][0] = WPFM_lastAlertStartTimes2[0][1][1] = 0;
-	WPFM_lastAlertStartTimes2[1][0][0] = WPFM_lastAlertStartTimes2[1][0][1] = WPFM_lastAlertStartTimes2[1][1][0] = WPFM_lastAlertStartTimes2[1][1][1] = 0;
+	WPFM_lastAlertStartTimes2[0][0] = WPFM_lastAlertStartTimes2[0][1] = 0;
+	WPFM_lastAlertStartTimes2[1][0] = WPFM_lastAlertStartTimes2[1][1] = 0;
 	WPFM_setNextCommunicateAlarm();
 }
 #endif
