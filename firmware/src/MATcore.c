@@ -830,7 +830,7 @@ void DLCMatState()
 			DLC_MatLineIdx = 0;
 			zLogOn = 0;
 			DLCMatSend( "AT$RECV,1024\r" );
-			DLCMatTimerset( 3,TIMER_1000ms);
+			DLCMatTimerset( 3,TIMER_3000ms);
 		}
 	}
 	if( DLC_MatLineIdx >= 19 ){				/* $RECVDATA:1,0,"41"\r */
