@@ -18,7 +18,7 @@
 #include "util.h"
 #include "rtc.h"
 #include "moni.h"
-
+void DLCMATrtctimer();
 /*
  *  Register number
  */
@@ -454,7 +454,7 @@ static void _RTC_handlerA(uintptr_t ptr)
 static void _RTC_handlerB(uintptr_t ptr)
 {
     uint8_t value = 0;
-
+	DLCMATrtctimer();
     if (_RTC_readRegister(RTC_REGISTER_CONTROL2, &value) == RTC_ERR_NONE)
     {
         if (value & REGISTER_CONTROL2_CTFG)

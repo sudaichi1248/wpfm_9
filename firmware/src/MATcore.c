@@ -125,6 +125,11 @@ struct {
 	int		cnt;
 	uchar	TO;
 } DLC_MatTimer[TIMER_NUM];
+#define		RTC_TIMER_NUM		5
+struct {
+	int		cnt;
+	uchar	TO;
+} DLC_MatRtcTimer[RTC_TIMER_NUM];
 void DLCMatTimerset(int tmid,int cnt )
 {
 	DLC_MatTimer[tmid].cnt = cnt;
@@ -157,6 +162,38 @@ void DLCMatTimerInt()
 		}
 	}
 //	putch('t');
+}
+/*
+	Function:RTCタイマー関数通信タスクのTO通知の確認
+*/
+void DLCMatRtcTimerset(int tmid,int cnt )
+{
+	DLC_MatRtcTimer[tmid].cnt = cnt;
+}
+void DLCMatTtcTimerClr(int tmid )
+{
+	DLC_MatRtcTimer[tmid].cnt = 0;
+	DLC_MatRtcTimer[tmid].TO = 0;
+}
+int	DLCMatRtcChk(int tmid)
+{
+	if( DLC_MatRtcTimer[tmid].TO ){
+		if( DLC_MatRtcTimer[tmid].cnt == 0 ){
+			DLC_MatRtcTimer[tmid].TO = 0;
+			return 1;
+		}
+	}
+	return 0;
+}
+void DLCMATrtctimer()
+{
+	for(int i=0;i<RTC_TIMER_NUM;i++ ){
+		if( DLC_MatRtcTimer[i].cnt != 0 ){
+			DLC_MatRtcTimer[i].cnt--;
+			if( DLC_MatRtcTimer[i].cnt == 0 )
+				DLC_MatRtcTimer[i].TO = 1;
+		}
+	}
 }
 /*
 	MATcoreをWAKEUPさせる処理
@@ -868,6 +905,10 @@ void DLCMatState()
 		else if( DLCMatTmChk( 3 ) ){
 			DLCMatSend( "AT$RECV,1024\r" );
 			putst("リトライ(ToT)\r\n");
+		}
+		else if( DLCMatRtcChk( 0 ) ){
+			DLCMatSend( "AT$RECV,1024\r" );
+			putst("RTC Timer Ok\r\n");
 		}
 		else {
 			switch( MatGetMsgStack() ){
@@ -2336,6 +2377,9 @@ void DLCMatMain()
 			break;
 		case 'S':												/* CTRL+A */
 			W25Q128JV_powerDown();
+			break;
+		case 'J':
+			DLCMatRtcTimerset(0,30);
 			break;
 		default:
 			break;
