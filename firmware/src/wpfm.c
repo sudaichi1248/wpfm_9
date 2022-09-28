@@ -70,9 +70,9 @@ uint32_t WPFM_communicationInterval;            // Current communication interva
 time_t WPFM_lastAlertStartTimes[2][2];          // Time when the last alert(warnin or attention) was issued [0:ch1/1:ch2] [0:upper/1:lower]
 time_t WPFM_lastWarningStartTimes[2];           // Time when the last warnin was issued(0 means "not during warning") [0:ch1/1:ch2]
 bool WPFM_InAlert = false;
-#ifdef ADD_FUNCTION
-time_t WPFM_lastAlertStartTimes2[2][2][2];      // Chattering_type2 Time when the last alert(warnin or attention) was issued [0:ch1/1:ch2] [0:upper/1:lower] [0:limit1/1:limit2]
 uint8_t WPFM_TxType = 0;
+#ifdef ADD_FUNCTION
+time_t WPFM_lastAlertStartTimes2[2][2];      // Chattering_type2 Time when the last alert(warnin or attention) was issued [0:ch1/1:ch2] [0:limit1/1:limit2]
 #endif
 
   // for battery

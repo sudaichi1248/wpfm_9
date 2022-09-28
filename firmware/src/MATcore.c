@@ -867,7 +867,7 @@ void DLCMatState()
 			DLC_MatLineIdx = 0;
 			zLogOn = 0;
 			DLCMatSend( "AT$RECV,1024\r" );
-			DLCMatTimerset( 3,TIMER_3000ms);
+			DLCMatTimerset( 3,TIMER_7000ms);
 		}
 	}
 	if( DLC_MatLineIdx >= 19 ){				/* $RECVDATA:1,0,"41"\r */
@@ -906,10 +906,10 @@ void DLCMatState()
 			DLCMatSend( "AT$RECV,1024\r" );
 			putst("リトライ(ToT)\r\n");
 		}
-		else if( DLCMatRtcChk( 0 ) ){
-			DLCMatSend( "AT$RECV,1024\r" );
-			putst("RTC Timer Ok\r\n");
-		}
+//		else if( DLCMatRtcChk( 0 ) ){
+//			DLCMatSend( "AT$RECV,1024\r" );
+//			putst("RTC Timer Ok\r\n");
+//		}
 		else {
 			switch( MatGetMsgStack() ){
 			case MSGID_TIMER:
@@ -1066,19 +1066,9 @@ void DLCMatPostStatus()
 	strcpy( http_tmp,http_status );
 	strcat( http_tmp,"{\"Status\":{" );
 	DLC_MatTxType = 0;
+	putst("Alert=");puthxb( WPFM_TxType );putcrlf();
+	DLC_MatTxType = WPFM_TxType;
 #ifdef ADD_FUNCTION
-	if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
-#endif
-		putst("Alter=");puthxb( WPFM_lastAlertStatus );putcrlf();
-		if( WPFM_lastAlertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_WARNING|MLOG_ALERT_STATUS_CH1_LOWER_WARNING|MLOG_ALERT_STATUS_CH2_UPPER_WARNING|MLOG_ALERT_STATUS_CH2_LOWER_WARNING))
-			DLC_MatTxType = 12;
-		if( WPFM_lastAlertStatus & (MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION|MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION|MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION|MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION))
-			DLC_MatTxType = 11;
-#ifdef ADD_FUNCTION
-	} else {	// チャタリングタイプ2
-		putst("Alter=");puthxb( WPFM_TxType );putcrlf();
-		DLC_MatTxType = WPFM_TxType;
-	}
 	if ( WPFM_isAlertPause == true )
 		DLC_MatTxType = 20;
 #endif
@@ -1377,22 +1367,22 @@ bool DLCMatWatchAlertPause()
 }
 void DLCMatAlertTimeStart()
 {
-	if (DLC_MatTimer[4].cnt == 0) {	// AlertTime無起動?
-		DLCMatTimerset(4, (WPFM_settingParameter.alertTimeout * 1000));
-putst("\r\nAlertTime start:");puthxs(WPFM_settingParameter.alertTimeout * 1000);putcrlf();
+	if (DLC_MatRtcTimer[0].cnt == 0) {	// AlertTime無起動?
+		DLCMatRtcTimerset(0, WPFM_settingParameter.alertTimeout);
+putst("\r\nAlertTime start:");puthxs(WPFM_settingParameter.alertTimeout);putcrlf();
 	}
 }
 void DLCMatAlertTimeChk()
 {
-	if (DLCMatTmChk(4)) {	// AlertTime T/O?
+	if (DLCMatRtcChk(0)) {	// AlertTime T/O?
 		WPFM_cancelAlert();
 putst("\r\nAlertTime T/O");putcrlf();
 	}
 }
 void DLCMatAlertTimeClr()
 {
-	if (DLC_MatTimer[4].cnt != 0) {	// AlertTime起動中?
-		DLCMatTimerClr(4);
+	if (DLC_MatRtcTimer[0].cnt != 0) {	// AlertTime起動中?
+		DLCMatTtcTimerClr(0);
 putst("\r\nAlertTime clear");putcrlf();
 	}
 }
