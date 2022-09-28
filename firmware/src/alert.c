@@ -647,7 +647,7 @@ uint8_t WPFM_suppressAlert(uint8_t changealert, bool changefirst, bool sw)
 #ifdef ADD_FUNCTION
 void WPFM_cancelAlert()
 {
-	WPFM_lastAlertStatus = 0;
+	WPFM_lastAlertStatus = WPFM_lastAlertStatusSuppressed = 0;
 	WPFM_TxType = 0;
 	SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
 	WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);

@@ -1304,11 +1304,12 @@ void DLCMatReflectionConfig()
 bool DLCMatWatchAlertPause()
 {
 	RTC_DATETIME dt;
-	char time[32],tmp[3] = {0, 0, 0};
+//	char time[32];
+	char tmp[3] = {0, 0, 0};
 	uint8_t ap_year, ap_month, ap_day, ap_hour, ap_minute, ap_second;
 
 	RTC_getDatetime( &dt );
-	sprintf( time,"%02d/%02d/%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+//	sprintf( time,"%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 //	putst("\r\nCulentTime:  ");putst(time);putcrlf();
 //	putst("AlertPause:");putst(WPFM_settingParameter.AlertPause);putcrlf();
 	tmp[0] = WPFM_settingParameter.AlertPause[0];
@@ -1377,6 +1378,91 @@ bool DLCMatWatchAlertPause()
 			}
 		}
 	}
+	return false;
+}
+bool DLCMatCheckAlertPause(char *alertpause_p)
+{
+	RTC_DATETIME dt;
+//	char time[32];
+	char tmp[3] = {0, 0, 0};
+	uint8_t ap_year, ap_month, ap_day, ap_hour, ap_minute, ap_second;
+
+	RTC_getDatetime( &dt );
+//	sprintf( time,"%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+//	putst("\r\nCulentTime:  ");putst(time);putcrlf();
+//	putst("AlertPause:");putst(alertpause_p);putcrlf();
+	tmp[0] = *alertpause_p++;
+	tmp[1] = *alertpause_p++;
+	ap_year = atoi(tmp);
+	if (strlen(alertpause_p) == 0) {
+//		putst("non AlertPause\r\n");
+		return false;
+	}
+//	puthxs(ap_year);putcrlf();
+	if (20 < ap_year) {
+//		putst("return true1\r\n");
+		return true;
+	} else if (20 == ap_year) {
+		tmp[0] = *alertpause_p++;
+		tmp[1] = *alertpause_p++;
+		ap_year = atoi(tmp);
+//		puthxs(ap_year);putcrlf();
+		if (dt.year < ap_year) {
+//			putst("return true2\r\n");
+			return true;
+		} else if (dt.year == ap_year) {
+			alertpause_p++;
+			tmp[0] = *alertpause_p++;
+			tmp[1] = *alertpause_p++;
+			ap_month = atoi(tmp);
+//			puthxs(ap_month);putcrlf();
+			if (dt.month < ap_month) {
+//				putst("return true3\r\n");
+				return true;
+			} else if (dt.month == ap_month) {
+				alertpause_p++;
+				tmp[0] = *alertpause_p++;
+				tmp[1] = *alertpause_p++;
+				ap_day = atoi(tmp);
+//				puthxs(ap_day);putcrlf();
+				if (dt.day < ap_day) {
+//					putst("return true4\r\n");
+					return true;
+				} else if (dt.day == ap_day) {
+					alertpause_p++;
+					tmp[0] = *alertpause_p++;
+					tmp[1] = *alertpause_p++;
+					ap_hour = atoi(tmp);
+//					puthxs(ap_hour);putcrlf();
+					if (dt.hour < ap_hour) {
+//						putst("return true5\r\n");
+						return true;
+					} else if (dt.hour == ap_hour) {
+						alertpause_p++;
+						tmp[0] = *alertpause_p++;
+						tmp[1] = *alertpause_p++;
+						ap_minute = atoi(tmp);
+//						puthxs(ap_minute);putcrlf();
+						if (dt.minute < ap_minute) {
+//							putst("return true6\r\n");
+							return true;
+						} else if (dt.minute == ap_minute) {
+							alertpause_p++;
+							tmp[0] = *alertpause_p++;
+							tmp[1] = *alertpause_p++;
+							ap_second = atoi(tmp);
+//							puthxs(ap_second);putcrlf();
+							if (dt.second < ap_second) {
+//								putst("return true7\r\n");
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+//	putst("return false\r\n");
 	return false;
 }
 void DLCMatAlertTimeStart()
@@ -1617,8 +1703,10 @@ putst("\r\ncoco3\r\n");
 		config_p = strstr(DLC_MatResBuf, "AlertPause");
 		if (config_p) {
 			DLCMatSTRParamSet(config_p);
-			strcpy(config.AlertPause, DLC_MatConfigItem);
-//			putst("AlertPause:");putst(config.AlertPause);putcrlf();
+			if (DLCMatCheckAlertPause(DLC_MatConfigItem) == true) {	// Œ»Ý“úŽžˆÈ~‚ÌAlertPause?
+				strcpy(config.AlertPause, DLC_MatConfigItem);	// Ý’è
+//				putst("AlertPause:");putst(config.AlertPause);putcrlf();
+			}
 		}
 		config_p = strstr(DLC_MatResBuf, "Measurment");
 		if (config_p) {
