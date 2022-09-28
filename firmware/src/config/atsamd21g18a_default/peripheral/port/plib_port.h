@@ -156,15 +156,6 @@
 #define RF_READY_OUT_Get()               (((PORT_REGS->GROUP[1].PORT_IN >> 11U)) & 0x01U)
 #define RF_READY_OUT_PIN                  PORT_PIN_PB11
 
-/*** Macros for MAT_POWER pin ***/
-#define MAT_POWER_Set()               (PORT_REGS->GROUP[0].PORT_OUTSET = ((uint32_t)1U << 12U))
-#define MAT_POWER_Clear()             (PORT_REGS->GROUP[0].PORT_OUTCLR = ((uint32_t)1U << 12U))
-#define MAT_POWER_Toggle()            (PORT_REGS->GROUP[0].PORT_OUTTGL = ((uint32_t)1U << 12U))
-#define MAT_POWER_OutputEnable()      (PORT_REGS->GROUP[0].PORT_DIRSET = ((uint32_t)1U << 12U))
-#define MAT_POWER_InputEnable()       (PORT_REGS->GROUP[0].PORT_DIRCLR = ((uint32_t)1U << 12U))
-#define MAT_POWER_Get()               (((PORT_REGS->GROUP[0].PORT_IN >> 12U)) & 0x01U)
-#define MAT_POWER_PIN                  PORT_PIN_PA12
-
 /*** Macros for nINTRA pin ***/
 #define nINTRA_Get()               (((PORT_REGS->GROUP[0].PORT_IN >> 13U)) & 0x01U)
 #define nINTRA_PIN                  PORT_PIN_PA13
