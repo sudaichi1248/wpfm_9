@@ -128,10 +128,22 @@ struct {
 #define		RTC_TIMER_NUM		5
 struct {
 	int		cnt;
-	uchar	TO;
+	uchar	TO;						/* 0:not use 1;counting 2:TO */
 } DLC_MatRtcTimer[RTC_TIMER_NUM];
+int	DLCMatTmisAct()
+{
+	for(int i=0;i<TIMER_NUM;i++ ){
+		if( DLC_MatTimer[i].TO ){
+			return 1;
+		}
+	}
+	return 0;
+}
 void DLCMatTimerset(int tmid,int cnt )
 {
+	if(DLCMatTmisAct()==0)
+       TC5_TimerStart();
+	DLC_MatTimer[tmid].TO = 1;
 	DLC_MatTimer[tmid].cnt = cnt;
 }
 void DLCMatTimerClr(int tmid )
@@ -144,7 +156,7 @@ void DLCMatTimerClr(int tmid )
 */
 int	DLCMatTmChk(int tmid)
 {
-	if( DLC_MatTimer[tmid].TO ){
+	if( DLC_MatTimer[tmid].TO == 2 ){
 		if( DLC_MatTimer[tmid].cnt == 0 ){
 			DLC_MatTimer[tmid].TO = 0;
 			return 1;
@@ -158,7 +170,7 @@ void DLCMatTimerInt()
 		if( DLC_MatTimer[i].cnt != 0 ){
 			DLC_MatTimer[i].cnt--;
 			if( DLC_MatTimer[i].cnt == 0 )
-				DLC_MatTimer[i].TO = 1;
+				DLC_MatTimer[i].TO = 2;
 		}
 	}
 //	putch('t');
@@ -197,20 +209,21 @@ void DLCMATrtctimer()
 }
 /*
 	MATcoreをWAKEUPさせる処理
+	3秒待つ
 */
 void DLCMatWake()
 {
 	int		i;
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
-	for(i=0;i<1000;i++){
-		APP_delay(1);
+	for(i=0;i<300;i++){
+		APP_delay(10);
 		if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11))
 			break;
 		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );
 		APP_delay(1);
 		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );
 	}
-	if( i == 1000 )
+	if( i == 300 )
 		putst("MATcore Wake Err!\r\n");
 }
 /* 
@@ -380,7 +393,7 @@ void MTconn()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT?\r" );
-	DLCMatTimerset( 0,TIMER_30s );
+	DLCMatTimerset( 0,TIMER_90s );
 	if (DLC_MatFotaExe == false) {	// fota 運用時
 		DLC_MatState = MATC_STATE_COND;
 	} else {	//  FOTA実行時
@@ -519,7 +532,7 @@ void MTdisc()
 	if( DLC_Matknd ){													/* 発呼要求保持 */
 		DLC_Matknd = 0;
 		DLCMatSend( "AT$CONNECT\r" );
-		DLCMatTimerset( 0,TIMER_12s );
+		DLCMatTimerset( 0,TIMER_90s );
 		DLC_MatState = MATC_STATE_CONN;
 	}
 	else {
@@ -618,7 +631,7 @@ void MTconW()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT\r" );
-	DLCMatTimerset( 0,TIMER_12s );
+	DLCMatTimerset( 0,TIMER_90s );
 	DLC_MatState = MATC_STATE_CONN;
 }
 void MTtoF()	// fota T/O
@@ -668,16 +681,17 @@ void DLCMatCall(int knd )
 {
 	if( DLC_Matknd )
 		putst("Stacked TheCall..\r\n" );
-	DLC_Matknd = knd;
-	switch( DLC_Matknd ){
+	switch( knd ){
 	case 1:
-		putst("●CALL!\r\n");										/* Constant */
+		putst("定期●CALL!\r\n");										/* Constant */
 		break;
 	case 2:	
-		putst("■CALL!\r\n");										/* Push */
+		putst("強制■CALL!\r\n");										/* Push */
+		DLC_Matknd = knd;
 		break;
 	case 3:
-		putst("★CALL!\r\n");										/* Alert */
+		putst("警報★CALL!\r\n");										/* Alert */
+		DLC_Matknd = knd;
 		break;
 	}
 	MatMsgSend( MSGID_WAKEUP );
@@ -2380,13 +2394,15 @@ void DLCMatMain()
 }
 int DLCMatIsSleep()
 {
-	if( DLC_Matdebug.wx != DLC_Matdebug.rx )
+	if( DLCMatTmisAct())											/* タイマー使用中 */
 		return 0;
-	if( DLC_MatState == MATC_STATE_SLP ){
+	if( DLC_Matdebug.wx != DLC_Matdebug.rx )						/* ログ表示中 */
+		return 0;
+	if( DLC_MatState == MATC_STATE_SLP ){							/* Sleepしてよい */
 		TC5_TimerStop();
 		return 1;
 	}
-	if( DLC_MatState == MATC_STATE_ERR ){
+	if( DLC_MatState == MATC_STATE_ERR ){							/* Sleepしてよい */
 		TC5_TimerStop();
 		return 1;
 	}
