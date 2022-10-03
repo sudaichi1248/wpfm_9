@@ -55,7 +55,8 @@ uchar	DLC_MatTxType;
 bool	DLC_MatFotaExe=false;	// fota FOTA実行フラグ
 // bool	DLC_MatFotaExe=true;	// fota FOTA実行フラグ
 bool	DLC_MatFotaWriteNG=false;	// fota FOTA書込みNGフラグ
-int	 	DLC_MatSPIFlashPage=256;	// fota SPIフラッシュ1ページbyte数
+int	 	DLC_MatSPIFlashPage=0x100;	// fota SPIフラッシュ1ページbyte数
+int	 	DLC_MatSPIFlashSector=0x400;	// fota SPIフラッシュ1セクタbyte数
 int	 	DLC_MatSPIRemaindataFota;	// fota 1ページ未満の半端byte数→保持して次回書込み
 int	 	DLC_MatSPIWritePageFota;	// fota SPI書込みページインデックス
 int		DLC_MatFotaDataLen=0;	// fota FOTAデータレングス
@@ -584,7 +585,7 @@ APP_delay(100);
 		}
 //		putst("BufData2:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
 	}
-	if ((DLC_MatFotaWriteNG == false) && ((DLC_MatSPIWritePageFota * 0x100) >= DLC_MatFotaDataLen)) {	/* 書込みNGなしかつ書込みレングスがFOTAデータレングス以上? */
+	if ((DLC_MatFotaWriteNG == false) && ((DLC_MatSPIFlashPage * DLC_MatSPIWritePageFota) >= DLC_MatFotaDataLen)) {	/* 書込みNGなしかつ書込みレングスがFOTAデータレングス以上? */
 		memset(DLC_MatSPICheckbufFota, 0xFF, sizeof(DLC_MatSPICheckbufFota));
 //		DLC_MatSPICheckbufFota[0xFC] = 0x04;
 //		DLC_MatSPICheckbufFota[0xFD] = 0x03;
@@ -1875,7 +1876,7 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 						DLC_MatSPIWritePageFota += 1;	/* 書込みページインデックス進める */
 //						putst("BufData1:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
 					}
-					for (k = 0; k < ((0x400 - len) / DLC_MatSPIFlashPage); k++) {	/* 残りのデータを256byte毎書込み */
+					for (k = 0; k < ((DLC_MatSPIFlashSector - len) / DLC_MatSPIFlashPage); k++) {	/* 残りのデータを256byte毎書込み */
 						if (W25Q128JV_programPage(fotaaddress + k + DLC_MatSPIWritePageFota, 0, (uint8_t*)(fpt + DLC_MatSPIFlashPage * k), DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){
 							puthxw(DLC_MatSPIFlashPage * (fotaaddress + k + DLC_MatSPIWritePageFota));
 							putst(":OK");putcrlf();
@@ -1897,7 +1898,7 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 						}
 					}
 					memset(DLC_MatSPIRemainbufFota, 0xFF, sizeof(DLC_MatSPIRemainbufFota));	/* 半端byte保持バッファFF初期化 */
-					DLC_MatSPIRemaindataFota = (0x400 - (DLC_MatSPIFlashPage - len)) - (DLC_MatSPIFlashPage * k);	/* 1ページ未満の半端byte数 */
+					DLC_MatSPIRemaindataFota = (DLC_MatSPIFlashSector - (DLC_MatSPIFlashPage - len)) - (DLC_MatSPIFlashPage * k);	/* 1ページ未満の半端byte数 */
 //					putst("DLC_MatSPIRemaindataFota1:");puthxs(DLC_MatSPIRemaindataFota);putcrlf();
 					memcpy(DLC_MatSPIRemainbufFota, fpt + DLC_MatSPIFlashPage * k ,DLC_MatSPIRemaindataFota);	/* 半端byte保持バッファに保持 */
 					DLC_MatSPIWritePageFota = k + DLC_MatSPIWritePageFota;	/* SPI書込みページインデックス保持 */
@@ -1985,9 +1986,9 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 				putst("DLC_MatFotaCRC[]:");Dump(DLC_MatFotaCRC, sizeof(DLC_MatFotaCRC));putcrlf();
 				if (j > 0) {	/* データが1024byte以上の場合 */
 					putst("RecvData3:\r\n");
-//					Dump(fpt, 0x400 - len);putcrlf();
+//					Dump(fpt, DLC_MatSPIFlashSector - len);putcrlf();
 					fotaaddress /= DLC_MatSPIFlashPage;
-					for (k = 0; k < ((0x400 - len) / DLC_MatSPIFlashPage); k++) {	/* ヘッダを抜いたFOTAデータを256byte毎書込み */
+					for (k = 0; k < ((DLC_MatSPIFlashSector - len) / DLC_MatSPIFlashPage); k++) {	/* ヘッダを抜いたFOTAデータを256byte毎書込み */
 						if (W25Q128JV_programPage(fotaaddress + k, 0, (uint8_t*)(fpt + DLC_MatSPIFlashPage * k), DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){
 							puthxw(DLC_MatSPIFlashPage * (fotaaddress + k));
 							putst(":OK");putcrlf();
@@ -2009,7 +2010,7 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 						}
 					}
 					memset(DLC_MatSPIRemainbufFota, 0xFF, sizeof(DLC_MatSPIRemainbufFota));	/* 半端byte保持バッファFF初期化 */
-					DLC_MatSPIRemaindataFota = (0x400 - len) - (DLC_MatSPIFlashPage * k);	/* 1ページ未満の半端byte数 */
+					DLC_MatSPIRemaindataFota = (DLC_MatSPIFlashSector - len) - (DLC_MatSPIFlashPage * k);	/* 1ページ未満の半端byte数 */
 //					putst("DLC_MatSPIRemaindataFota3:");puthxs(DLC_MatSPIRemaindataFota);putcrlf();
 					memcpy(DLC_MatSPIRemainbufFota, fpt + DLC_MatSPIFlashPage * k ,DLC_MatSPIRemaindataFota);	/* 半端byte保持バッファに保持 */
 					DLC_MatSPIWritePageFota = k;	/* SPI書込みページインデックス保持 */
