@@ -3,6 +3,7 @@
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project battery control file.
  * Date:    2022/08/13 (R0)
+ *          2022/10/01 (R1) Once the voltage drops, maintain battery status until replacement.(Respond to requests from Mr. Kasai)
  * Note:
  */
 
@@ -35,22 +36,6 @@ int BATTERY_checkAndSwitchBattery(void)
             {
                 WPFM_timesBelowTheThresholds[batteryIndex] = 1;
                 WPFM_batteryStatus |= mask;
-            }
-        }
-        else
-        {
-            if (WPFM_batteryStatus & mask)
-            {
-                DEBUG_UART_printlnFormat("Battery #%d was recovered.", batteryIndex + 1);
-                WPFM_timesBelowTheThresholds[batteryIndex] = 0;    // Reset
-                WPFM_batteryStatus &= ~mask;
-                if (! WPFM_isBeingReplacedBattery)
-                {
-                    if (WPFM_externalBatteryNumberToReplace == batteryIndex + 1)
-                    {
-                        WPFM_externalBatteryNumberToReplace = 0;
-                    }
-                }
             }
         }
     }
@@ -177,9 +162,11 @@ int BATTERY_leaveReplaceBattery(void)
     {
         case 1:
             WPFM_timesBelowTheThresholds[0] = 0;
+            WPFM_batteryStatus &= ~MLOG_BAT_STATUS_BAT1_LOW_VOLTAGE;    // @add(R1)
             break;
         case 2:
             WPFM_timesBelowTheThresholds[1] = 0;
+            WPFM_batteryStatus &= ~MLOG_BAT_STATUS_BAT2_LOW_VOLTAGE;    // @add(R1)
             break;
     }
     BATTERY_turnOffExtLed();
