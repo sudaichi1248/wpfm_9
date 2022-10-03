@@ -58,6 +58,8 @@ bool	DLC_MatFotaWriteNG=false;	// fota FOTA書込みNGフラグ
 int	 	DLC_MatSPIFlashPage=256;	// fota SPIフラッシュ1ページbyte数
 int	 	DLC_MatSPIRemaindataFota;	// fota 1ページ未満の半端byte数→保持して次回書込み
 int	 	DLC_MatSPIWritePageFota;	// fota SPI書込みページインデックス
+int		DLC_MatFotaDataLen=0;	// fota FOTAデータレングス
+char	DLC_MatFotaCRC[4];	// fota FOTAデータチェックサム
 char	DLC_MatSPIRemainbufFota[256];	// fota 1ページ未満の半端byte保持バッファ
 char	DLC_MatSPICheckbufFota[256];	// fota ベリファイ用バッファ
 static	char wget_Head[] = "GET /wpfm.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// fota FOTAデータ指定
@@ -383,8 +385,9 @@ void MTapn()
 #else
 		DLCMatSend( "AT$SETSERVER,beam.soracom.io,8888\r" );
 #endif
-	} else {	// FOTA実行時
+	} else {	// fota FOTA実行時
 		DLCMatSend( "AT$SETSERVER,harvest-files.soracom.io,80\r" );	// fota soracom harvest指定
+		DLC_Matknd = 3;	// fota FOTA発呼
 	}
 	DLCMatTimerset( 0,TIMER_5000ms );
 	DLC_MatState = MATC_STATE_SVR;
@@ -554,6 +557,7 @@ void MTcls3()
 void MTclsF()	// fota
 {
 	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* FOTAデータ保存番地 */
+APP_delay(100);
 	DLC_MatLineIdx = 0;
 	putst("RecvData2:\r\n");
 // putst("DLC_MatSPIRemaindataFota:");puthxw(DLC_MatSPIRemaindataFota);putcrlf();
@@ -578,19 +582,21 @@ void MTclsF()	// fota
 			DLC_MatFotaWriteNG = true;
 			putst("PROG NG\r\n");
 		}
-		putst("BufData2:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
+//		putst("BufData2:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
 	}
-	if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし */
+	if ((DLC_MatFotaWriteNG == false) && ((DLC_MatSPIWritePageFota * 0x100) >= DLC_MatFotaDataLen)) {	/* 書込みNGなしかつ書込みレングスがFOTAデータレングス以上? */
 		memset(DLC_MatSPICheckbufFota, 0xFF, sizeof(DLC_MatSPICheckbufFota));
-		DLC_MatSPICheckbufFota[0xFC] = 0x04;
-		DLC_MatSPICheckbufFota[0xFD] = 0x03;
-		DLC_MatSPICheckbufFota[0xFE] = 0x02;
-		DLC_MatSPICheckbufFota[0xFF] = 0x01;
+//		DLC_MatSPICheckbufFota[0xFC] = 0x04;
+//		DLC_MatSPICheckbufFota[0xFD] = 0x03;
+//		DLC_MatSPICheckbufFota[0xFE] = 0x02;
+//		DLC_MatSPICheckbufFota[0xFF] = 0x01;
+		memcpy(&DLC_MatSPICheckbufFota[0xFC], DLC_MatFotaCRC, sizeof(DLC_MatFotaCRC));
 		putst("CheckData:\r\n");Dump(DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage);putcrlf();
 		if (W25Q128JV_programPage(fotaaddress + 0x35F, 0, (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){	/* チェック用256byte書込む */
 			DLCMatTimerClr( 0 );	/* タイマークリア */
 			putst("FOTA timer CLR\r\n");
-// putst("address:");puthxw(fotaaddress + 0x35F);putcrlf();
+putst("page:");puthxw(fotaaddress + 0x35F);putcrlf();
+putst("write:");puthxw(DLC_MatSPIWritePageFota);putcrlf();
 		}
 	}
 }
@@ -1896,6 +1902,7 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 					memcpy(DLC_MatSPIRemainbufFota, fpt + DLC_MatSPIFlashPage * k ,DLC_MatSPIRemaindataFota);	/* 半端byte保持バッファに保持 */
 					DLC_MatSPIWritePageFota = k + DLC_MatSPIWritePageFota;	/* SPI書込みページインデックス保持 */
 //					putst("RemainData1:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
+#if 0
 				} else {
 					putst("RecvData2:\r\n");
 //					Dump(DLC_MatResBuf,i);putcrlf();
@@ -1949,6 +1956,7 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 					if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし */
 						DLCMatTimerClr( 0 );	/* タイマークリア */
 					}
+#endif
 				}
 			} else {	/* ヘッダにConnection: closeあり=受信データ先頭 */
 				for (k = 0; k < 4; k++) {	/* SPI 256kbyte消去 */
@@ -1962,6 +1970,19 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 				fpt = strstr(DLC_MatResBuf,"Connection: close") + strlen("Connection: close\r\n\r\n");	/* FOTAデータの先頭アドレス */
 				*(fpt - 1) = 0;	// strlenのため
 				len = strlen(DLC_MatResBuf) + 1;	/* ヘッダのレングス */
+				len += 8;	// サイズとチェックサムの8byte
+				DLC_MatFotaDataLen = *fpt;	// FOTAデータレングス
+				fpt++;
+				DLC_MatFotaDataLen |= *fpt << 8;
+				fpt++;
+				DLC_MatFotaDataLen |= *fpt << 16;
+				fpt++;
+				DLC_MatFotaDataLen |= *fpt << 24;
+				fpt++;
+				putst("DLC_MatFotaDataLen:");puthxw(DLC_MatFotaDataLen);putcrlf();
+				memcpy(DLC_MatFotaCRC, fpt, sizeof(DLC_MatFotaCRC));
+				fpt += 4;
+				putst("DLC_MatFotaCRC[]:");Dump(DLC_MatFotaCRC, sizeof(DLC_MatFotaCRC));putcrlf();
 				if (j > 0) {	/* データが1024byte以上の場合 */
 					putst("RecvData3:\r\n");
 //					Dump(fpt, 0x400 - len);putcrlf();
