@@ -32,6 +32,7 @@ void DLCMatConfigDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatPostSndSub(),DLCMatPostReport();
 void DLCMatTimerset(int tmid,int cnt ),DLCMatError();
 void DLCMatWgetFile();	// fota FOTAファイルwget
+void ToBoot_reset(uchar);
 extern	char _Main_version[];
 int DLCMatRecvDisp();
 int DLCMatRecvWriteFota();	// fota FOTAデータ書込み処理
@@ -2350,7 +2351,6 @@ void MATRts()
 	if( PORT_GroupRead( PORT_GROUP_1 )&(0x1<<22))
 		putch('@');
 }
-void command_software_reset(uchar);
 void DLCMatMain()
 {
 	char key;
@@ -2483,18 +2483,21 @@ void DLCMatMain()
 #endif
 			break;
 		case 0x01:												/* CTRL+A */
-			if( CheckPasswd() )
-				__NVIC_SystemReset();
+			if( CheckPasswd() ){
+				ToBoot_reset(6);
+			}
 			break;
-		case 'Q':												/* CTRL+A */
+		case 0x03:												/* CTRL+A */
+			if( CheckPasswd() ){
+				__NVIC_SystemReset();
+			}
+			break;
+		case 'Q':												/* 強制STBY */
 			if( CheckPasswd() )
            		 WPFM_sleep();       // MCUをスタンバイモードにする
 			break;
-		case 'S':												/* CTRL+A */
+		case 'S':												/* Flash Powerdown */
 			W25Q128JV_powerDown();
-			break;
-		case 'J':
-			DLCMatRtcTimerset(0,30);
 			break;
 		default:
 			break;
@@ -2519,9 +2522,12 @@ int DLCMatIsSleep()
 	}
 	return 0;
 }
+/*
+	USBからのUPコマンド
+*/
 void DLCMatUpdate()
 {
-	command_software_reset(1);
+	ToBoot_reset(6);
 }
 void DLCMatError( int no )
 {

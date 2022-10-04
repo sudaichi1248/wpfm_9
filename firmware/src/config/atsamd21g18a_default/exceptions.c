@@ -71,6 +71,7 @@ void __attribute__((noreturn)) HardFault_Handler(void)
 #if defined(__DEBUG) || defined(__DEBUG_D) && defined(__XC32)
    __builtin_software_breakpoint();
 #endif
+	__NVIC_SystemReset();
    while (true)
    {
    }
