@@ -2422,7 +2422,7 @@ void DLCMatMain()
 			break;
 		case 'E':												/* ã≠êßñ{ÉvÉççÌèú */
 			if( CheckPasswd() ){
-				NVMCTRL_RowErase( 0x8000 );
+				NVMCTRL_RowErase( 0x3DF00 );
 			}
 			break;
 		case 'F':
