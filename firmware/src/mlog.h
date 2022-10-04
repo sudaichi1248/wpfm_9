@@ -31,8 +31,8 @@ extern "C" {
 */
   // (1) Mlog region (12MB)
 #define MLOG_ADDRESS_MLOG_TOP           0x000000    // Mlog region top
-//#define MLOG_ADDRESS_MLOG_LAST          0xBFFFFF    // Mlog region last
-#define MLOG_ADDRESS_MLOG_LAST          0x001FFF    // Mlog region last for test
+#define MLOG_ADDRESS_MLOG_LAST          0xAFFFFF    // Mlog region last
+//#define MLOG_ADDRESS_MLOG_LAST          0x001FFF    // Mlog region last for test
   // (2) Reserved region (4MB)
 #define MLOG_ADDRESS_RESERVED_TOP       0xC00000    // Reserved region top
 #define MLOG_ADDRESS_RESERVED_LAST      0xFFFFFF    // Reserved region last
