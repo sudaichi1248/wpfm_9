@@ -2487,6 +2487,29 @@ void DLCMatMain()
 				ToBoot_reset(6);
 			}
 			break;
+		case 'V':
+			WPFM_readSettingParameter( &config );
+			putst("lowThresholdVoltage[mV] : 1=2400,2=2600,3=3000");
+			putst("->");
+			key = getch();
+			switch( key ){
+			case '1':
+				config.lowThresholdVoltage = 2400;
+				WPFM_writeSettingParameter( &config );
+				break;
+			case '2':
+				config.lowThresholdVoltage = 2600;
+				WPFM_writeSettingParameter( &config );
+				break;
+			case '3':
+				config.lowThresholdVoltage = 3000;
+				WPFM_writeSettingParameter( &config );
+				break;
+			default:
+				putst("Out of range.\r\n");
+				break;
+			}
+			break;
 		case 0x03:												/* CTRL+A */
 			if( CheckPasswd() ){
 				__NVIC_SystemReset();

@@ -222,37 +222,37 @@ static uint32_t alertStatusFormat(uint8_t alertStatus)
     uint32_t status = 0;
 
     // Ch1 alert
-    if (alertStatus & MLOG_ALERT_STATUS_CH1_UPPER_WARNING)
+    if (alertStatus == MLOG_ALERT_STATUS_CH1_UPPER_WARNING)
     {
         status += 10000000;
     }
-    else if (alertStatus & MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION)
+    else if (alertStatus == MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION)
     {
         status += 1000000;
     }
-    else if (alertStatus & MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION)
+    else if (alertStatus == MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION)
     {
         status += 100000;
     }
-    else if (alertStatus & MLOG_ALERT_STATUS_CH1_LOWER_WARNING)
+    else if (alertStatus == MLOG_ALERT_STATUS_CH1_LOWER_WARNING)
     {
         status += 10000;
     }
 
     // Ch2 alert
-    if (alertStatus & MLOG_ALERT_STATUS_CH2_UPPER_WARNING)
+    if (alertStatus == MLOG_ALERT_STATUS_CH2_UPPER_WARNING)
     {
         status += 1000;
     }
-    else if (alertStatus & MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION)
+    else if (alertStatus == MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION)
     {
         status += 100;
     }
-    else if (alertStatus & MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION)
+    else if (alertStatus == MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION)
     {
         status += 10;
     }
-    else if (alertStatus & MLOG_ALERT_STATUS_CH2_LOWER_WARNING)
+    else if (alertStatus == MLOG_ALERT_STATUS_CH2_LOWER_WARNING)
     {
         status += 1;
     }
