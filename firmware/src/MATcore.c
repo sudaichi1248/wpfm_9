@@ -2204,10 +2204,10 @@ void DLCRomTest()
 		key = toupper( getch() );
 		switch( key ){
 		case 'W':
-			NVMCTRL_PageWrite( (uint32_t *)buff,address );
+			NVMCTRL_PageWrite( (uint32_t *)buff,address );puthxw( address );putst("wrote!\r\n");
 			break;
 	    case 'E':
-			NVMCTRL_RowErase( address );
+			NVMCTRL_RowErase( address );puthxw( address );putst("deleted!\r\n");
 			break;
 		case 'F':
 			putst("Fill char=>");
@@ -2228,7 +2228,8 @@ void DLCRomTest()
 			address = c_get32b();
 			break;
 		case 'D':
-			NVMCTRL_RowErase( 0x0003FE00 );
+			putst("保存パラメータ削除\r\n");
+			NVMCTRL_RowErase( 0x0003FE00 );				/* 保存パラメータ削除 */
 			break;
 		case 0x1b:
 		case 0x03:
