@@ -207,8 +207,14 @@ static void eventLoopOnMeasurementMode(void)
             WPFM_status = WPFM_STATUS_MEASUREMENT;
             if (measurementCount++ < 5)
             {
-                // 定期計測の最初の5回だけLED1を500mS点灯させる
-                UTIL_LED1_ONESHOT();
+				if ((WPFM_settingParameter.measurementInterval == 4) && (measurementCount == 1)) {	// 測定間隔4秒で1回目の測定はスルー
+					;
+				} else {
+					if (WPFM_ForcedCall == false) {	// 強制発報でない
+		                // 定期計測の最初の5回だけLED1を500mS点灯させる
+		                UTIL_LED1_ONESHOT();
+	                }
+				}
             }
             WPFM_measureRegularly(false);
             WPFM_status = WPFM_STATUS_WAIT_COMMAND;

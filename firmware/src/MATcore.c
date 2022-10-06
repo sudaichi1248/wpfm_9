@@ -22,8 +22,8 @@ void IDLEputch();
 void command_main();
 //void _GO_IDLE(){command_main();DLCMatState();}
 #ifdef ADD_FUNCTION
-void DLCMatAlertTimeChk();
-void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatAlertTimeChk();}
+void DLCMatRtcTimeChk();
+void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatRtcTimeChk();}
 #else
 void _GO_IDLE(){DLCMatState();IDLEputch();}
 #endif
@@ -52,6 +52,7 @@ uchar	DLC_BigState,DLC_Matknd;
 uchar	DLC_MatRetry;
 char	DLC_MatConfigItem[32];
 uchar	DLC_MatTxType;
+bool	DLC_ForcedCallOK=false;
 
 bool	DLC_MatFotaExe=false;	// fota FOTA実行フラグ
 // bool	DLC_MatFotaExe=true;	// fota FOTA実行フラグ
@@ -129,7 +130,7 @@ struct {
 	int		cnt;
 	uchar	TO;
 } DLC_MatTimer[TIMER_NUM];
-#define		RTC_TIMER_NUM		5
+#define		RTC_TIMER_NUM		5	// 0:alertTimeout,1:LED1 6s Timer
 struct {
 	int		cnt;
 	uchar	TO;						/* 0:not use 1;counting 2:TO */
@@ -409,6 +410,9 @@ void MTtime()
 {
 	memcpy( DLC_MatDateTime,DLC_MatLineBuf,DLC_MatLineIdx );
 	DLC_MatLineIdx = 0;
+	if (WPFM_ForcedCall == true) {	// 強制発報
+		UTIL_LED1_ON();
+	}
 	DLCMatSend( "AT$TIME\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
 }
@@ -438,6 +442,9 @@ void MTOpen()
 void MTcnfg()
 {
 	DLC_MatLineIdx = 0;
+	if (WPFM_ForcedCall == true) {	// 強制発報
+		UTIL_LED1_OFF();
+	}
 	DLCMatPostConfig();
 	DLC_MatState = MATC_STATE_CNFG;
 	DLCMatTimerset( 0,TIMER_7000ms );
@@ -458,6 +465,10 @@ void MTrrcv()
 void MTrvTO()
 {
 	DLC_MatLineIdx = 0;
+	if (WPFM_ForcedCall == true) {	// 強制発報
+		UTIL_startBlinkLED1(5);	// LED1 5回点滅
+		DLCMatRtcTimerset(1, 6);
+	}
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatSend( "AT$CLOSE\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
@@ -469,7 +480,12 @@ void MTdata()
 	rt = DLCMatRecvDisp();
 	if( rt == 0 ){												/* 残りデータなし */
 		zLogOn = 1;
-		DLCMatTimerset( 0,TIMER_300ms);						/* $CLOSE待ち */
+		DLCMatTimerset( 0,TIMER_300ms);							/* $CLOSE待ち */
+		if (WPFM_ForcedCall == true) {	// 強制発報
+			DLC_ForcedCallOK = true;
+			UTIL_LED1_ON();	// LED1 5秒点灯
+			DLCMatRtcTimerset(1, 6);
+		}
 	}
 	else {
 		putst("Remain=");putdech( rt );putcrlf();
@@ -497,6 +513,11 @@ void MTfirm()	// fota
 void MTopn2()
 {
 	DLC_MatLineIdx = 0;
+	if ((WPFM_ForcedCall == true) && (DLC_ForcedCallOK == false)) {	// 強制発報かつサーバ応答なし
+		UTIL_startBlinkLED1(5);	// LED1 5回点滅
+		DLCMatRtcTimerset(1, 6);
+	}
+	DLC_ForcedCallOK = false;
 	DLCMatSend( "AT$OPEN\r" );
 	DLCMatTimerset( 0,TIMER_15s );
 	DLC_MatState = MATC_STATE_OPN2;
@@ -535,6 +556,10 @@ void MTrpOk()
 void MTdisc()
 {
 	DLC_MatLineIdx = 0;
+	if (WPFM_ForcedCall == true) {	// 強制発報
+		UTIL_startBlinkLED1(5);	// LED1 5回点滅
+		DLCMatRtcTimerset(1, 6);
+	}
 	if( DLC_Matknd ){													/* 発呼要求保持 */
 		DLC_Matknd = 0;
 		DLCMatSend( "AT$CONNECT\r" );
@@ -551,6 +576,10 @@ void MTdisc()
 void MTcls3()
 {
 	DLC_MatLineIdx = 0;
+	if (WPFM_ForcedCall == true) {	// 強制発報
+		UTIL_startBlinkLED1(5);	// LED1 5回点滅
+		DLCMatRtcTimerset(1, 6);
+	}
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatSend( "AT$DISCONNECT\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
@@ -559,7 +588,7 @@ void MTcls3()
 void MTclsF()	// fota
 {
 	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* FOTAデータ保存番地 */
-APP_delay(100);
+	APP_delay(100);
 	DLC_MatLineIdx = 0;
 	putst("RecvData2:\r\n");
 // putst("DLC_MatSPIRemaindataFota:");puthxw(DLC_MatSPIRemaindataFota);putcrlf();
@@ -1481,11 +1510,16 @@ void DLCMatAlertTimeStart()
 putst("\r\nAlertTime start:");puthxs(WPFM_settingParameter.alertTimeout);putcrlf();
 	}
 }
-void DLCMatAlertTimeChk()
+void DLCMatRtcTimeChk()
 {
 	if (DLCMatRtcChk(0)) {	// AlertTime T/O?
 		WPFM_cancelAlert();
 putst("\r\nAlertTime T/O");putcrlf();
+	}
+	if (DLCMatRtcChk(1)) {	// LED1 6s T/O?
+		UTIL_LED1_OFF();	// LED1 消灯
+		WPFM_ForcedCall = false;
+		DLC_ForcedCallOK = false;
 	}
 }
 void DLCMatAlertTimeClr()
@@ -2483,11 +2517,6 @@ void DLCMatMain()
 			putst("AlertTimeOut:");puthxb(config.alertTimeout);putcrlf();
 #endif
 			break;
-		case 0x01:												/* CTRL+A */
-			if( CheckPasswd() ){
-				ToBoot_reset(6);
-			}
-			break;
 		case 'V':
 			WPFM_readSettingParameter( &config );
 			putst("lowThresholdVoltage[mV] : 1=2400,2=2600,3=3000");
@@ -2509,6 +2538,11 @@ void DLCMatMain()
 			default:
 				putst("Out of range.\r\n");
 				break;
+			}
+			break;
+		case 0x01:												/* CTRL+A */
+			if( CheckPasswd() ){
+				ToBoot_reset(6);
 			}
 			break;
 		case 0x03:												/* CTRL+A */

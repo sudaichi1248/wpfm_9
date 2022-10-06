@@ -36,6 +36,8 @@ void WPFM_uploadRegularly(void)
 */
 void WPFM_uploadOneShot(bool unsentOrEmpty)
 {
+	WPFM_ForcedCall = true;
+	UTIL_startBlinkLED1(5);	// LED1 5‰ñ“_–Å
     // Wake up MATcore
     DLCMatCall(2);
 #if 0

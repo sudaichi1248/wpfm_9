@@ -65,6 +65,7 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
 };
 volatile uint32_t WPFM_measurementInterval;     // Current measurement interval[Sec]
 uint32_t WPFM_communicationInterval;            // Current communication interval[Sec]
+bool WPFM_ForcedCall = false;
 
   // for alert
 time_t WPFM_lastAlertStartTimes[2][2];          // Time when the last alert(warnin or attention) was issued [0:ch1/1:ch2] [0:upper/1:lower]
