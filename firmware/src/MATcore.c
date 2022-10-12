@@ -16,6 +16,7 @@
 #include "mlog.h"
 #include "util.h"
 #include "wpfm.h"
+#include "DLCpara.h"
 void DLCMatTimerInt();
 void DLCMatState();
 void IDLEputch();
@@ -2478,9 +2479,10 @@ void DLCMatMain()
 			puthxw( PORT_GroupRead( PORT_GROUP_0 ));putch(':');
 			puthxw( PORT_GroupRead( PORT_GROUP_1 ));
 			break;
-		case 'E':												/* 強制本プロ削除 */
+		case 'E':												/* 強制本プロ削除+Reset */
 			if( CheckPasswd() ){
 				NVMCTRL_RowErase( 0x3DF00 );
+				__NVIC_SystemReset();
 			}
 			break;
 		case 'F':
@@ -2563,19 +2565,16 @@ void DLCMatMain()
 				break;
 			}
 			break;
-		case 0x01:												/* CTRL+A */
-			if( CheckPasswd() ){
-				ToBoot_reset(6);
-			}
-			break;
 		case 0x03:												/* CTRL+A */
 			if( CheckPasswd() ){
 				__NVIC_SystemReset();
 			}
 			break;
 		case 'Q':												/* 強制STBY */
-			if( CheckPasswd() )
-           		 WPFM_sleep();       // MCUをスタンバイモードにする
+			if( CheckPasswd() ){
+				DLC_MatState = MATC_STATE_SLP;
+           		 WPFM_sleep();     							  // MCUをスタンバイモードにする
+           	}
 			break;
 		case 'S':												/* Flash Powerdown */
 			W25Q128JV_powerDown();
@@ -2604,11 +2603,18 @@ int DLCMatIsSleep()
 	return 0;
 }
 /*
-	USBからのUPコマンド
+	USBからのUPDATEコマンド
 */
-void DLCMatUpdate()
+void DLCMatUpdateGo()
 {
 	ToBoot_reset(6);
+}
+/*
+	USBからのFOTA開始コマンド
+*/
+void DLCMatFotaGo()
+{
+	DLCFotaGoAndReset();
 }
 void DLCMatError( int no )
 {
