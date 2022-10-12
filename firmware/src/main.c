@@ -8,7 +8,8 @@
     main.c
 
   Date:
-    2022/09/10 (R0)
+    2022/09/19 (R0)
+    2022/10/08 (R0.1) Introduce DEBUG_ADD_LF symbol for debugging
 
   Summary:
     This file contains the "main" function for a project.
@@ -25,6 +26,7 @@
 // *****************************************************************************
 
 #define DEBUG_UART
+//#define DEBUG_ADD_LF                 // If defined, command response terminated by LF for debugging
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -41,6 +43,7 @@
 #include "w25q128jv.h"
 #include "mlog.h"
 #include "Moni.h"
+#include "DLCpara.h"
 void	DLCMatMain();
 int		DLCMatIsSleep();
 /*
@@ -61,7 +64,7 @@ int main(void)
 
     /* Initialize all modules */
     SYS_Initialize(NULL);
-
+	DLCParaRead();
     /*** FOR DEBUG ***/
     if (TEST_SW_Get() == 0)
     {
@@ -93,7 +96,7 @@ int main(void)
     //DEBUG_UART_printlnFormat("MLOG Max logs = %u", ((MLOG_ADDRESS_MLOG_LAST + 1) / 256) * MLOG_LOGS_PER_PAGE);
 
     // Main-loop
-    if (WPFM_operationMode == WPFM_OPERATION_MODE_NON_MEASUREMENT)
+    if ((WPFM_operationMode == WPFM_OPERATION_MODE_NON_MEASUREMENT)||(DLC_Para.FOTAact == 0)) /* 非測定モードorFOTA */
     {
         // Execute on non-measurement mode processing
         DEBUG_UART_printlnString("RUN AS NON-MEASUREMENT MODE");
@@ -207,14 +210,8 @@ static void eventLoopOnMeasurementMode(void)
             WPFM_status = WPFM_STATUS_MEASUREMENT;
             if (measurementCount++ < 5)
             {
-				if ((WPFM_settingParameter.measurementInterval == 4) && (measurementCount == 1)) {	// 測定間隔4秒で1回目の測定はスルー
-					;
-				} else {
-					if (WPFM_ForcedCall == false) {	// 強制発報でない
-		                // 定期計測の最初の5回だけLED1を500mS点灯させる
-		                UTIL_LED1_ONESHOT();
-	                }
-				}
+                // 定期計測の最初の5回だけLED1を500mS点灯させる
+                UTIL_LED1_ONESHOT();
             }
             WPFM_measureRegularly(false);
             WPFM_status = WPFM_STATUS_WAIT_COMMAND;
@@ -222,7 +219,9 @@ static void eventLoopOnMeasurementMode(void)
             if (WPFM_isInSendingRegularly)
             {
                 SMPIF_sendRegularly();      // 定期受信を実行する
-                APP_printlnUSB("");         // デバッグ用に改行を入れる（リリース版では削除する） @remove
+#ifdef DEBUG_ADD_LF
+                APP_printlnUSB("");         // デバッグ用に改行を入れる
+#endif
             }
 
             WPFM_doMeasure = false;
@@ -368,8 +367,9 @@ static void eventLoopOnNonMeasurementMode(void)
                 {
                     WPFM_measureRegularly(true);
                     SMPIF_sendRegularly();       // 定期受信を実行する
-                    APP_printlnUSB("");     // Response terminated by LF for  @remove
-
+#ifdef DEBUG_ADD_LF
+                    APP_printlnUSB("");         // デバッグ用に改行を入れる（
+#endif
                     WPFM_doMeasure = false;
                 }
             }

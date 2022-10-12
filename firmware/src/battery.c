@@ -38,6 +38,10 @@ int BATTERY_checkAndSwitchBattery(void)
                 WPFM_batteryStatus |= mask;
             }
         }
+        else if (WPFM_batteryStatus & mask)
+        {
+            WPFM_timesBelowTheThresholds[batteryIndex] = 0;     // reset counter
+        }
     }
 
     // Set in-use flag to WPFM_batteryStatus
@@ -55,6 +59,7 @@ int BATTERY_checkAndSwitchBattery(void)
             DEBUG_UART_printlnFormat("WPFM_externalBatteryNumberInUse is bad: %d", WPFM_externalBatteryNumberInUse);
             break;
     }
+
     // Switch batteries if necessary.
     uint16_t batteryStatus = WPFM_batteryStatus;
     if (WPFM_timesBelowTheThresholds[0] >= WPFM_settingParameter.timesLessThresholdVoltage)

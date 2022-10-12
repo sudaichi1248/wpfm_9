@@ -3,8 +3,9 @@
  * Author:  Interark Corp.
  * Summary: Measure log header file.
  * Date:    2022/08/17 (R0)
- *          2022/09/09 (R1) Support temporary SRAM log
- *			2022/09/13 Bitassign update  Alert status(CH1/CH2)
+ *          2022/09/09 (R0.1) Support temporary SRAM log
+ *			2022/09/13 (R0.2) Bitassign update  Alert status(CH1/CH2)
+ *          2022/10/08 (R0.3) fix bug related to return error value of findLogBySN()
  * Note:
  *          Use 2KB of SRAM for temporary SRAM log (R1)
  */
@@ -31,8 +32,8 @@ extern "C" {
 */
   // (1) Mlog region (12MB)
 #define MLOG_ADDRESS_MLOG_TOP           0x000000    // Mlog region top
-#define MLOG_ADDRESS_MLOG_LAST          0xAFFFFF    // Mlog region last
-//#define MLOG_ADDRESS_MLOG_LAST          0x001FFF    // Mlog region last for test
+//#define MLOG_ADDRESS_MLOG_LAST          0xBFFFFF    // Mlog region last
+#define MLOG_ADDRESS_MLOG_LAST          0x001FFF    // Mlog region last for test
   // (2) Reserved region (4MB)
 #define MLOG_ADDRESS_RESERVED_TOP       0xC00000    // Reserved region top
 #define MLOG_ADDRESS_RESERVED_LAST      0xFFFFFF    // Reserved region last
@@ -78,13 +79,13 @@ typedef struct
 #define MLOG_ALERT_STATUS_CH1_NORMAL            0x00    // CH1 Normal status
 #define MLOG_ALERT_STATUS_CH1_UPPER_WARNING     0x01    // CH1 Warning status(upper-side)
 #define MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION   0x02    // CH1 Attention status(upper-side)
-#define MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION   0x03    // CH1 Attention status(lower-side)
-#define MLOG_ALERT_STATUS_CH1_LOWER_WARNING     0x04    // CH1 Warning status(lower-side)
+#define MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION   0x04    // CH1 Attention status(lower-side)
+#define MLOG_ALERT_STATUS_CH1_LOWER_WARNING     0x08    // CH1 Warning status(lower-side)
 #define MLOG_ALERT_STATUS_CH2_NORMAL            0x00    // CH2 Normal status
 #define MLOG_ALERT_STATUS_CH2_UPPER_WARNING     0x10    // CH2 Warning status(upper-side)
 #define MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION   0x20    // CH2 Attention status(upper-side)
-#define MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION   0x30    // CH2 Attention status(lower-side)
-#define MLOG_ALERT_STATUS_CH2_LOWER_WARNING     0x40    // CH2 Warning status(lower-side)
+#define MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION   0x40    // CH2 Attention status(lower-side)
+#define MLOG_ALERT_STATUS_CH2_LOWER_WARNING     0x80    // CH2 Warning status(lower-side)
 
 // Battery status(#1/#2)
 #define MLOG_BAT_STATUS_BAT1_NOT_USE            0x00    // Battery #1 not used

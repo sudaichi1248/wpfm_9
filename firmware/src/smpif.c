@@ -3,10 +3,12 @@
  * Author:  Interark Corp.
  * Summary: WPFM(code name "DLC_04") project Smartphone interface implementation file.
  * Date:    2022/08/18 (R0)
+ *          2022/10/08 (R0.1) Introduce DEBUG_ADD_LF symbol
  * Note:    Common definitions
  */
 
 #define DEBUG_UART                   // Debug with UART
+//#define DEBUG_ADD_LF                 // If defined, command response terminated by LF for debugging
 
 #include <string.h>
 #include <ctype.h>
@@ -16,8 +18,9 @@
 #include "debug.h"
 #include "uart_debug.h"
 #include "smpif.h"
-void DLCMatUpdate();
 
+void DLCMatUpdateGo();
+void DLCMatFotaGo();
 /*
 *   Symbols
 */
@@ -55,7 +58,8 @@ static SMPIF_COMMAND_TABLE _SMPIF_commandTables[] =
         { "CS", SMPIF_setCallibrationValues },
         { "CN", SMPIF_notifyCallibrationTarget },
         { "CR", SMPIF_readCallibrationValues },
-        { "UP", DLCMatUpdate },
+        { "UG", DLCMatUpdateGo },
+        { "FG", DLCMatFotaGo },
         { NULL, NULL }
     };
 
@@ -154,7 +158,9 @@ int SMPIF_handleMessage(void)
     memset((void *)_SMPIF_responseBuffer, 0, SMPIF_MAX_RESPONSE_LENGTH);
     (*(_SMPIF_commandTables[_SMPIF_commandTableIndex].handler))(_SMPIF_parameterBuffer, _SMPIF_responseBuffer);
 
-    APP_printlnUSB("");     // Response terminated by LF for debugging @remove
+#ifdef DEBUG_ADD_LF
+    APP_printlnUSB("");     // Response terminated by LF for debugging
+#endif
 
     DEBUG_UART_printlnFormat("call handler(%d) done.", _SMPIF_commandTableIndex);
     return (SMPIF_ERR_NONE);

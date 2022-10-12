@@ -4,7 +4,8 @@
  * Summary: WPFM(code name "DLC_04") project Smartphone interface implementation file.
  * Date:    2022/08/16 (R0)
  *          2022/09/07 (R0.1) modify SMPIF_getData() response message format
- * Note:    LOg data related functions.
+            2022/10/09 (R0.2) fix SMPIF_getData() for maximum number of logs in "DG" response and outputting garbage
+ * Note:    Log data related functions.
  */
 
 #define DEBUG_UART                   // Debug with UART
@@ -16,7 +17,10 @@
 #include "rtc.h"
 #include "smpif.h"
 
-#define CHUNK_SIZE          256
+/*
+*   Symbols
+*/
+#define CHUNK_SIZE          256     // Size of data written to USB at one time
 
 static int batteryStatusFormat(uint8_t batteryStatus);
 static bool makeDatetimeString(uint32_t epochTime, char datetime[]);
@@ -111,7 +115,7 @@ void SMPIF_getData(const char *param, char *resp)
         strcat(resp + 6, buf);
         DEBUG_UART_printlnFormat("[%08lXh] \"%s\"", mlog.sequentialNumber, buf); APP_delay(20);
 
-        if (++number > SMPIF_MAX_LOGS_PER_RESPONSE)
+        if (++number >= SMPIF_MAX_LOGS_PER_RESPONSE)
             break;
 
         sequentialNumber = mlog.sequentialNumber + 1;
@@ -142,23 +146,19 @@ void SMPIF_getData(const char *param, char *resp)
         resp[6 + length] = SMPIF_ETX;
         resp[7 + length] = '\0';    // terminate
 
-        //DEBUG_UART_printlnFormat("[%s]", resp); APP_delay(20);
-
-        // Divide and send message to smartphone app.
+        // Divide and send message to USB
         length += 7;
-        int n = 0;
-        for (n = 0; n < length; n += CHUNK_SIZE)
+        for (int n = 0; n < (length / CHUNK_SIZE); n++)
         {
             APP_writeUSB((uint8_t *)resp, CHUNK_SIZE);
             resp += CHUNK_SIZE;
+            length -= CHUNK_SIZE;
         }
-        if (n - length > 0)
+        // Output the rest to USB
+        if (length > 0)
         {
-            APP_writeUSB((uint8_t *)resp, (n - length + 1));
+            APP_writeUSB((uint8_t *)resp, length);
         }
-
-        //SMPIF_dumpMessage("RESP", resp);
-        //APP_delay(200);
     }
     else
     {
@@ -222,37 +222,37 @@ static uint32_t alertStatusFormat(uint8_t alertStatus)
     uint32_t status = 0;
 
     // Ch1 alert
-    if (alertStatus == MLOG_ALERT_STATUS_CH1_UPPER_WARNING)
+    if (alertStatus & MLOG_ALERT_STATUS_CH1_UPPER_WARNING)
     {
         status += 10000000;
     }
-    else if (alertStatus == MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION)
+    else if (alertStatus & MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION)
     {
         status += 1000000;
     }
-    else if (alertStatus == MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION)
+    else if (alertStatus & MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION)
     {
         status += 100000;
     }
-    else if (alertStatus == MLOG_ALERT_STATUS_CH1_LOWER_WARNING)
+    else if (alertStatus & MLOG_ALERT_STATUS_CH1_LOWER_WARNING)
     {
         status += 10000;
     }
 
     // Ch2 alert
-    if (alertStatus == MLOG_ALERT_STATUS_CH2_UPPER_WARNING)
+    if (alertStatus & MLOG_ALERT_STATUS_CH2_UPPER_WARNING)
     {
         status += 1000;
     }
-    else if (alertStatus == MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION)
+    else if (alertStatus & MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION)
     {
         status += 100;
     }
-    else if (alertStatus == MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION)
+    else if (alertStatus & MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION)
     {
         status += 10;
     }
-    else if (alertStatus == MLOG_ALERT_STATUS_CH2_LOWER_WARNING)
+    else if (alertStatus & MLOG_ALERT_STATUS_CH2_LOWER_WARNING)
     {
         status += 1;
     }

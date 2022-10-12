@@ -3,7 +3,8 @@
  * Author:  Interark Corp.
  * Summary: Measure log implementation file.
  * Date:    2022/08/18 (R0)
- *          2022/09/09 (R1) Support temporary SRAM log
+ *          2022/09/09 (R0.1) Support temporary SRAM log
+ *          2022/10/08 (R0.3) fix bug related to return error value of findLogBySN()
  * Note:
  *          Use 2KB of SRAM for temporary SRAM log (R1)
  */
@@ -21,11 +22,12 @@
 /*
 *   Macros
 */
-#define IS_NOT_USED_SN(sn)      ((sn) == ~(uint32_t)0)        // sequential number "sn" is not used ?
+#define IS_NOT_USED_SN(sn)      ((sn) == ~(uint32_t)0)          // sequential number "sn" is not used ?
 
 /*
 *   Symbols
 */
+#define BAD_MLOG_ADDRESS        (MLOG_ADDRESS_MLOG_LAST+1)      // use as bad address(=error)
 
 /*
 *   Local(static) variables and functions
@@ -249,7 +251,7 @@ int MLOG_findLog(uint32_t sn, MLOG_T *log_p)
     {
         DEBUG_UART_printFormat("MLOG_findLog(): unknown SN=%ld - ", sn); APP_delay(30);
         lastAddress = findLogBySN(sn);
-        if (lastAddress == 0)
+        if (lastAddress == BAD_MLOG_ADDRESS)
         {
             DEBUG_UART_printlnString("NOT FOUND"); APP_delay(10);
             return (MLOG_ERR_NOT_EXIST);     // Not found
@@ -635,7 +637,7 @@ static uint32_t findLogBySN(uint32_t sn)
 
     if (sn >= MLOG_MAX_SEQUENTIAL_NUMBER)
     {
-        return (0);     // Not found
+        return (BAD_MLOG_ADDRESS);     // Not found
     }
 
     for (uint32_t blockNo = 0; blockNo < ((MLOG_ADDRESS_MLOG_LAST + 1) >> 16) + 1; blockNo++)
@@ -665,7 +667,7 @@ static uint32_t findLogBySN(uint32_t sn)
     }
 
     DEBUG_UART_printlnFormat("> findLogBySN(%ld) NOT FOUND", sn); APP_delay(10);
-    return (0);     // Not found
+    return (BAD_MLOG_ADDRESS);     // Not found
 }
 
 static int _MLOG_getLogOnSRAM(MLOG_T *log_p)
