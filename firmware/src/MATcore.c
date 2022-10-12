@@ -498,7 +498,7 @@ void MTfirm()	// fota
 {
 	int	rt;
 	if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし */
-		DLCMatTimerset( 4,TIMER_12s);
+		DLCMatTimerset( 4,TIMER_5000ms);
 	}
 	rt = DLCMatRecvWriteFota();			/* 内部Flashへ受信データ書込み処理 */
 	putst("RecvRet=");puthxs( rt );putcrlf();
@@ -635,11 +635,13 @@ putst("length(page):");puthxw(DLC_MatFotaDataLen / DLC_MatSPIFlashPage);putcrlf(
 				putst("FOTA timer CLR\r\n");
 putst("crc page:");puthxw((fotaaddress + 0x35F00) / DLC_MatSPIFlashPage);putcrlf();
 putst("write:");puthxw(DLC_MatSPIWritePageFota);putcrlf();
-//				DLCFotaFinAndReset();
+				DLC_delay(1000);
+				DLCFotaFinAndReset();
 			}
 		}
 	}
-//	DLCFotaNGAndReset();
+	DLC_delay(1000);
+	DLCFotaNGAndReset();
 }
 void MTRSlp()
 {
@@ -682,12 +684,20 @@ void MTconW()
 	DLCMatTimerset( 0,TIMER_90s );
 	DLC_MatState = MATC_STATE_CONN;
 }
+int	TOcnt=0;
 void MTtoF()	// fota T/O
 {
 	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* FOTAデータ保存番地 */
-	// 実行フラグそのままでリセットしリトライ?
-	W25Q128JV_eraseSctor(((fotaaddress + 0x36000) / 0x1000) - 1, true);	/* 失敗なのでFOTAデータ最終セクタ消去(SPI Flash) */
-//	DLCFotaNGAndReset();
+	if (TOcnt < 3) {
+		TOcnt++;
+		DLCMatTimerset( 4,TIMER_5000ms);
+		DLCMatSend( "AT$RECV,1024\r" );
+		putst("リトライ(*o*)\r\n");
+	} else {
+		// 実行フラグそのままでリセットしリトライ?
+		W25Q128JV_eraseSctor(((fotaaddress + 0x36000) / 0x1000) - 1, true);	/* 失敗なのでFOTAデータ最終セクタ消去(SPI Flash) */
+//		DLCFotaNGAndReset();
+	}
 }
 struct {
 	uchar	wx;
@@ -804,7 +814,7 @@ void	 (*MTjmp[18][19])() = {
 /*					  0         1       2      3       4       5       6       7       8       9       10      11      12      13      14      15      16      17   18     */
 /*				  	 INIT    IDLE    IMEI    APN     SVR     CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR   */
 /* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy  },
-/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, ______, ______, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, ______, MTtoF,  ______, ______, ______, ______ },
+/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, ______, ______, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, ______, ______ },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______ },
@@ -1070,13 +1080,13 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"Upper0_ch1\":%d,"			,config.upperLimits[0] );					strcat( http_tmp,tmp );		/* ch1 センサ出力の上限値 */
 	sprintf( tmp,"\"Lower0_ch1\":%d,"			,config.lowerLimits[0] );					strcat( http_tmp,tmp );		/* ch1 センサ出力の下限値 */
 	sprintf( tmp,"\"AlertSw_U2_ch1\":%d,"		,(int)config.alertEnableKinds[0][0][1] );	strcat( http_tmp,tmp );		/* アラート U2 ch1 */
-	sprintf( tmp,"\"Upper2_ch1\":%f,"			,config.alertUpperLimits[0][1] );			strcat( http_tmp,tmp );		/* 上限値2 ch1 */
+	sprintf( tmp,"\"Upper2_ch1\":%.03f,"		,config.alertUpperLimits[0][1] );			strcat( http_tmp,tmp );		/* 上限値2 ch1 */
 	sprintf( tmp,"\"AlertSw_U1_ch1\":%d,"		,(int)config.alertEnableKinds[0][0][0] );	strcat( http_tmp,tmp );		/* アラート U1 ch1 */
-	sprintf( tmp,"\"Upper1_ch1\":%f,"			,config.alertUpperLimits[0][0] );			strcat( http_tmp,tmp );		/* 上限値1 ch1 */
+	sprintf( tmp,"\"Upper1_ch1\":%.03f,"		,config.alertUpperLimits[0][0] );			strcat( http_tmp,tmp );		/* 上限値1 ch1 */
 	sprintf( tmp,"\"AlertSw_L1_ch1\":%d,"		,(int)config.alertEnableKinds[0][1][0] );	strcat( http_tmp,tmp );		/* アラート U2 ch1 */
-	sprintf( tmp,"\"Lower1_ch1\":%f,"			,config.alertLowerLimits[0][0] );			strcat( http_tmp,tmp );		/* 上限値2 ch1 */
+	sprintf( tmp,"\"Lower1_ch1\":%.03f,"		,config.alertLowerLimits[0][0] );			strcat( http_tmp,tmp );		/* 上限値2 ch1 */
 	sprintf( tmp,"\"AlertSw_L2_ch1\":%d,"		,(int)config.alertEnableKinds[0][1][1] );	strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Lower2_ch1\":%f,"			,config.alertLowerLimits[0][1] );			strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Lower2_ch1\":%.03f,"		,config.alertLowerLimits[0][1] );			strcat( http_tmp,tmp );
  	sprintf( tmp,"\"Measure_ch1\":\"%s\","		,config.Measure_ch1 );						strcat( http_tmp,tmp );
  	sprintf( tmp,"\"MeaKind_ch1\":\"%s\","		,config.MeaKind_ch1 );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Chattering_ch1\":%d,"		,config.alertChatteringTimes[0] );			strcat( http_tmp,tmp );
@@ -1084,13 +1094,13 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"Upper0_ch2\":%d,"			,config.upperLimits[1] );					strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Lower0_ch2\":%d,"			,config.lowerLimits[1] );					strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertSw_U2_ch2\":%d,"		,(int)config.alertEnableKinds[1][0][1] );	strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Upper2_ch2\":%f,"			,config.alertUpperLimits[1][1] );			strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Upper2_ch2\":%.03f,"		,config.alertUpperLimits[1][1] );			strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertSw_U1_ch2\":%d,"		,(int)config.alertEnableKinds[1][0][0] );	strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Upper1_ch2\":%f,"			,config.alertUpperLimits[1][0] );			strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Upper1_ch2\":%.03f,"		,config.alertUpperLimits[1][0] );			strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertSw_L1_ch2\":%d,"		,(int)config.alertEnableKinds[1][1][0] );	strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Lower1_ch2\":%f,"			,config.alertLowerLimits[1][0] );			strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Lower1_ch2\":%.03f,"		,config.alertLowerLimits[1][0] );			strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertSw_L2_ch2\":%d,"		,(int)config.alertEnableKinds[1][1][1] );	strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Lower2_ch2\":%f,"			,config.alertLowerLimits[1][1] );			strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Lower2_ch2\":%.03f,"		,config.alertLowerLimits[1][1] );			strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Measure_ch2\":\"%s\","		,config.Measure_ch2 );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"MeaKind_ch2\":\"%s\","		,config.MeaKind_ch2 );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Chattering_ch2\":%d,"		,config.alertChatteringTimes[1] );			strcat( http_tmp,tmp );
@@ -1599,25 +1609,25 @@ putst("\r\ncoco3\r\n");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
 			config.upperLimits[0] = atoi(DLC_MatConfigItem);
-//			putst("Upper0_ch1:");puthxb(config.upperLimits[0]);putcrlf();
+//			putst("Upper0_ch1:");puthxs(config.upperLimits[0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Upper0_ch2");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
 			config.upperLimits[1] = atoi(DLC_MatConfigItem);
-//			putst("Upper0_ch2:");puthxb(config.upperLimits[1]);putcrlf();
+//			putst("Upper0_ch2:");puthxs(config.upperLimits[1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Lower0_ch1");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
 			config.lowerLimits[0] = atoi(DLC_MatConfigItem);
-//			putst("Lower0_ch1:");puthxb(config.lowerLimits[0]);putcrlf();
+//			putst("Lower0_ch1:");puthxs(config.lowerLimits[0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Lower0_ch2");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
 			config.lowerLimits[1] = atoi(DLC_MatConfigItem);
-//			putst("Lower0_ch2:");puthxb(config.lowerLimits[1]);putcrlf();
+//			putst("Lower0_ch2:");puthxs(config.lowerLimits[1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "AlertSw_U2_ch1");
 		if (config_p) {
@@ -1761,9 +1771,13 @@ putst("\r\ncoco3\r\n");
 		config_p = strstr(DLC_MatResBuf, "AlertPause");
 		if (config_p) {
 			DLCMatSTRParamSet(config_p);
-			if (DLCMatCheckAlertPause(DLC_MatConfigItem) == true) {	// 現在日時以降のAlertPause?
-				strcpy(config.AlertPause, DLC_MatConfigItem);	// 設定
-//				putst("AlertPause:");putst(config.AlertPause);putcrlf();
+			if (DLC_MatConfigItem[0] == 0) {	// AlertPauseなし?
+				memset(config.AlertPause, 0, sizeof(config.AlertPause));
+			} else {
+				if (DLCMatCheckAlertPause(DLC_MatConfigItem) == true) {	// 現在日時以降のAlertPause?
+					strcpy(config.AlertPause, DLC_MatConfigItem);	// 設定
+//					putst("AlertPause:");putst(config.AlertPause);putcrlf();
+				}
 			}
 		}
 		config_p = strstr(DLC_MatResBuf, "Measurment");
@@ -1964,57 +1978,6 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 #if 0
 				} else {
 					putst("RecvData2:\r\n");
-//					Dump(DLC_MatResBuf,i);putcrlf();
-					fotaaddress /= DLC_MatSPIFlashPage;
-					if (DLC_MatSPIRemaindataFota != 0) {	/* 半端byteありの場合 */
-						memcpy(&DLC_MatSPIRemainbufFota[DLC_MatSPIRemaindataFota], fpt ,sizeof(DLC_MatSPIRemainbufFota) - DLC_MatSPIRemaindataFota);	/* 今回受信データで256byte埋めて */
-						if (W25Q128JV_programPage(fotaaddress + DLC_MatSPIWritePageFota, 0, (uint8_t*)DLC_MatSPIRemainbufFota, DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){	/* 256byte書込む */
-							puthxw(DLC_MatSPIFlashPage * (fotaaddress + DLC_MatSPIWritePageFota));
-							putst("_R:OK");putcrlf();
-							memset(DLC_MatSPICheckbufFota, 0xFF, sizeof(DLC_MatSPICheckbufFota));
-							if (W25Q128JV_readData(DLC_MatSPIFlashPage * (fotaaddress + DLC_MatSPIWritePageFota), (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage) == W25Q128JV_ERR_NONE) {
-								if (memcmp(DLC_MatSPICheckbufFota, DLC_MatSPIRemainbufFota, DLC_MatSPIFlashPage) == 0) {
-									putst("VERFY OK\r\n");
-								} else {
-									DLC_MatFotaWriteNG = true;
-									putst("VERFY NG\r\n");
-								}
-							} else {
-								DLC_MatFotaWriteNG = true;
-								putst("READ NG\r\n");
-							}
-						} else {
-							DLC_MatFotaWriteNG = true;
-							putst("PROG NG\r\n");
-						}
-						fpt = &DLC_MatResBuf[sizeof(DLC_MatSPIRemainbufFota) - DLC_MatSPIRemaindataFota];	/* 書込みアドレス進める */
-						DLC_MatSPIWritePageFota += 1;	/* 書込みページインデックス進める */
-//						putst("BufData2:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
-					}
-					for (k = 0; k <= ((i - (DLC_MatSPIFlashPage - len)) / DLC_MatSPIFlashPage); k++) {	/* 残りのデータを256byte毎書込み */
-						if (W25Q128JV_programPage(fotaaddress + k + DLC_MatSPIWritePageFota, 0, (uint8_t*)(fpt + DLC_MatSPIFlashPage * k), DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){
-							puthxw(DLC_MatSPIFlashPage * (fotaaddress + k + DLC_MatSPIWritePageFota));
-							putst(":OK");putcrlf();
-							memset(DLC_MatSPICheckbufFota, 0xFF, sizeof(DLC_MatSPICheckbufFota));
-							if (W25Q128JV_readData(DLC_MatSPIFlashPage * (fotaaddress + k + DLC_MatSPIWritePageFota), (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage) == W25Q128JV_ERR_NONE) {
-								if (memcmp(DLC_MatSPICheckbufFota, (fpt + DLC_MatSPIFlashPage * k), DLC_MatSPIFlashPage) == 0) {
-									putst("VERFY OK\r\n");
-								} else {
-									DLC_MatFotaWriteNG = true;
-									putst("VERFY NG\r\n");
-								}
-							} else {
-								DLC_MatFotaWriteNG = true;
-								putst("READ NG\r\n");
-							}
-						} else {
-							DLC_MatFotaWriteNG = true;
-							putst("PROG NG\r\n");
-						}
-					}
-					if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし */
-						DLCMatTimerClr( 4 );	/* タイマークリア */
-					}
 #endif
 				}
 			} else {	/* ヘッダにConnection: closeあり=受信データ先頭 */
@@ -2103,9 +2066,6 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 						}
 					}
 					DLC_MatSPIRemaindataFota = (j - len) - (DLC_MatSPIFlashPage * k);	/* 1ページ未満の半端byte数 */
-					if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし */
-						DLCMatTimerClr( 4 );	/* タイマークリア */
-					}
 				}
 			}
 			DLC_MatResIdx = 0;

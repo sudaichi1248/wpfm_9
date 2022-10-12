@@ -112,8 +112,8 @@ typedef struct
     uint32_t        communicationIntervalOnAlert;       // 警報時の通信間隔 [Sec] - 60で割り切れること
     uint16_t        Measurment  ;                       // Measurement
     SENSOR_KIND     sensorKinds[2];                     // センサ種別[0:ch1/1:ch2]
-    uint16_t        upperLimits[2];                     // 仕様上のセンサ出力の上限値[0:ch1/1:ch2] [-]
-    uint16_t        lowerLimits[2];                     // 仕様上のセンサ出力の下限値[0:ch1/1:ch2] [-]
+    int16_t         upperLimits[2];                     // 仕様上のセンサ出力の上限値[0:ch1/1:ch2] [-]
+    int16_t         lowerLimits[2];                     // 仕様上のセンサ出力の下限値[0:ch1/1:ch2] [-]
     WPFM_ALERT_KIND alertEnableKinds[2][2][2];          // アラート有効種別(0:無効/1:有効/2:一時停止) [0:ch1/1:ch2] [0:upper/1:lower] [0:上下限1/1:上下限2]
     float           alertUpperLimits[2][2];             // アラート上限値[0:ch1/1:ch2] [0:上限値1/1:上限値2] [V/mA]
     float           alertLowerLimits[2][2];             // アラート下限値[0:ch1/1:ch2] [0:下限値1/1:下限値2] [V/mA]
