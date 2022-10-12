@@ -56,7 +56,7 @@ void DLCFotaGoAndReset()
 {
 	DLC_Para.FOTAact = 0;														/* FOTA開始フラグ */
 	DLCParaSave();
-	DLCsumBreakAndReset();
+	__NVIC_SystemReset();														/* 装置リセット */
 }
 /*
 	FOTA完了でリセット
