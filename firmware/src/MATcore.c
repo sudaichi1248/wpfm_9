@@ -127,7 +127,7 @@ void IDLEputch( )
 #define		TIMER_15s		15000
 #define		TIMER_30s		30000
 #define		TIMER_90s		90000
-#define		TIMER_NUM		5	// 0:all over timer,1:,2:push sw timer,3:retry timer,4:FOTA timer
+#define		TIMER_NUM		8	// 0:all over timer,1:,2:push sw timer,3:retry timer,4:FOTA timer
 struct {
 	int		cnt;
 	uchar	TO;
