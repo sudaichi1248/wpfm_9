@@ -31,7 +31,7 @@ void DLCParaSave()
 	tmp = (char*)&DLC_Para;
 	NVMCTRL_RowErase( DLC_PARAMETER_ADDRESS );
 	for(int i=0;i<256;i+=64 ){													/*  64byte毎にwrite */
-		NVMCTRL_PageWrite( (uint32_t*)(tmp+i),FIRM_SUM_SECTOR+i );
+		NVMCTRL_PageWrite( (uint32_t*)(tmp+i),DLC_PARAMETER_ADDRESS+i );
 	}
 }
 int DLCParaVrfy()
@@ -56,6 +56,7 @@ void DLCFotaGoAndReset()
 {
 	DLC_Para.FOTAact = 0;														/* FOTA開始フラグ */
 	DLCParaSave();
+	APP_delay(100);
 	__NVIC_SystemReset();														/* 装置リセット */
 }
 /*
