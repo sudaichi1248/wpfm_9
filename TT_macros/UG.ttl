@@ -1,0 +1,2 @@
+; UpdateGo
+send #2 "000UG" #3

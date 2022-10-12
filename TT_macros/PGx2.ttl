@@ -1,0 +1,8 @@
+; PG “®ìğŒæ“¾
+send #2 "000PG" #3
+wait "OK"
+send #2 "000PG" #3
+wait "OK"
+send #2 "000PG" #3
+wait "OK"
+send #2 "000PG" #3
