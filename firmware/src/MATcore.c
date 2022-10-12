@@ -62,6 +62,7 @@ int	 	DLC_MatSPIFlashSector=0x400;	// fota SPIフラッシュ1セクタbyte数
 int	 	DLC_MatSPIRemaindataFota;	// fota 1ページ未満の半端byte数→保持して次回書込み
 int	 	DLC_MatSPIWritePageFota;	// fota SPI書込みページインデックス
 int		DLC_MatFotaDataLen=0;	// fota FOTAデータレングス
+int		DLC_MatWriteFotaDataLen=0;	// fota 書込みFOTAデータレングス
 char	DLC_MatFotaCRC[4];	// fota FOTAデータチェックサム
 char	DLC_MatSPIRemainbufFota[256];	// fota 1ページ未満の半端byte保持バッファ
 char	DLC_MatSPICheckbufFota[256];	// fota ベリファイ用バッファ
@@ -507,7 +508,6 @@ void MTfirm()	// fota
 	else {
 		DLC_MatLineIdx = 0;
 		DLCMatSend( "AT$RECV,1024\r" );
-//		DLCMatSend( "AT$RECV,512\r" );
 	}
 }
 void MTopn2()
@@ -591,7 +591,7 @@ void MTclsF()	// fota
 	APP_delay(100);
 	DLC_MatLineIdx = 0;
 	putst("RecvData2:\r\n");
-// putst("DLC_MatSPIRemaindataFota:");puthxw(DLC_MatSPIRemaindataFota);putcrlf();
+#if 0
 	fotaaddress /= DLC_MatSPIFlashPage;
 	if (DLC_MatSPIRemaindataFota != 0) {	/* 半端byteありの場合 */
 		if (W25Q128JV_programPage(fotaaddress + DLC_MatSPIWritePageFota, 0, (uint8_t*)DLC_MatSPIRemainbufFota, DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){	/* 256byte書込む */
@@ -601,6 +601,7 @@ void MTclsF()	// fota
 			if (W25Q128JV_readData(DLC_MatSPIFlashPage * (fotaaddress + DLC_MatSPIWritePageFota), (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage) == W25Q128JV_ERR_NONE) {
 				if (memcmp(DLC_MatSPICheckbufFota, DLC_MatSPIRemainbufFota, DLC_MatSPIFlashPage) == 0) {
 					putst("VERFY OK\r\n");
+					DLC_MatWriteFotaDataLen += DLC_MatSPIRemaindataFota;
 				} else {
 					DLC_MatFotaWriteNG = true;
 					putst("VERFY NG\r\n");
@@ -615,19 +616,25 @@ void MTclsF()	// fota
 		}
 //		putst("BufData2:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
 	}
-	if ((DLC_MatFotaWriteNG == false) && ((DLC_MatSPIFlashPage * DLC_MatSPIWritePageFota) >= DLC_MatFotaDataLen)) {	/* 書込みNGなしかつ書込みレングスがFOTAデータレングス以上? */
-		memset(DLC_MatSPICheckbufFota, 0xFF, sizeof(DLC_MatSPICheckbufFota));
-//		DLC_MatSPICheckbufFota[0xFC] = 0x04;
-//		DLC_MatSPICheckbufFota[0xFD] = 0x03;
-//		DLC_MatSPICheckbufFota[0xFE] = 0x02;
-//		DLC_MatSPICheckbufFota[0xFF] = 0x01;
-		memcpy(&DLC_MatSPICheckbufFota[0xFC], DLC_MatFotaCRC, sizeof(DLC_MatFotaCRC));
-		putst("CheckData:\r\n");Dump(DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage);putcrlf();
-		if (W25Q128JV_programPage(fotaaddress + 0x35F, 0, (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){	/* チェック用256byte書込む */
-			DLCMatTimerClr( 0 );	/* タイマークリア */
-			putst("FOTA timer CLR\r\n");
-putst("page:");puthxw(fotaaddress + 0x35F);putcrlf();
+#endif
+	if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし? */
+putst("length:");puthxw(DLC_MatFotaDataLen);putcrlf();
+putst("writelength:");puthxw(DLC_MatWriteFotaDataLen);putcrlf();
+putst("length(page):");puthxw(DLC_MatFotaDataLen / DLC_MatSPIFlashPage);putcrlf();
+		if (DLC_MatWriteFotaDataLen == ((DLC_MatFotaDataLen / DLC_MatSPIFlashPage) * DLC_MatSPIFlashPage)) {	/* 書込みNGなし、かつ書込みレングス=FOTAデータレングス(ページ単位)? */
+			memset(DLC_MatSPICheckbufFota, 0xFF, sizeof(DLC_MatSPICheckbufFota));
+//			DLC_MatSPICheckbufFota[0xFC] = 0x04;
+//			DLC_MatSPICheckbufFota[0xFD] = 0x03;
+//			DLC_MatSPICheckbufFota[0xFE] = 0x02;
+//			DLC_MatSPICheckbufFota[0xFF] = 0x01;
+			memcpy(&DLC_MatSPICheckbufFota[0xFC], DLC_MatFotaCRC, sizeof(DLC_MatFotaCRC));
+			putst("CheckData:\r\n");Dump(DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage);putcrlf();
+			if (W25Q128JV_programPage((fotaaddress + 0x35F00) / DLC_MatSPIFlashPage, 0, (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){	/* チェック用256byte書込む */
+				DLCMatTimerClr( 0 );	/* タイマークリア */
+				putst("FOTA timer CLR\r\n");
+putst("crc page:");puthxw((fotaaddress + 0x35F00) / DLC_MatSPIFlashPage);putcrlf();
 putst("write:");puthxw(DLC_MatSPIWritePageFota);putcrlf();
+			}
 		}
 	}
 }
@@ -919,7 +926,9 @@ void DLCMatState()
 			DLC_MatLineIdx = 0;
 			zLogOn = 0;
 			DLCMatSend( "AT$RECV,1024\r" );
-			DLCMatTimerset( 3,TIMER_7000ms);
+			if (DLC_MatFotaExe == false) {	// fota 運用時
+				DLCMatTimerset( 3,TIMER_7000ms);
+			}
 		}
 	}
 	if( DLC_MatLineIdx >= 19 ){				/* $RECVDATA:1,0,"41"\r */
@@ -1847,6 +1856,7 @@ int DLCMatRecvDisp()
 int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 {
 	char	*p,*q,*fpt,n;
+	bool	endflg=false;
 	int		i,j=0,k,len;
 	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* FOTAデータ保存番地 */
 	if(( p = strstr( (char*)DLC_MatLineBuf,"$RECVDATA:" )) > 0 ){
@@ -1895,6 +1905,7 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 							if (W25Q128JV_readData(DLC_MatSPIFlashPage * (fotaaddress + DLC_MatSPIWritePageFota), (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage) == W25Q128JV_ERR_NONE) {
 								if (memcmp(DLC_MatSPICheckbufFota, DLC_MatSPIRemainbufFota, DLC_MatSPIFlashPage) == 0) {
 									putst("VERFY OK\r\n");
+									DLC_MatWriteFotaDataLen += DLC_MatSPIFlashPage;
 								} else {
 									DLC_MatFotaWriteNG = true;
 									putst("VERFY NG\r\n");
@@ -1919,6 +1930,11 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 							if (W25Q128JV_readData(DLC_MatSPIFlashPage * (fotaaddress + k + DLC_MatSPIWritePageFota), (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage) == W25Q128JV_ERR_NONE) {
 								if (memcmp(DLC_MatSPICheckbufFota, (fpt + DLC_MatSPIFlashPage * k), DLC_MatSPIFlashPage) == 0) {
 									putst("VERFY OK\r\n");
+									if (DLC_MatWriteFotaDataLen > (DLC_MatFotaDataLen - DLC_MatSPIFlashPage)) {	// データの最終で余計なページは書込まない
+										endflg = true;
+										break;
+									}
+									DLC_MatWriteFotaDataLen += DLC_MatSPIFlashPage;
 								} else {
 									DLC_MatFotaWriteNG = true;
 									putst("VERFY NG\r\n");
@@ -1932,12 +1948,14 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 							putst("PROG NG\r\n");
 						}
 					}
-					memset(DLC_MatSPIRemainbufFota, 0xFF, sizeof(DLC_MatSPIRemainbufFota));	/* 半端byte保持バッファFF初期化 */
-					DLC_MatSPIRemaindataFota = (DLC_MatSPIFlashSector - (DLC_MatSPIFlashPage - len)) - (DLC_MatSPIFlashPage * k);	/* 1ページ未満の半端byte数 */
-//					putst("DLC_MatSPIRemaindataFota1:");puthxs(DLC_MatSPIRemaindataFota);putcrlf();
-					memcpy(DLC_MatSPIRemainbufFota, fpt + DLC_MatSPIFlashPage * k ,DLC_MatSPIRemaindataFota);	/* 半端byte保持バッファに保持 */
+					if (endflg == false) {	// データの最終でない
+						memset(DLC_MatSPIRemainbufFota, 0xFF, sizeof(DLC_MatSPIRemainbufFota));	/* 半端byte保持バッファFF初期化 */
+						DLC_MatSPIRemaindataFota = (DLC_MatSPIFlashSector - (DLC_MatSPIFlashPage - len)) - (DLC_MatSPIFlashPage * k);	/* 1ページ未満の半端byte数 */
+//						putst("DLC_MatSPIRemaindataFota1:");puthxs(DLC_MatSPIRemaindataFota);putcrlf();
+						memcpy(DLC_MatSPIRemainbufFota, fpt + DLC_MatSPIFlashPage * k ,DLC_MatSPIRemaindataFota);	/* 半端byte保持バッファに保持 */
+//						putst("RemainData1:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
+					}
 					DLC_MatSPIWritePageFota = k + DLC_MatSPIWritePageFota;	/* SPI書込みページインデックス保持 */
-//					putst("RemainData1:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
 #if 0
 				} else {
 					putst("RecvData2:\r\n");
@@ -2003,10 +2021,12 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 				}
 				memset(DLC_MatSPIRemainbufFota, 0xFF, sizeof(DLC_MatSPIRemainbufFota));	/* 1ページ未満の半端byte保持バッファFF初期化 */
 				DLC_MatSPIRemaindataFota = 0;
+				DLC_MatWriteFotaDataLen = 0;
 				fpt = strstr(DLC_MatResBuf,"Connection: close") + strlen("Connection: close\r\n\r\n");	/* FOTAデータの先頭アドレス */
 				*(fpt - 1) = 0;	// strlenのため
 				len = strlen(DLC_MatResBuf) + 1;	/* ヘッダのレングス */
 				len += 8;	// サイズとチェックサムの8byte
+putst("len:");puthxw(len);putcrlf();
 				DLC_MatFotaDataLen = *fpt;	// FOTAデータレングス
 				fpt++;
 				DLC_MatFotaDataLen |= *fpt << 8;
@@ -2031,6 +2051,7 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 							if (W25Q128JV_readData(DLC_MatSPIFlashPage * (fotaaddress + k), (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage) == W25Q128JV_ERR_NONE) {
 								if (memcmp(DLC_MatSPICheckbufFota, (fpt + DLC_MatSPIFlashPage * k), DLC_MatSPIFlashPage) == 0) {
 									putst("VERFY OK\r\n");
+									DLC_MatWriteFotaDataLen += DLC_MatSPIFlashPage;
 								} else {
 									DLC_MatFotaWriteNG = true;
 									putst("VERFY NG\r\n");
@@ -2062,6 +2083,7 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 							if (W25Q128JV_readData(DLC_MatSPIFlashPage * (fotaaddress + k), (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage) == W25Q128JV_ERR_NONE) {
 								if (memcmp(DLC_MatSPICheckbufFota, (fpt + DLC_MatSPIFlashPage * k), DLC_MatSPIFlashPage) == 0) {
 									putst("VERFY OK\r\n");
+									DLC_MatWriteFotaDataLen += DLC_MatSPIFlashPage;
 								} else {
 									DLC_MatFotaWriteNG = true;
 									putst("VERFY NG\r\n");
@@ -2075,6 +2097,7 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 							putst("PROG NG\r\n");
 						}
 					}
+					DLC_MatSPIRemaindataFota = (j - len) - (DLC_MatSPIFlashPage * k);	/* 1ページ未満の半端byte数 */
 					if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし */
 						DLCMatTimerClr( 0 );	/* タイマークリア */
 					}
