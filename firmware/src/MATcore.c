@@ -21,6 +21,7 @@ void DLCMatTimerInt();
 void DLCMatState();
 void IDLEputch();
 void command_main();
+void DLC_delay(int);
 //void _GO_IDLE(){command_main();DLCMatState();}
 #ifdef ADD_FUNCTION
 void DLCMatRtcTimeChk();
@@ -2485,6 +2486,8 @@ void DLCMatMain()
 		case 'E':												/* 強制本プロ削除+Reset */
 			if( CheckPasswd() ){
 				NVMCTRL_RowErase( 0x3DF00 );
+				putst("本プロ削除してBoot起動します。");putcrlf();
+				DLC_delay(1000);
 				__NVIC_SystemReset();
 			}
 			break;
@@ -2633,4 +2636,11 @@ void DLCMatError( int no )
 	GPIOEXP_clear(2);
 	DLCMatTimerset( 0,15000 );
 	DLC_MatState = MATC_STATE_ERR;
+}
+void DLC_delay( int msec )
+{
+	for(int i=0;i<msec;i++){
+		IDLEputch();
+		APP_delay(1);
+	}
 }
