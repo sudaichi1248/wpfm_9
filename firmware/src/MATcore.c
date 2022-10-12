@@ -55,7 +55,6 @@ char	DLC_MatConfigItem[32];
 uchar	DLC_MatTxType;
 bool	DLC_ForcedCallOK=false;
 
-bool	DLC_MatFotaExe=false;	// fota FOTA実行フラグ
 // bool	DLC_MatFotaExe=true;	// fota FOTA実行フラグ
 bool	DLC_MatFotaWriteNG=false;	// fota FOTA書込みNGフラグ
 int	 	DLC_MatSPIFlashPage=0x100;	// fota SPIフラッシュ1ページbyte数
@@ -127,7 +126,7 @@ void IDLEputch( )
 #define		TIMER_15s		15000
 #define		TIMER_30s		30000
 #define		TIMER_90s		90000
-#define		TIMER_NUM		5
+#define		TIMER_NUM		5	// 0:all over timer,1:,2:push sw timer,3:retry timer,4:FOTA timer
 struct {
 	int		cnt;
 	uchar	TO;
@@ -373,7 +372,7 @@ void MTimei()
 void MTapn()
 {
 	DLC_MatLineIdx = 0;
-	if (DLC_MatFotaExe == false) {	// fota 運用時
+	if (DLC_Para.FOTAact != 0) {	// fota 運用時
 		if( strstr( DLC_MatVer,"01.04" ) )
 			strcpy(	DLC_MatNUM,"812000000000000" );
 		else{
@@ -402,7 +401,7 @@ void MTconn()
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT?\r" );
 	DLCMatTimerset( 0,TIMER_90s );
-	if (DLC_MatFotaExe == false) {	// fota 運用時
+	if (DLC_Para.FOTAact != 0) {	// fota 運用時
 		DLC_MatState = MATC_STATE_COND;
 	} else {	//  FOTA実行時
 		DLC_MatState = MATC_STATE_FOTA;	// fota FOTA stateへ
@@ -455,7 +454,7 @@ void MTwget()	// fota
 {
 	DLC_MatLineIdx = 0;
 	DLCMatWgetFile();
-	DLCMatTimerset( 0,TIMER_30s );
+	DLCMatTimerset( 4,TIMER_15s );
 }
 /*
 	PostConfig送信でOKを受けた,$RECV待ち
@@ -498,7 +497,7 @@ void MTfirm()	// fota
 {
 	int	rt;
 	if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし */
-		DLCMatTimerset( 0,TIMER_12s);
+		DLCMatTimerset( 4,TIMER_12s);
 	}
 	rt = DLCMatRecvWriteFota();			/* 内部Flashへ受信データ書込み処理 */
 	putst("RecvRet=");puthxs( rt );putcrlf();
@@ -631,13 +630,15 @@ putst("length(page):");puthxw(DLC_MatFotaDataLen / DLC_MatSPIFlashPage);putcrlf(
 			memcpy(&DLC_MatSPICheckbufFota[0xFC], DLC_MatFotaCRC, sizeof(DLC_MatFotaCRC));
 			putst("CheckData:\r\n");Dump(DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage);putcrlf();
 			if (W25Q128JV_programPage((fotaaddress + 0x35F00) / DLC_MatSPIFlashPage, 0, (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){	/* チェック用256byte書込む */
-				DLCMatTimerClr( 0 );	/* タイマークリア */
+				DLCMatTimerClr( 4 );	/* タイマークリア */
 				putst("FOTA timer CLR\r\n");
 putst("crc page:");puthxw((fotaaddress + 0x35F00) / DLC_MatSPIFlashPage);putcrlf();
 putst("write:");puthxw(DLC_MatSPIWritePageFota);putcrlf();
+//				DLCFotaFinAndReset();
 			}
 		}
 	}
+//	DLCFotaNGAndReset();
 }
 void MTRSlp()
 {
@@ -685,6 +686,7 @@ void MTtoF()	// fota T/O
 	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* FOTAデータ保存番地 */
 	// 実行フラグそのままでリセットしリトライ?
 	W25Q128JV_eraseSctor(((fotaaddress + 0x36000) / 0x1000) - 1, true);	/* 失敗なのでFOTAデータ最終セクタ消去(SPI Flash) */
+//	DLCFotaNGAndReset();
 }
 struct {
 	uchar	wx;
@@ -801,7 +803,7 @@ void	 (*MTjmp[18][19])() = {
 /*					  0         1       2      3       4       5       6       7       8       9       10      11      12      13      14      15      16      17   18     */
 /*				  	 INIT    IDLE    IMEI    APN     SVR     CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR   */
 /* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy  },
-/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, ______, ______, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, ______, ______ },
+/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, ______, ______, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, ______, MTtoF,  ______, ______, ______, ______ },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______ },
@@ -927,7 +929,7 @@ void DLCMatState()
 			DLC_MatLineIdx = 0;
 			zLogOn = 0;
 			DLCMatSend( "AT$RECV,1024\r" );
-			if (DLC_MatFotaExe == false) {	// fota 運用時
+			if (DLC_Para.FOTAact != 0) {	// fota 運用時
 				DLCMatTimerset( 3,TIMER_7000ms);
 			}
 		}
@@ -972,6 +974,8 @@ void DLCMatState()
 //			DLCMatSend( "AT$RECV,1024\r" );
 //			putst("RTC Timer Ok\r\n");
 //		}
+		else if( DLCMatTmChk( 4 ) )
+			DLC_Matfact = MATC_FACT_TO1;
 		else {
 			switch( MatGetMsgStack() ){
 			case MSGID_TIMER:
@@ -1834,7 +1838,6 @@ int DLCMatRecvDisp()
 				}
 // fota				if( strstr( DLC_MatResBuf,"Status" )){
 // fota					if (strstr(DLC_MatResBuf, "\"LTEVersion\":")) {	// fota StatusでF/W version指定されたらFOTA起動?
-// fota						DLC_MatFotaExe = true;
 // fota						// フラグを維持したまま再起動したい
 // fota					}
 // fota				}
@@ -2009,11 +2012,12 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 						}
 					}
 					if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし */
-						DLCMatTimerClr( 0 );	/* タイマークリア */
+						DLCMatTimerClr( 4 );	/* タイマークリア */
 					}
 #endif
 				}
 			} else {	/* ヘッダにConnection: closeあり=受信データ先頭 */
+				DLCMatTimerClr( 0 );	// タイマー0クリア
 				for (k = 0; k < 4; k++) {	/* SPI 256kbyte消去 */
 					char line[32];
 					W25Q128JV_eraseBlock64(((fotaaddress / 0x10000) + k), true);	/* 現状address:0～ 1ブロック64kbyte*/
@@ -2027,7 +2031,6 @@ int DLCMatRecvWriteFota()	// fota SPIへ受信データ書込み処理
 				*(fpt - 1) = 0;	// strlenのため
 				len = strlen(DLC_MatResBuf) + 1;	/* ヘッダのレングス */
 				len += 8;	// サイズとチェックサムの8byte
-putst("len:");puthxw(len);putcrlf();
 				DLC_MatFotaDataLen = *fpt;	// FOTAデータレングス
 				fpt++;
 				DLC_MatFotaDataLen |= *fpt << 8;
@@ -2100,7 +2103,7 @@ putst("len:");puthxw(len);putcrlf();
 					}
 					DLC_MatSPIRemaindataFota = (j - len) - (DLC_MatSPIFlashPage * k);	/* 1ページ未満の半端byte数 */
 					if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし */
-						DLCMatTimerClr( 0 );	/* タイマークリア */
+						DLCMatTimerClr( 4 );	/* タイマークリア */
 					}
 				}
 			}
@@ -2564,6 +2567,12 @@ void DLCMatMain()
 				putst("Out of range.\r\n");
 				break;
 			}
+			break;
+		case 'X':	// FOTA開始
+			DLCFotaGoAndReset();
+			break;
+		case 'T':	// FOTA終了
+			DLCFotaFinAndReset();
 			break;
 		case 0x03:												/* CTRL+A */
 			if( CheckPasswd() ){

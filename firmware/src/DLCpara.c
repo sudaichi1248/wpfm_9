@@ -66,5 +66,15 @@ void DLCFotaFinAndReset()
 {
 	DLC_Para.FOTAact = 0xFF;													/* FOTA完了フラグ */
 	DLCParaSave();
-	DLCsumBreakAndReset();
+//	DLCsumBreakAndReset();
+}
+/*
+	FOTA失敗でリセット
+*/
+void DLCFotaNGAndReset()
+{
+	DLC_Para.FOTAact = 0xFF;													/* FOTA開始フラグ */
+	DLCParaSave();
+	APP_delay(100);
+	__NVIC_SystemReset();														/* 装置リセット */
 }

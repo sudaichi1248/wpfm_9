@@ -9,3 +9,5 @@ int DLCParaVrfy();
 void DLCsumBreakAndReset();
 void DLCFotaFineAndReset();
 void DLCFotaGoAndReset();
+void DLCFotaFinAndReset();
+void DLCFotaNGAndReset();
