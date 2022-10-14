@@ -1,4 +1,3 @@
-//#define	__DAIKOKU
 /*
 	通信タスク
 */
@@ -387,11 +386,14 @@ void MTapn()
 				return;
 			}
 		}
-#ifdef __DAIKOKU
-		DLCMatSend( "AT$SETSERVER,karugamosoft.ddo.jp,9999\r" );
-#else
-		DLCMatSend( "AT$SETSERVER,beam.soracom.io,8888\r" );
-#endif
+		switch( DLC_Para.Server ){
+		case 0:
+			DLCMatSend( "AT$SETSERVER,karugamosoft.ddo.jp,9999\r" );
+			break;
+		default:
+			DLCMatSend( "AT$SETSERVER,beam.soracom.io,8888\r" );
+			break;
+		}
 	} else {	// fota FOTA実行時
 		DLCMatSend( "AT$SETSERVER,harvest-files.soracom.io,80\r" );	// fota soracom harvest指定
 		DLC_Matknd = 3;	// fota FOTA発呼
@@ -2349,10 +2351,12 @@ void DLCMatTest()
 			DLCMatSend( "AT$OPEN\r" );
 			break;
 		case 'S':
-			DLCMatSend( "AT$SETSERVER,karugamosoft.ddo.jp,9999\r" );
-			break;
-		case 'T':
-			DLCMatSend( "AT$SETSERVER,beam.soracom.io,8888\r" );
+			DLC_Para.Server ^= 0xff;
+			if( DLC_Para.Server == 0 )
+				putst( "karugamosoft.ddo.jp,9999\r" );
+			else
+				putst( "beam.soracom.io,8888\r" );
+			DLCParaSave();
 			break;
 		case 'U':
 #if 1
@@ -2604,7 +2608,7 @@ int DLCMatIsSleep()
 */
 void DLCMatUpdateGo()
 {
-	ToBoot_reset(6);
+	DLCsumBreakAndReset();
 }
 /*
 	USBからのFOTA開始コマンド
