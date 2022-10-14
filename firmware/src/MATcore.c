@@ -64,11 +64,13 @@ int	 	DLC_MatSPIRemaindataFota;	// fota 1ƒy[ƒW–¢–‚Ì”¼’[byte”¨•Û‚µ‚ÄŸ‰ñ‘
 int	 	DLC_MatSPIWritePageFota;	// fota SPI‘‚İƒy[ƒWƒCƒ“ƒfƒbƒNƒX
 int		DLC_MatFotaDataLen=0;	// fota FOTAƒf[ƒ^ƒŒƒ“ƒOƒX
 int		DLC_MatWriteFotaDataLen=0;	// fota ‘‚İFOTAƒf[ƒ^ƒŒƒ“ƒOƒX
+int		DLC_MatFotaTOcnt=0;	// ƒ^ƒCƒ€ƒAƒEƒgƒJƒEƒ“ƒ^
 char	DLC_MatFotaCRC[4];	// fota FOTAƒf[ƒ^ƒ`ƒFƒbƒNƒTƒ€
 char	DLC_MatSPIRemainbufFota[256];	// fota 1ƒy[ƒW–¢–‚Ì”¼’[byte•Ûƒoƒbƒtƒ@
 char	DLC_MatSPICheckbufFota[256];	// fota ƒxƒŠƒtƒ@ƒC—pƒoƒbƒtƒ@
 static	char wget_Head[] = "GET /wpfm.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// fota FOTAƒf[ƒ^w’è
 // static char wget_Head[] = "GET /2048.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// fota
+// static char wget_Head[] = "GET /1792.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// fota
 // static char wget_Head[] = "GET /256.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// fota
 #define	 	DLC_MatSPIFlashAddrFota		0xE00000;	// fota SPIƒtƒ‰ƒbƒVƒ…‘‚İƒAƒhƒŒƒX
 char getkey()
@@ -498,17 +500,19 @@ void MTfirm()	// fota
 {
 	int	rt;
 	if (DLC_MatFotaWriteNG == false) {	/* ‘‚İNG‚È‚µ */
+		DLC_MatFotaTOcnt = 0;
 		DLCMatTimerset( 4,TIMER_5000ms);
 	}
 	rt = DLCMatRecvWriteFota();			/* “à•”Flash‚ÖóMƒf[ƒ^‘‚İˆ— */
 	putst("RecvRet=");puthxs( rt );putcrlf();
 	if( rt == 0 ){
 		DLC_MatLineIdx = 0;
-		zLogOn = 1;
-	}
-	else {
+//		zLogOn = 1;
+	} else if (rt > 0) {
 		DLC_MatLineIdx = 0;
 		DLCMatSend( "AT$RECV,1024\r" );
+	} else {
+		putst("RecvDataERROR\r\n");
 	}
 }
 void MTopn2()
@@ -592,7 +596,6 @@ void MTclsF()	// fota
 	APP_delay(100);
 	DLC_MatLineIdx = 0;
 	putst("RecvData2:\r\n");
-#if 0
 	fotaaddress /= DLC_MatSPIFlashPage;
 	if (DLC_MatSPIRemaindataFota != 0) {	/* ”¼’[byte‚ ‚è‚Ìê‡ */
 		if (W25Q128JV_programPage(fotaaddress + DLC_MatSPIWritePageFota, 0, (uint8_t*)DLC_MatSPIRemainbufFota, DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){	/* 256byte‘‚Ş */
@@ -617,12 +620,12 @@ void MTclsF()	// fota
 		}
 //		putst("BufData2:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
 	}
-#endif
 	if (DLC_MatFotaWriteNG == false) {	/* ‘‚İNG‚È‚µ? */
 putst("length:");puthxw(DLC_MatFotaDataLen);putcrlf();
 putst("writelength:");puthxw(DLC_MatWriteFotaDataLen);putcrlf();
 putst("length(page):");puthxw(DLC_MatFotaDataLen / DLC_MatSPIFlashPage);putcrlf();
-		if (DLC_MatWriteFotaDataLen == ((DLC_MatFotaDataLen / DLC_MatSPIFlashPage) * DLC_MatSPIFlashPage)) {	/* ‘‚İNG‚È‚µA‚©‚Â‘‚İƒŒƒ“ƒOƒX=FOTAƒf[ƒ^ƒŒƒ“ƒOƒX(ƒy[ƒW’PˆÊ)? */
+//		if (DLC_MatWriteFotaDataLen == ((DLC_MatFotaDataLen / DLC_MatSPIFlashPage) * DLC_MatSPIFlashPage)) {	/* ‘‚İƒŒƒ“ƒOƒX=FOTAƒf[ƒ^ƒŒƒ“ƒOƒX(ƒy[ƒW’PˆÊ)? */
+		if (DLC_MatWriteFotaDataLen == DLC_MatFotaDataLen) {	/* ‘‚İƒŒƒ“ƒOƒX=FOTAƒf[ƒ^ƒŒƒ“ƒOƒX? */
 			memset(DLC_MatSPICheckbufFota, 0xFF, sizeof(DLC_MatSPICheckbufFota));
 //			DLC_MatSPICheckbufFota[0xFC] = 0x04;
 //			DLC_MatSPICheckbufFota[0xFD] = 0x03;
@@ -630,16 +633,18 @@ putst("length(page):");puthxw(DLC_MatFotaDataLen / DLC_MatSPIFlashPage);putcrlf(
 //			DLC_MatSPICheckbufFota[0xFF] = 0x01;
 			memcpy(&DLC_MatSPICheckbufFota[0xFC], DLC_MatFotaCRC, sizeof(DLC_MatFotaCRC));
 			putst("CheckData:\r\n");Dump(DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage);putcrlf();
-			if (W25Q128JV_programPage((fotaaddress + 0x35F00) / DLC_MatSPIFlashPage, 0, (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){	/* ƒ`ƒFƒbƒN—p256byte‘‚Ş */
+			if (W25Q128JV_programPage(fotaaddress + 0x35F, 0, (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){	/* ƒ`ƒFƒbƒN—p256byte‘‚Ş */
 				DLCMatTimerClr( 4 );	/* ƒ^ƒCƒ}[ƒNƒŠƒA */
-				putst("FOTA timer CLR\r\n");
-putst("crc page:");puthxw((fotaaddress + 0x35F00) / DLC_MatSPIFlashPage);putcrlf();
+				putst("FOTA SUCCESS. timer CLR\r\n");
+putst("crc page:");puthxw(fotaaddress + 0x35F);putcrlf();
 putst("write:");puthxw(DLC_MatSPIWritePageFota);putcrlf();
 				DLC_delay(1000);
 				DLCFotaFinAndReset();
+				return;
 			}
 		}
 	}
+	putst("FOTA FAILED.\r\n");
 	DLC_delay(1000);
 	DLCFotaNGAndReset();
 }
@@ -684,12 +689,11 @@ void MTconW()
 	DLCMatTimerset( 0,TIMER_90s );
 	DLC_MatState = MATC_STATE_CONN;
 }
-int	TOcnt=0;
 void MTtoF()	// fota T/O
 {
 	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* FOTAƒf[ƒ^•Û‘¶”Ô’n */
-	if (TOcnt < 3) {
-		TOcnt++;
+	if (DLC_MatFotaTOcnt < 3) {
+		DLC_MatFotaTOcnt++;
 		DLCMatTimerset( 4,TIMER_5000ms);
 		DLCMatSend( "AT$RECV,1024\r" );
 		putst("ƒŠƒgƒ‰ƒC(*o*)\r\n");
@@ -1138,12 +1142,21 @@ void DLCMatPostStatus()
 {
 	char	tmp[48],n,*p,ver[6];
 	int		i;
+	uint8_t	batteryStatus1,batteryStatus2;
 	memcpy( ver,&_Main_version[4],5 );
 	ver[5] = 0;
 	strcpy( http_tmp,http_status );
 	strcat( http_tmp,"{\"Status\":{" );
 	DLC_MatTxType = 0;
 	putst("Alert=");puthxb( WPFM_TxType );putcrlf();
+	batteryStatus1 = WPFM_batteryStatus >> 4;
+	if (batteryStatus1 == 3 ) {
+		batteryStatus1 = 1;
+	}
+	batteryStatus2 = WPFM_batteryStatus & 0x0F;
+	if (batteryStatus2 == 3 ) {
+		batteryStatus2 = 1;
+	}
 	DLC_MatTxType = WPFM_TxType;
 #ifdef ADD_FUNCTION
 	if ( WPFM_isAlertPause == true )
@@ -1158,8 +1171,8 @@ void DLCMatPostStatus()
 	sprintf( tmp,"\"LTEVersion\":\"%s\","	,DLC_MatVer );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"ExtCellPwr1\":%.3f,"	,(float)WPFM_lastBatteryVoltages[0]/1000 );		strcat( http_tmp,tmp );
 	sprintf( tmp,"\"ExtCellPwr2\":%.3f,"	,(float)WPFM_lastBatteryVoltages[1]/1000 );		strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Batt1Use\":%d,"			,WPFM_batteryStatus>>4 );						strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Batt2Use\":%d,"			,WPFM_batteryStatus&0x0F );						strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Batt1Use\":%d,"			,batteryStatus1 );								strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Batt2Use\":%d,"			,batteryStatus2 );								strcat( http_tmp,tmp );
 	sprintf( tmp,"\"EARFCN\":%d,"			,DLCMatCharInt( DLC_MatRadioDensty,"EARFCN:"));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"CellId\":%d,"			,DLCMatCharInt( DLC_MatRadioDensty,"CELLID:"));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"RSRP\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSRP:" ));	strcat( http_tmp,tmp );
@@ -1875,8 +1888,7 @@ int DLCMatRecvDisp()
 int DLCMatRecvWriteFota()	// fota SPI‚ÖóMƒf[ƒ^‘‚İˆ—
 {
 	char	*p,*q,*fpt,n;
-	bool	endflg=false;
-	int		i,j=0,k,len;
+	int		i,j=0,k,len,recvlen;
 	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* FOTAƒf[ƒ^•Û‘¶”Ô’n */
 	if(( p = strstr( (char*)DLC_MatLineBuf,"$RECVDATA:" )) > 0 ){
 		p = str2int( &p[10],&i );										/* $RECVDATA,i,j,"...."<cr> */
@@ -1890,6 +1902,7 @@ int DLCMatRecvWriteFota()	// fota SPI‚ÖóMƒf[ƒ^‘‚İˆ—
 			return -3;
 		}
 		putst("Ln=");puthxs(i);putst(" Rm=");puthxs(j);putcrlf();
+		recvlen = i;	/* óMƒf[ƒ^ƒŒƒ“ƒOƒX */
 		p = strchr( p,'\"' );
 		if( p > 0 ){
 			p++;
@@ -1916,6 +1929,12 @@ int DLCMatRecvWriteFota()	// fota SPI‚ÖóMƒf[ƒ^‘‚İˆ—
 //					Dump(DLC_MatResBuf,i);putcrlf();
 					fotaaddress /= DLC_MatSPIFlashPage;
 					if (DLC_MatSPIRemaindataFota != 0) {	/* ”¼’[byte‚ ‚è‚Ìê‡ */
+						if ((len  + recvlen) < DLC_MatSPIFlashPage) {	/* ”¼’[byte‚ÆóMƒf[ƒ^‚Ì˜a‚ª1ƒy[ƒW–¢–? */
+							memcpy(&DLC_MatSPIRemainbufFota[DLC_MatSPIRemaindataFota], fpt ,recvlen);	/* ¡‰ñóMƒf[ƒ^‚Å”¼’[byte•Ûƒoƒbƒtƒ@–„‚ß‚é */
+							DLC_MatSPIRemaindataFota = len  + recvlen;
+putst("mjca2\r\n");
+							return j;
+						}
 						memcpy(&DLC_MatSPIRemainbufFota[DLC_MatSPIRemaindataFota], fpt ,sizeof(DLC_MatSPIRemainbufFota) - DLC_MatSPIRemaindataFota);	/* ¡‰ñóMƒf[ƒ^‚Å256byte–„‚ß‚Ä */
 						if (W25Q128JV_programPage(fotaaddress + DLC_MatSPIWritePageFota, 0, (uint8_t*)DLC_MatSPIRemainbufFota, DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){	/* 256byte‘‚Ş */
 							puthxw(DLC_MatSPIFlashPage * (fotaaddress + DLC_MatSPIWritePageFota));
@@ -1937,11 +1956,16 @@ int DLCMatRecvWriteFota()	// fota SPI‚ÖóMƒf[ƒ^‘‚İˆ—
 							DLC_MatFotaWriteNG = true;
 							putst("PROG NG\r\n");
 						}
+						recvlen = recvlen - (sizeof(DLC_MatSPIRemainbufFota) - DLC_MatSPIRemaindataFota);	/* ”¼’[byte•Ûƒoƒbƒtƒ@–„‚ß‚½•ªŒ¸‚¸‚é */
 						fpt = &DLC_MatResBuf[sizeof(DLC_MatSPIRemainbufFota) - DLC_MatSPIRemaindataFota];	/* ‘‚İƒAƒhƒŒƒXi‚ß‚é */
 						DLC_MatSPIWritePageFota += 1;	/* ‘‚İƒy[ƒWƒCƒ“ƒfƒbƒNƒXi‚ß‚é */
 //						putst("BufData1:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
 					}
 					for (k = 0; k < ((DLC_MatSPIFlashSector - len) / DLC_MatSPIFlashPage); k++) {	/* c‚è‚Ìƒf[ƒ^‚ğ256byte–ˆ‘‚İ */
+						if (recvlen < DLC_MatSPIFlashPage) {	/* ƒf[ƒ^‚ª1ƒy[ƒW–¢–? */
+putst("mjca1\r\n");
+							break;
+						}
 						if (W25Q128JV_programPage(fotaaddress + k + DLC_MatSPIWritePageFota, 0, (uint8_t*)(fpt + DLC_MatSPIFlashPage * k), DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){
 							puthxw(DLC_MatSPIFlashPage * (fotaaddress + k + DLC_MatSPIWritePageFota));
 							putst(":OK");putcrlf();
@@ -1949,10 +1973,6 @@ int DLCMatRecvWriteFota()	// fota SPI‚ÖóMƒf[ƒ^‘‚İˆ—
 							if (W25Q128JV_readData(DLC_MatSPIFlashPage * (fotaaddress + k + DLC_MatSPIWritePageFota), (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage) == W25Q128JV_ERR_NONE) {
 								if (memcmp(DLC_MatSPICheckbufFota, (fpt + DLC_MatSPIFlashPage * k), DLC_MatSPIFlashPage) == 0) {
 									putst("VERFY OK\r\n");
-									if (DLC_MatWriteFotaDataLen > (DLC_MatFotaDataLen - DLC_MatSPIFlashPage)) {	// ƒf[ƒ^‚ÌÅI‚Å—]Œv‚Èƒy[ƒW‚Í‘‚Ü‚È‚¢
-										endflg = true;
-										break;
-									}
 									DLC_MatWriteFotaDataLen += DLC_MatSPIFlashPage;
 								} else {
 									DLC_MatFotaWriteNG = true;
@@ -1966,15 +1986,14 @@ int DLCMatRecvWriteFota()	// fota SPI‚ÖóMƒf[ƒ^‘‚İˆ—
 							DLC_MatFotaWriteNG = true;
 							putst("PROG NG\r\n");
 						}
+						recvlen -= DLC_MatSPIFlashPage;
 					}
-					if (endflg == false) {	// ƒf[ƒ^‚ÌÅI‚Å‚È‚¢
-						memset(DLC_MatSPIRemainbufFota, 0xFF, sizeof(DLC_MatSPIRemainbufFota));	/* ”¼’[byte•Ûƒoƒbƒtƒ@FF‰Šú‰» */
-						DLC_MatSPIRemaindataFota = (DLC_MatSPIFlashSector - (DLC_MatSPIFlashPage - len)) - (DLC_MatSPIFlashPage * k);	/* 1ƒy[ƒW–¢–‚Ì”¼’[byte” */
-//						putst("DLC_MatSPIRemaindataFota1:");puthxs(DLC_MatSPIRemaindataFota);putcrlf();
-						memcpy(DLC_MatSPIRemainbufFota, fpt + DLC_MatSPIFlashPage * k ,DLC_MatSPIRemaindataFota);	/* ”¼’[byte•Ûƒoƒbƒtƒ@‚É•Û */
-//						putst("RemainData1:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
-					}
+					memset(DLC_MatSPIRemainbufFota, 0xFF, sizeof(DLC_MatSPIRemainbufFota));	/* ”¼’[byte•Ûƒoƒbƒtƒ@FF‰Šú‰» */
+					DLC_MatSPIRemaindataFota = recvlen;	/* 1ƒy[ƒW–¢–‚Ì”¼’[byte” */
+//					putst("DLC_MatSPIRemaindataFota1:");puthxs(DLC_MatSPIRemaindataFota);putcrlf();
+					memcpy(DLC_MatSPIRemainbufFota, fpt + DLC_MatSPIFlashPage * k ,DLC_MatSPIRemaindataFota);	/* ”¼’[byte•Ûƒoƒbƒtƒ@‚É•Û */
 					DLC_MatSPIWritePageFota = k + DLC_MatSPIWritePageFota;	/* SPI‘‚İƒy[ƒWƒCƒ“ƒfƒbƒNƒX•Û */
+//					putst("RemainData1:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
 #if 0
 				} else {
 					putst("RecvData2:\r\n");
@@ -1995,6 +2014,7 @@ int DLCMatRecvWriteFota()	// fota SPI‚ÖóMƒf[ƒ^‘‚İˆ—
 				*(fpt - 1) = 0;	// strlen‚Ì‚½‚ß
 				len = strlen(DLC_MatResBuf) + 1;	/* ƒwƒbƒ_‚ÌƒŒƒ“ƒOƒX */
 				len += 8;	// ƒTƒCƒY‚Æƒ`ƒFƒbƒNƒTƒ€‚Ì8byte
+putst("header len:");puthxw(len);putcrlf();
 				DLC_MatFotaDataLen = *fpt;	// FOTAƒf[ƒ^ƒŒƒ“ƒOƒX
 				fpt++;
 				DLC_MatFotaDataLen |= *fpt << 8;
@@ -2044,6 +2064,9 @@ int DLCMatRecvWriteFota()	// fota SPI‚ÖóMƒf[ƒ^‘‚İˆ—
 //					Dump(fpt, i - len);putcrlf();
 					fotaaddress /= DLC_MatSPIFlashPage;
 					for (k = 0; k <= ((i - len) / DLC_MatSPIFlashPage); k++) {
+						if (recvlen < DLC_MatSPIFlashPage) {	/* ƒf[ƒ^‚ª1ƒy[ƒW–¢–? */
+							break;
+						}
 						if (W25Q128JV_programPage(fotaaddress + k, 0, (uint8_t*)(fpt + DLC_MatSPIFlashPage * k), DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){
 							puthxw(DLC_MatSPIFlashPage * (fotaaddress + k));
 							putst(":OK");putcrlf();
@@ -2064,8 +2087,10 @@ int DLCMatRecvWriteFota()	// fota SPI‚ÖóMƒf[ƒ^‘‚İˆ—
 							DLC_MatFotaWriteNG = true;
 							putst("PROG NG\r\n");
 						}
+						recvlen -= DLC_MatSPIFlashPage;
 					}
-					DLC_MatSPIRemaindataFota = (j - len) - (DLC_MatSPIFlashPage * k);	/* 1ƒy[ƒW–¢–‚Ì”¼’[byte” */
+					DLC_MatSPIRemaindataFota = recvlen;	/* 1ƒy[ƒW–¢–‚Ì”¼’[byte” */
+					DLC_MatSPIWritePageFota = k;	/* SPI‘‚İƒy[ƒWƒCƒ“ƒfƒbƒNƒX•Û */
 				}
 			}
 			DLC_MatResIdx = 0;
