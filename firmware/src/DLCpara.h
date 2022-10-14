@@ -1,6 +1,7 @@
 typedef struct {
 	uchar	FOTAact;							/* FOTA実行フラグ,FOTA開始時に0にしてFOTA終了(失敗も含む)FFへ */
-	uchar	fix[255];						
+	uchar	Server;								/* 0;karugamoサーバー 0以外=soracom */
+	uchar	fix[254];						
 } DLC_Parameter;
 extern DLC_Parameter DLC_Para;
 void DLCParaRead();

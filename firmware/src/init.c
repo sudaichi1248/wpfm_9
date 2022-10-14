@@ -19,6 +19,7 @@
 #include "w25q128jv.h"
 #include "mlog.h"
 #include "moni.h"
+#include "DLCpara.h"
 void DLCMatTimerset();
 #ifdef ADD_FUNCTION
 bool DLCMatWatchAlertPause();
@@ -154,9 +155,15 @@ void WPFM_initializeApplication(void)
         else
         {
             // Both batteries are low voltage, blink ext1-led and ext2-led until the battery is replaced and reset.
-            UTIL_startBlinkEXT1AND2LED();
-            while (true)
-                ;           // Stop here
+#if 1
+		        WPFM_externalBatteryNumberInUse = 1;
+		        WPFM_batteryStatus = MLOG_BAT_STATUS_BAT1_IN_USE | MLOG_BAT_STATUS_BAT2_NOT_USE;
+		        EXT2_OFF_Set();         // detach battery #2
+#else
+	            UTIL_startBlinkEXT1AND2LED();
+	            while (true)
+	                ;           // Stop here
+#endif
         }
     }
 
