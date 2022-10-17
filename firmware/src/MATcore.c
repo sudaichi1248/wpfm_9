@@ -31,7 +31,7 @@ void _GO_IDLE(){DLCMatState();IDLEputch();}
 void Moni();
 void DLCMatConfigDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatPostSndSub(),DLCMatPostReport();
-void DLCMatTimerset(int tmid,int cnt ),DLCMatError();
+void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatReset();
 void DLCMatWgetFile();	// fota FOTAファイルwget
 void ToBoot_reset(uchar);
 extern	char _Main_version[];
@@ -2393,6 +2393,8 @@ void DLCMatTest()
 				PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );
 			break;
 		case 0x03:
+			DLCMatReset();
+			break;
 		case 0x1b:
 			return;
 		}
@@ -2411,6 +2413,7 @@ void DLCMatMain()
 	if( DLC_BigState == 0 ){
 		putst( VerPrint() );
 		putst( "\r\nMATcore Task Started.\r\n" );
+		DLCMatReset();
 		DLCMatInit();
 		DLC_BigState = 1;
 	}
@@ -2626,10 +2629,25 @@ void DLCMatError( int no )
 	DLCMatTimerset( 0,15000 );
 	DLC_MatState = MATC_STATE_ERR;
 }
+/*
+	ログを出し切るdelay
+*/
 void DLC_delay( int msec )
 {
 	for(int i=0;i<msec;i++){
 		IDLEputch();
 		APP_delay(1);
 	}
+}
+/*
+	MATcoreのRESET
+*/
+void DLCMatReset( )
+{
+	putst("MATcore RST!\r\n");
+	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,-1 );		/* OFF */
+	APP_delay(200);
+	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );		/* ON */
+	DLCMatTimerset( 0,15000 );
+	DLC_MatState = MATC_STATE_INIT;
 }
