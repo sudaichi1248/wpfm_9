@@ -66,7 +66,7 @@ void DLCFotaFinAndReset()
 {
 	DLC_Para.FOTAact = 0xFF;													/* FOTA完了フラグ */
 	DLCParaSave();
-//	DLCsumBreakAndReset();
+	DLCsumBreakAndReset();
 }
 /*
 	FOTA失敗でリセット

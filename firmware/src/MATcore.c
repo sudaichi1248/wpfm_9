@@ -71,7 +71,7 @@ static	char wget_Head[] = "GET /wpfm.bin HTTP/1.1\r\nHost:harvest-files.soracom.
 // static char wget_Head[] = "GET /2048.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// fota
 // static char wget_Head[] = "GET /1792.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// fota
 // static char wget_Head[] = "GET /256.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// fota
-#define	 	DLC_MatSPIFlashAddrFota		0xE00000;	// fota SPIフラッシュ書込みアドレス
+#define	 	DLC_MatSPIFlashAddrFota		0xB00000;	// fota SPIフラッシュ書込みアドレス
 char getkey()
 {
 	char	c;
@@ -647,6 +647,7 @@ putst("write:");puthxw(DLC_MatSPIWritePageFota);putcrlf();
 		}
 	}
 	putst("FOTA FAILED.\r\n");
+	W25Q128JV_eraseSctor(((fotaaddress * DLC_MatSPIFlashPage + 0x36000) / 0x1000) - 1, true);	/* 失敗なのでFOTAデータ最終セクタ消去(SPI Flash) */
 	DLC_delay(1000);
 	DLCFotaNGAndReset();
 }
@@ -2409,6 +2410,7 @@ void DLCMatMain()
 {
 	char key;
 	char *VerPrint();
+	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* FOTAデータ保存番地 */
 //	PORT_GroupWrite( PORT_GROUP_1,0x1<<22,0 );
 	if( DLC_BigState == 0 ){
 		putst( VerPrint() );
@@ -2541,27 +2543,7 @@ void DLCMatMain()
 #endif
 			break;
 		case 'V':
-			WPFM_readSettingParameter( &config );
-			putst("lowThresholdVoltage[mV] : 1=2400,2=2600,3=3000");
-			putst("->");
-			key = getch();
-			switch( key ){
-			case '1':
-				config.lowThresholdVoltage = 2400;
-				WPFM_writeSettingParameter( &config );
-				break;
-			case '2':
-				config.lowThresholdVoltage = 2600;
-				WPFM_writeSettingParameter( &config );
-				break;
-			case '3':
-				config.lowThresholdVoltage = 3000;
-				WPFM_writeSettingParameter( &config );
-				break;
-			default:
-				putst("Out of range.\r\n");
-				break;
-			}
+			W25Q128JV_eraseSctor(((fotaaddress + 0x36000) / 0x1000) - 1, true);	/* 失敗なのでFOTAデータ最終セクタ消去(SPI Flash) */
 			break;
 		case 'X':	// FOTA開始
 			DLCFotaGoAndReset();
