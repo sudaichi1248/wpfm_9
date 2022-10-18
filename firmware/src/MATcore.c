@@ -1145,21 +1145,12 @@ void DLCMatPostStatus()
 {
 	char	tmp[48],n,*p,ver[6];
 	int		i;
-	uint8_t	batteryStatus1,batteryStatus2;
 	memcpy( ver,&_Main_version[4],5 );
 	ver[5] = 0;
 	strcpy( http_tmp,http_status );
 	strcat( http_tmp,"{\"Status\":{" );
 	DLC_MatTxType = 0;
 	putst("Alert=");puthxb( WPFM_TxType );putcrlf();
-	batteryStatus1 = WPFM_batteryStatus >> 4;
-	if (batteryStatus1 == 3 ) {
-		batteryStatus1 = 1;
-	}
-	batteryStatus2 = WPFM_batteryStatus & 0x0F;
-	if (batteryStatus2 == 3 ) {
-		batteryStatus2 = 1;
-	}
 	DLC_MatTxType = WPFM_TxType;
 #ifdef ADD_FUNCTION
 	if ( WPFM_isAlertPause == true )
@@ -1174,8 +1165,8 @@ void DLCMatPostStatus()
 	sprintf( tmp,"\"LTEVersion\":\"%s\","	,DLC_MatVer );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"ExtCellPwr1\":%.3f,"	,(float)WPFM_lastBatteryVoltages[0]/1000 );		strcat( http_tmp,tmp );
 	sprintf( tmp,"\"ExtCellPwr2\":%.3f,"	,(float)WPFM_lastBatteryVoltages[1]/1000 );		strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Batt1Use\":%d,"			,batteryStatus1 );								strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Batt2Use\":%d,"			,batteryStatus2 );								strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Batt1Use\":%d,"			,WPFM_batteryStatus>>4 );						strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Batt2Use\":%d,"			,WPFM_batteryStatus&0x0F );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"EARFCN\":%d,"			,DLCMatCharInt( DLC_MatRadioDensty,"EARFCN:"));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"CellId\":%d,"			,DLCMatCharInt( DLC_MatRadioDensty,"CELLID:"));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"RSRP\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSRP:" ));	strcat( http_tmp,tmp );
