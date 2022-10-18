@@ -191,7 +191,7 @@ void WPFM_initializeApplication(void)
     SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
     WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
 	WPFM_InAlert = false;
-    DEBUG_UART_printlnFormat("Intervales: %u,%u", WPFM_measurementInterval, WPFM_communicationInterval);
+    DEBUG_UART_printlnFormat("Intervales: %lu,%lu", WPFM_measurementInterval, WPFM_communicationInterval);
     DEBUG_UART_FLUSH();
 
     //- Check analog sensors
@@ -505,8 +505,9 @@ bool WPFM_setNextCommunicateAlarm(void)
 {
     // Adjust and set next alarm
     uint32_t nextTime = RTC_now + WPFM_communicationInterval;
-//    DEBUG_UART_printlnFormat(">>nextTime: %lu,%u", nextTime, WPFM_communicationInterval);
-    nextTime -= nextTime % WPFM_communicationInterval;
+//    DEBUG_UART_printlnFormat(">>nextTime: %lu,%lu", nextTime, WPFM_communicationInterval);
+// ’èŠú’Ê’m•ªŽU‚Ì‚½‚ß“dŒ¹ON‚©‚çÝ’èŽžŠÔŒã
+//    nextTime -= nextTime % WPFM_communicationInterval;
 //    DEBUG_UART_printlnFormat(">>nextTime: %lu", nextTime);
     uint32_t minutesLater = ((nextTime - RTC_now) + 59) / 60;
     if (minutesLater ==  0)
