@@ -3,6 +3,7 @@
  * Author:  Interark Corp.
  * Summary: Analog Sensor control implementation file.
  * Date:    2022/09/04 (R0)
+ *          2022/10/17 (R1) Corresponded to battery voltage change to 12V
  * Note:    Points to be adjusted where ""@tune" is listed
  */
 
@@ -28,7 +29,7 @@
 bool SENSOR_alwaysOnSensorPowers[2] = { false, false };
 
 const static float _SENSOR_conversionFactor                = 0.000990000;      // Conversion to voltage factor [V/LSB]
-const static float _SENSOR_dividedRatioOfExternalBattery   = 1.52710; //1.52308;          // 回路上は1.50000、実際には実測(Board $22-005)により補正
+const static float _SENSOR_dividedRatioOfExternalBattery   = 880.0 / 200.0;    // Voltage division ratio: (R1) Corresponded to battery voltage change to 12V
 
 
 int SENSOR_readSensorOutput(int sensorNo, float *result_p)

@@ -563,3 +563,35 @@ static int _RTC_writeRegisters(uint8_t register_, uint8_t values[], int nbytes)
 
     return (stat);
 }
+void _RTC_handlerBClr()
+{
+    uint8_t value = 0;
+	DLCMATrtctimer();
+    if (_RTC_readRegister(RTC_REGISTER_CONTROL2, &value) == RTC_ERR_NONE)
+    {
+        if (value & REGISTER_CONTROL2_CTFG)
+        {
+            // if CTFG is set, clear CTFG and call user handler
+            value &= ~REGISTER_CONTROL2_CTFG;       // cleat CTFG
+            UTIL_delayMicros(100);
+            _RTC_writeRegister(RTC_REGISTER_CONTROL2, value);
+            if (_RTC_handlerForTimeupdate != NULL)
+            {
+                RTC_now += _RTC_updateUnit;
+                _RTC_handlerForTimeupdate();
+            }
+        }
+
+        if (value & REGISTER_CONTROL2_WKAFG)
+        {
+            // if WkAFG is set, clear WkAFG and call user handler
+            value &= ~REGISTER_CONTROL2_WKAFG;      // clear WkAFG
+            UTIL_delayMicros(100);
+            _RTC_writeRegister(RTC_REGISTER_CONTROL2, value);
+            if (_RTC_handlerForAlarm != NULL)
+            {
+                _RTC_handlerForAlarm();
+            }
+        }
+    }
+}

@@ -2408,6 +2408,7 @@ void MATRts()
 }
 void DLCMatMain()
 {
+	extern void _RTC_handlerBClr();
 	char key;
 	char *VerPrint();
 	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* FOTAデータ保存番地 */
@@ -2479,10 +2480,9 @@ void DLCMatMain()
 			break;
 		case 'E':												/* 強制本プロ削除+Reset */
 			if( CheckPasswd() ){
-				NVMCTRL_RowErase( 0x3DF00 );
 				putst("本プロ削除してBoot起動します。");putcrlf();
 				DLC_delay(1000);
-				__NVIC_SystemReset();
+				DLCsumBreakAndReset();
 			}
 			break;
 		case 'F':
@@ -2546,10 +2546,12 @@ void DLCMatMain()
 			W25Q128JV_eraseSctor(((fotaaddress + 0x36000) / 0x1000) - 1, true);	/* 失敗なのでFOTAデータ最終セクタ消去(SPI Flash) */
 			break;
 		case 'X':	// FOTA開始
-			DLCFotaGoAndReset();
+			if( CheckPasswd() )
+				DLCFotaGoAndReset();
 			break;
 		case 'T':	// FOTA終了
-			DLCFotaFinAndReset();
+			if( CheckPasswd() )
+				DLCFotaFinAndReset();
 			break;
 		case 0x03:												/* CTRL+A */
 			if( CheckPasswd() ){
@@ -2564,6 +2566,10 @@ void DLCMatMain()
 			break;
 		case 'S':												/* Flash Powerdown */
 			W25Q128JV_powerDown();
+			break;
+		case 'H':
+			if( CheckPasswd() )
+				_RTC_handlerBClr();
 			break;
 		default:
 			break;
