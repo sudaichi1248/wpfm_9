@@ -407,10 +407,18 @@ static void eventLoopOnNonMeasurementMode(void)
         {
             // タクトスイッチの押下中
         }
-        else
-        {
-            // USB was disconnected
+        else if( DLCMatIsSleep() ){
+            // USBが接続されていないとき
             WPFM_isInSendingRegularly = false;  // USBケーブルがVEなしで抜かれた時のために
+
+            // Fall asleep if there is no work to do
+            WPFM_status = WPFM_STATUS_SLEEP;
+            DEBUG_UART_printlnString(">SLEEP");
+            APP_delay(1);
+            WPFM_sleep();       // MCUをスタンバイモードにする
+            APP_delay(1);
+            DEBUG_UART_printlnString("<WAKE UP");
+            WPFM_status = WPFM_STATUS_IDLE;
         }
     }
 }
