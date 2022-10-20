@@ -15,6 +15,7 @@
 #include "util.h"
 #include "gpioexp.h"
 #include "sensor.h"
+#include "rtc.h"
 
 /*
 *   Symbols and Constants
@@ -182,6 +183,7 @@ void SENSOR_updateMeasurementInterval(uint16_t interval)
 {
     // Always update regardless of previous settings
     WPFM_measurementInterval = interval;
+	RTC_poweron = RTC_now;
 
     for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
     {

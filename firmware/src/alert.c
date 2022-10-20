@@ -343,7 +343,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	    if (hasCommunicationIntervalChanged)
 	    {
 	        DBG_PRINT("[ALERT_T1] Change next comminication alarm.");
-	        WPFM_setNextCommunicateAlarm();
+//	        WPFM_setNextCommunicateAlarm();
 	    }
 #ifdef ADD_FUNCTION
 	}
@@ -474,7 +474,7 @@ putst("2.alertStatus:");puthxb(alertStatus);putcrlf();
 			if (hasCommunicationIntervalChanged)
 			{
 				DBG_PRINT("[ALERT_T2] Change next comminication alarm.");
-			    WPFM_setNextCommunicateAlarm();
+//			    WPFM_setNextCommunicateAlarm();
 			}
 		}
 #endif
@@ -658,6 +658,7 @@ void WPFM_cancelAlert()
 	WPFM_lastAlertStartTimes[0][0] = WPFM_lastAlertStartTimes[1][0] = WPFM_lastAlertStartTimes[0][1] = WPFM_lastAlertStartTimes[1][1] = 0;
 	WPFM_lastAlertStartTimes2[0][0] = WPFM_lastAlertStartTimes2[0][1] = 0;
 	WPFM_lastAlertStartTimes2[1][0] = WPFM_lastAlertStartTimes2[1][1] = 0;
-	WPFM_setNextCommunicateAlarm();
+// 上記 WPFM_updateCommunicationInterval() でcallされる
+//	WPFM_setNextCommunicateAlarm();
 }
 #endif

@@ -117,7 +117,6 @@ int RTC_initialize(EIC_PIN interruptPinA, EIC_PIN interruptPinB)
             _RTC_writeRegister(RTC_REGISTER_CONTROL1, 0);   // all:0
             _RTC_writeRegister(RTC_REGISTER_CONTROL2, 0);   // all:0
             RTC_now = RTC_getEpoch();
-            RTC_poweron = RTC_now;
 #ifdef RTC_DEBUG
             RTC_DATETIME dt;
             RTC_getDatetime(&dt);
