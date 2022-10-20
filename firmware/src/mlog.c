@@ -5,6 +5,7 @@
  * Date:    2022/08/18 (R0)
  *          2022/09/09 (R0.1) Support temporary SRAM log
  *          2022/10/08 (R0.3) fix bug related to return error value of findLogBySN()
+ *          2022/10/19 (R0.4) fix MLOG_checkLogs() as release mode
  * Note:
  *          Use 2KB of SRAM for temporary SRAM log (R1)
  */
@@ -18,6 +19,9 @@
 #include "w25q128jv.h"
 #include "mlog.h"
 #include "debug.h"
+// 測定logリングバッファ試験用
+#include "rtc.h"
+#include "wpfm.h"
 
 /*
 *   Macros
@@ -292,10 +296,10 @@ int MLOG_checkLogs(bool oldestOnly)
 
     uint32_t latestSN = 0, oldestSN = MLOG_MAX_SEQUENTIAL_NUMBER, latestSN2 = 0;
     uint32_t latestAddr = 0, oldestAddr = 0, latestAddr2 = 0;
-    //for (uint32_t blockNo = 0; blockNo < W25Q128JV_NUM_BLOCK64; blockNo++)
-    for (uint32_t blockNo = 0; blockNo < 1; blockNo++)
+
+    for (uint32_t blockNo = 0; blockNo < (MLOG_ADDRESS_MLOG_LAST >> 16) + 1; blockNo++)
     {
-        for (uint32_t sectorNo = 0; sectorNo < 2; sectorNo++)
+        for (uint32_t sectorNo = 0; sectorNo < W25Q128JV_NUM_SECTOR; sectorNo++)
         {
             for (uint32_t pageNo = 0; pageNo < W25Q128JV_NUM_PAGE; pageNo++)
             {
@@ -692,4 +696,83 @@ static int _MLOG_getLogOnSRAM(MLOG_T *log_p)
     }
 
     return (mlogID);
+}
+
+// 測定logリングバッファ試験用
+int MLOG_putLogtest(MLOG_T *log_p, bool specifySN)
+{
+    bool Flg=false;
+    DEBUG_UART_printlnFormat("_MLOG_headAddress=%06x,%d", (unsigned int)_MLOG_headAddress, specifySN); APP_delay(2);
+    if ((_MLOG_headAddress & 0xfff) == 0)
+    {
+        // if page number and offset are zero - first log in current sector
+        DEBUG_UART_printlnFormat("head=%06Xh", (unsigned int)_MLOG_headAddress);
+        uint16_t sectorNo = (_MLOG_headAddress >> 12) & 0x0fff;
+        DEBUG_UART_printlnFormat("eraseSector(%04Xh)", (unsigned int)sectorNo);
+        if (W25Q128JV_eraseSctor(sectorNo, true) != W25Q128JV_ERR_NONE)
+        {
+            return (MLOG_ERR_ERASE);
+        }
+        DEBUG_UART_printlnFormat("eraseSector(%04Xh): done", (unsigned int)sectorNo);
+    }
+    uint16_t pageNo = _MLOG_headAddress >> 8;
+    uint8_t offset = _MLOG_headAddress & 0xff;
+    if (! specifySN)
+    {
+        _MLOG_lastSequentialNumber++;       // Increment sequential number
+        if (_MLOG_lastSequentialNumber == 0)
+        {
+            // Overflow sequential number
+            DEBUG_UART_printlnString("MLOG_putLog(): Overflow sequential number");
+        }
+        log_p->sequentialNumber = _MLOG_lastSequentialNumber;
+    }
+    DEBUG_UART_printlnFormat("programPage(%04Xh,%02Xh):", (unsigned int)pageNo, (unsigned int)offset);
+    if (W25Q128JV_programPage(pageNo, offset, (uint8_t *)log_p, MLOG_RECORD_SIZE, true) != W25Q128JV_ERR_NONE)
+    {
+        return (MLOG_ERR_PROGRAM_PAGE);
+    }
+    MLOG_ID_T mlogID = (pageNo << 8) + offset;
+    dumpLog(">", mlogID, log_p);
+
+    // update _MLOG_headAddress for next use
+    if (offset < MLOG_RECORD_SIZE * (MLOG_LOGS_PER_PAGE - 1))
+    {
+        offset += MLOG_RECORD_SIZE;
+    }
+    else
+    {
+        offset = 0;
+        if (++pageNo > ((MLOG_ADDRESS_MLOG_LAST - 0x100) >> 8))
+        {
+			Flg = true;
+        }
+    }
+    _MLOG_headAddress = ((uint32_t)pageNo << 8) + offset;
+    //DEBUG_UART_printlnFormat("_MLOG_headAddress=%06x", (unsigned int)_MLOG_headAddress);
+
+    if (Flg == true) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+int mlogdumywrite(uint32_t logtime)
+{
+    MLOG_T mlog;
+    mlog.timestamp.second = logtime;
+    mlog.timestamp.mSecond = 0;
+    mlog.measuredValues[0] = WPFM_lastMeasuredValues[0];
+    mlog.measuredValues[1] = WPFM_lastMeasuredValues[1];
+    mlog.batteryVoltages[0] = WPFM_lastBatteryVoltages[0];
+    mlog.batteryVoltages[1] = WPFM_lastBatteryVoltages[1];
+    mlog.temperatureOnBoard = WPFM_lastTemperatureOnBoard;
+    mlog.alertStatus = WPFM_lastAlertStatusSuppressed;
+    mlog.batteryStatus = WPFM_batteryStatus;
+
+    int stat;
+    // Store log into Flash
+    stat = MLOG_putLogtest(&mlog, false);
+
+	return stat;
 }

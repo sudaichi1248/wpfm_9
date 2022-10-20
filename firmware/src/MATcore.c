@@ -55,6 +55,10 @@ uchar	DLC_MatTxType;
 bool	DLC_ForcedCallOK=false;
 
 int		DLC_MatFotaTOcnt=0;	// fota  タイムアウトカウンタ
+// 測定logリングバッファ試験用
+int mlogdumywrite(uint32_t logtime);
+uint32_t logtime;
+
 char getkey()
 {
 	char	c;
@@ -2091,6 +2095,7 @@ void DLCMatMain()
 	extern void _RTC_handlerBClr();
 	char key;
 	char *VerPrint();
+	int ret=0;
 //	PORT_GroupWrite( PORT_GROUP_1,0x1<<22,0 );
 	if( DLC_BigState == 0 ){
 		putst( VerPrint() );
@@ -2231,6 +2236,19 @@ void DLCMatMain()
 		case 'T':	// FOTA終了
 			if( CheckPasswd() )
 				DLCFotaFinAndReset();
+			break;
+		case 'P':
+			if( CheckPasswd() ){
+				logtime = RTC_now;
+				while(1) {
+					ret = mlogdumywrite(logtime);
+					if (ret == 0) {
+						break;
+					}
+					logtime += 4;
+				}
+				putst("##### write end #####");
+			}
 			break;
 		case 0x03:												/* CTRL+A */
 			if( CheckPasswd() ){
