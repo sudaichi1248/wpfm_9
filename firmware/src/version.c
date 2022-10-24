@@ -4,7 +4,7 @@
 #include <stdlib.h>                     // Defines EXIT_FAILURE
 #include <ctype.h>
 #include <string.h>                     // Defines EXIT_FAILURE
-#define MAIN_VERSION "Ver 00.50 "
+#define MAIN_VERSION "Ver 00.60 "
 char 	_Main_version[32] = {MAIN_VERSION};
 char *VerPrint()
 {
