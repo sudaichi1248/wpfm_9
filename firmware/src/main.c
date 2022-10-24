@@ -96,6 +96,7 @@ int main(void)
     //DEBUG_UART_printlnFormat("MLOG Max logs = %u", ((MLOG_ADDRESS_MLOG_LAST + 1) / 256) * MLOG_LOGS_PER_PAGE);
 
     // Main-loop
+    int stat;
     if ((WPFM_operationMode == WPFM_OPERATION_MODE_NON_MEASUREMENT)||(DLC_Para.FOTAact == 0)) /* 非測定モードorFOTA */
     {
         // Execute on non-measurement mode processing
@@ -111,7 +112,20 @@ int main(void)
         // Execute on measurement mode processing
         DEBUG_UART_printlnString("RUN AS MEASUREMENT MODE");
         UTIL_startBlinkLED1(5);
-
+		// initから移動
+        if (! WPFM_setNextCommunicateAlarm())
+        {
+            DEBUG_UART_printlnString("RTC_setAlarm() ERROR");
+            DEBUG_HALT();
+        }
+        if ((stat = MLOG_begin(true)) != MLOG_ERR_NONE)
+        {
+            DEBUG_UART_printlnFormat("MLOG ERROR: %d", stat);
+            DEBUG_HALT();
+        }
+		// MLOG_begin()のcheckが長いのでここから測定タイミング開始
+		WPFM_doMeasure = false;
+		RTC_poweron = RTC_now;
         WPFM_status = WPFM_STATUS_WAIT_COMMAND;
         DEBUG_UART_printlnFormat("START MEASURE MODE(%lu)", SYS_tick);
         eventLoopOnMeasurementMode();

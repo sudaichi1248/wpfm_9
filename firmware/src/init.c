@@ -208,6 +208,7 @@ void WPFM_initializeApplication(void)
         DEBUG_UART_FLUSH();
     }
 
+#if 0	// main‚ÌLED“_–ÅŒã‚ÉˆÚ“®
     if (WPFM_operationMode == WPFM_OPERATION_MODE_MEASUREMENT)
     {
         if (! WPFM_setNextCommunicateAlarm())
@@ -221,6 +222,7 @@ void WPFM_initializeApplication(void)
             DEBUG_HALT();
         }
     }
+#endif
 
     //- Initialize temperature sensor(S5851A)
     S5851A_setMode(S5851A_MODE_SHUTDOWN);
