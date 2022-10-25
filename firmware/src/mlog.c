@@ -336,9 +336,10 @@ int MLOG_checkLogs(bool oldestOnly)
 				if (flag == 0) {	// ‹N“®‚‘¬‰»
 					continue;       // skip uploaded page
 				}
+#if 0	// ‹N“®‚‘¬‰»
                 DEBUG_UART_printlnFormat("READ FLAG %06lX: %02Xh", addr + (W25Q128JV_PAGE_SIZE-1), flag);
-//                APP_delay(20);
-                APP_delay(2);	// ‹N“®‚‘¬‰»
+                APP_delay(20);
+#endif
                 if (flag == 0x00)
                 {
                     // when this page was uploaded
