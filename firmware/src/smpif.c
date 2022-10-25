@@ -21,6 +21,7 @@
 
 void DLCMatUpdateGo();
 void DLCMatFotaGo();
+void DLCMatServerChange();
 /*
 *   Symbols
 */
@@ -58,8 +59,9 @@ static SMPIF_COMMAND_TABLE _SMPIF_commandTables[] =
         { "CS", SMPIF_setCallibrationValues },
         { "CN", SMPIF_notifyCallibrationTarget },
         { "CR", SMPIF_readCallibrationValues },
-        { "UG", DLCMatUpdateGo },
-        { "FG", DLCMatFotaGo },
+        { "M1", DLCMatUpdateGo },
+        { "M2", DLCMatFotaGo },
+        { "M3", DLCMatServerChange },
         { NULL, NULL }
     };
 
