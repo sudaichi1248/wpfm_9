@@ -33,7 +33,7 @@ void Moni();
 void DLCMatConfigDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatPostSndSub(),DLCMatPostReport();
 void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatReset();
-void ToBoot_reset(uchar);
+void DLCMatServerChange();
 extern	char _Main_version[];
 int DLCMatRecvDisp();
 char 	zLogOn=1;
@@ -2036,12 +2036,7 @@ void DLCMatTest()
 			DLCMatSend( "AT$OPEN\r" );
 			break;
 		case 'S':
-			DLC_Para.Server ^= 0xff;
-			if( DLC_Para.Server == 0 )
-				putst( "karugamosoft.ddo.jp,9999\r" );
-			else
-				putst( "beam.soracom.io,8888\r" );
-			DLCParaSave();
+			DLCMatServerChange();
 			break;
 		case 'U':
 #if 1
@@ -2304,6 +2299,15 @@ void DLCMatUpdateGo()
 void DLCMatFotaGo()
 {
 	DLCFotaGoAndReset();
+}
+void DLCMatServerChange()
+{
+	DLC_Para.Server ^= 0xff;
+	if( DLC_Para.Server == 0 )
+		putst( "karugamosoft.ddo.jp,9999\r" );
+	else
+		putst( "beam.soracom.io,8888\r" );
+	DLCParaSave();
 }
 void DLCMatError( int no )
 {
