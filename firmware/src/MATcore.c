@@ -17,6 +17,7 @@
 #include "wpfm.h"
 #include "DLCpara.h"
 #include "FOTAcmd.h"
+char *VerPrint();
 void DLCMatTimerInt();
 void DLCMatState();
 void IDLEputch();
@@ -2089,7 +2090,6 @@ void DLCMatMain()
 {
 	extern void _RTC_handlerBClr();
 	char key;
-	char *VerPrint();
 	int ret=0;
 //	PORT_GroupWrite( PORT_GROUP_1,0x1<<22,0 );
 	if( DLC_BigState == 0 ){
@@ -2285,6 +2285,10 @@ int DLCMatIsSleep()
 		return 1;
 	}
 	return 0;
+}
+void DLCMatVersion()
+{
+	APP_writeUSB( (uint8_t const*)VerPrint(),30 );
 }
 /*
 	USB‚©‚ç‚ÌUPDATEƒRƒ}ƒ“ƒh

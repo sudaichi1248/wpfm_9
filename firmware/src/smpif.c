@@ -19,6 +19,7 @@
 #include "uart_debug.h"
 #include "smpif.h"
 
+void DLCMatVersion();
 void DLCMatUpdateGo();
 void DLCMatFotaGo();
 void DLCMatServerChange();
@@ -59,6 +60,7 @@ static SMPIF_COMMAND_TABLE _SMPIF_commandTables[] =
         { "CS", SMPIF_setCallibrationValues },
         { "CN", SMPIF_notifyCallibrationTarget },
         { "CR", SMPIF_readCallibrationValues },
+        { "M0", DLCMatVersion },
         { "M1", DLCMatUpdateGo },
         { "M2", DLCMatFotaGo },
         { "M3", DLCMatServerChange },
