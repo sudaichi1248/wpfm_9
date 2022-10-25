@@ -164,8 +164,8 @@ void WPFM_dumpSettingParameter(WPFM_SETTING_PARAMETER *param_p)
     DEBUG_UART_printlnFormat("measurementIntervalOnAlert: %u", (unsigned int)param_p->measurementIntervalOnAlert); APP_delay(10);
     DEBUG_UART_printlnFormat("communicationIntervalOnAlert: %u", (unsigned int)param_p->communicationIntervalOnAlert); APP_delay(10);
     DEBUG_UART_printlnFormat("sensorKinds[2]: %d/%d", param_p->sensorKinds[0], param_p->sensorKinds[1]); APP_delay(10);
-    DEBUG_UART_printlnFormat("upperLimits[2]: %u/%u", param_p->upperLimits[0], param_p->upperLimits[1]); APP_delay(10);
-    DEBUG_UART_printlnFormat("lowerLimits[2]: %u/%u", param_p->lowerLimits[0], param_p->lowerLimits[1]); APP_delay(10);
+    DEBUG_UART_printlnFormat("upperLimits[2]: %d/%d", param_p->upperLimits[0], param_p->upperLimits[1]); APP_delay(10);
+    DEBUG_UART_printlnFormat("lowerLimits[2]: %d/%d", param_p->lowerLimits[0], param_p->lowerLimits[1]); APP_delay(10);
 
     DEBUG_UART_printlnFormat("alertEnableKinds[2][2][2]: %d %d %d %d/%d %d %d %d",
             param_p->alertEnableKinds[0][0][0], param_p->alertEnableKinds[0][0][1],param_p->alertEnableKinds[0][1][0], param_p->alertEnableKinds[0][1][1],

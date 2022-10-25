@@ -333,8 +333,12 @@ int MLOG_checkLogs(bool oldestOnly)
                 {
                     return (MLOG_ERR_READ);
                 }
+				if (flag == 0) {	// 起動時高速化
+					continue;       // skip uploaded page
+				}
                 DEBUG_UART_printlnFormat("READ FLAG %06lX: %02Xh", addr + (W25Q128JV_PAGE_SIZE-1), flag);
-                APP_delay(20);
+//                APP_delay(20);
+                APP_delay(2);	// 起動時高速化
                 if (flag == 0x00)
                 {
                     // when this page was uploaded
@@ -744,6 +748,7 @@ int MLOG_putLogtest(MLOG_T *log_p, bool specifySN)
     {
         offset = 0;
         if (++pageNo > ((MLOG_ADDRESS_MLOG_LAST - 0x100) >> 8))
+//        if (++pageNo > ((0x93b00 - 0x100) >> 8))	// 測定：4秒、通知：1日の場合の未通知log最大
         {
 			Flg = true;
         }
