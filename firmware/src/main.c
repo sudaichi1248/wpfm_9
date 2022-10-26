@@ -102,6 +102,12 @@ int main(void)
         // Execute on non-measurement mode processing
         DEBUG_UART_printlnString("RUN AS NON-MEASUREMENT MODE");
 
+		// 押しボタン強制発報のため測定logチェック要
+        if ((stat = MLOG_begin(true)) != MLOG_ERR_NONE)
+        {
+            DEBUG_UART_printlnFormat("MLOG ERROR: %d", stat);
+            DEBUG_HALT();
+        }
         WPFM_status = WPFM_STATUS_WAIT_COMMAND;
         SENSOR_updateMeasurementInterval(1);
         DEBUG_UART_printlnFormat("START NON-MEASURE MODE(%lu)", SYS_tick);

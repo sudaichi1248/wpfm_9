@@ -133,9 +133,12 @@ void WPFM_initializeApplication(void)
     W25Q128JV_begin(MEM_CS_PIN);
 
     // Control external batteries
-    uint16_t voltage = 0;
-    SENSOR_readExternalBatteryVoltage(1, &voltage);
-    if (voltage > WPFM_settingParameter.lowThresholdVoltage)
+//    uint16_t voltage = 0;
+//    SENSOR_readExternalBatteryVoltage(1, &voltage);
+	SENSOR_readExternalBatteryVoltage(1, &WPFM_lastBatteryVoltages[0]);
+	SENSOR_readExternalBatteryVoltage(2, &WPFM_lastBatteryVoltages[1]);
+//    if (voltage > WPFM_settingParameter.lowThresholdVoltage)
+	if (WPFM_lastBatteryVoltages[0] > WPFM_settingParameter.lowThresholdVoltage)
     {
         // Use Battery #1, detach Battery #2
         WPFM_externalBatteryNumberInUse = 1;
@@ -145,8 +148,9 @@ void WPFM_initializeApplication(void)
     else
     {
         // Use Battery #2, detach Battery #1
-        SENSOR_readExternalBatteryVoltage(2, &voltage);
-        if (voltage > WPFM_settingParameter.lowThresholdVoltage)
+//        SENSOR_readExternalBatteryVoltage(2, &voltage);
+//        if (voltage > WPFM_settingParameter.lowThresholdVoltage)
+		if (WPFM_lastBatteryVoltages[1] > WPFM_settingParameter.lowThresholdVoltage)
         {
             WPFM_externalBatteryNumberInUse = 2;
             WPFM_batteryStatus = MLOG_BAT_STATUS_BAT2_IN_USE | MLOG_BAT_STATUS_BAT1_NOT_USE;
