@@ -41,6 +41,7 @@
 
 /* temporary */
 #include "w25q128jv.h"
+#include "s5851a.h"
 #include "mlog.h"
 #include "Moni.h"
 #include "DLCpara.h"
@@ -94,6 +95,9 @@ int main(void)
     //DEBUG_UART_printlnFormat("WPFM_SETTING_PARAMETER size = %u", (unsigned int)sizeof(WPFM_SETTING_PARAMETER));
     //DEBUG_UART_printlnFormat("MLOG_T size = %u", (unsigned int)sizeof(MLOG_T));
     //DEBUG_UART_printlnFormat("MLOG Max logs = %u", ((MLOG_ADDRESS_MLOG_LAST + 1) / 256) * MLOG_LOGS_PER_PAGE);
+
+    // Read temperature sensor on board 起動時も温度測定
+	WPFM_getTemperature();
 
     // Main-loop
     int stat;

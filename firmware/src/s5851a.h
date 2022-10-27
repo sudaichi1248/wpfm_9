@@ -39,6 +39,8 @@ typedef enum {
 extern int S5851A_setMode(S5851A_MODE mode);    // Initialize with mode
 extern int S5851A_getTemperature(float *temp_p);    // Get temperature [C degree]
 extern int S5851A_startMeasurement(void);       // Start to measure temperature at shuto down mode
+extern void WPFM_getTemperature();
+
 
 
 #ifdef	__cplusplus

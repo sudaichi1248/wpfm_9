@@ -107,23 +107,7 @@ void WPFM_measureRegularly(bool justMeasure)
     APP_delay(20);
 
     // Read temperature sensor on board
-    float temp;
-#ifdef DEBUG_DETAIL
-    uint32_t t0 = SYS_mSec;
-    stat = S5851A_getTemperature(&temp);
-    DEBUG_UART_printlnFormat("S5851A: %umS", (unsigned int)(SYS_mSec - t0));
-#else
-    stat = S5851A_getTemperature(&temp);
-#endif // DEBUG_UART
-    if (stat == S5851A_ERR_NONE)
-    {
-        WPFM_lastTemperatureOnBoard = temp * 10.0;
-        DEBUG_UART_printlnFormat("temp: %.1f", temp);
-    }
-    else
-    {
-        DEBUG_UART_printlnFormat("S5851A_getTemperature() error: %d", stat);
-    }
+    WPFM_getTemperature();
 
     if (! justMeasure)
     {
@@ -177,5 +161,27 @@ static void _SENSOR_storeLog(uint32_t occurrenceTime, uint32_t mSec)
     else
     {
         fatal("MLOG_putLog() ERROR: %d", stat);
+    }
+}
+
+void WPFM_getTemperature()
+{
+    float temp;
+    int stat = 0;
+#ifdef DEBUG_DETAIL
+    uint32_t t0 = SYS_mSec;
+    stat = S5851A_getTemperature(&temp);
+    DEBUG_UART_printlnFormat("S5851A: %umS", (unsigned int)(SYS_mSec - t0));
+#else
+    stat = S5851A_getTemperature(&temp);
+#endif // DEBUG_UART
+    if (stat == S5851A_ERR_NONE)
+    {
+        WPFM_lastTemperatureOnBoard = temp * 10.0;
+        DEBUG_UART_printlnFormat("temp: %.1f", temp);
+    }
+    else
+    {
+        DEBUG_UART_printlnFormat("S5851A_getTemperature() error: %d", stat);
     }
 }
