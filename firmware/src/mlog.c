@@ -38,6 +38,7 @@
 */
 static uint32_t     _MLOG_headAddress    = 0;           // address of head log (point next address)
 static uint32_t     _MLOG_tailAddress    = 0;           // address of tail log for upload
+static uint32_t     _MLOG_tailAddressBuckUp    = 0;
 static uint32_t     _MLOG_oldestAddress  = 0;           // oldest log address in chip
 static uint32_t     _MLOG_latestAddress  = 0;           // latest log address in chip
 static uint32_t     _MLOG_lastSequentialNumber = 0;     // last sequentila number (1..MAX_UINT32-1)
@@ -159,12 +160,14 @@ int MLOG_getLog(MLOG_T *log_p)
     {
         // mark as uploaded
         offset = W25Q128JV_PAGE_SIZE - 1;   // uploaded flag at last offset in the page
+#if 0	// flagÇÕ200 OKéÛêMå„
         uint8_t flag = 0x00;
         if (W25Q128JV_programPage(pageNo, offset, (uint8_t *)&flag, 1, true) != W25Q128JV_ERR_NONE)
         {
             return (MLOG_ERR_PROGRAM_PAGE);
         }
         DEBUG_UART_printlnFormat("MARK %04X%02X AS %02Xh", (unsigned int)pageNo, (unsigned int)offset, flag);
+#endif
 
         // turn the page
         offset = 0;
@@ -176,6 +179,51 @@ int MLOG_getLog(MLOG_T *log_p)
     _MLOG_tailAddress = ((uint32_t)pageNo << 8) + offset;
 
     return (mlogID);
+}
+
+void MLOG_tailAddressBuckUp()
+{
+	_MLOG_tailAddressBuckUp = _MLOG_tailAddress;
+}
+
+void MLOG_tailAddressRestore()
+{
+	_MLOG_tailAddress = _MLOG_tailAddressBuckUp;
+}
+
+int MLOG_updateLog()
+{
+	// backload record flag
+	uint16_t pageNo;
+	uint8_t offset;
+	while (_MLOG_tailAddressBuckUp <= _MLOG_tailAddress) {
+		pageNo = _MLOG_tailAddressBuckUp >> 8;
+		offset = _MLOG_tailAddressBuckUp & 0xff;
+		if (offset < MLOG_RECORD_SIZE * (MLOG_LOGS_PER_PAGE - 1))
+		{
+			offset += MLOG_RECORD_SIZE;
+		}
+		else
+		{
+			// mark as backloaded
+			offset = W25Q128JV_PAGE_SIZE - 1;   // uploaded flag at last offset in the page
+			uint8_t flag = 0x00;
+			if (W25Q128JV_programPage(pageNo, offset, (uint8_t *)&flag, 1, true) != W25Q128JV_ERR_NONE)
+			{
+				return (MLOG_ERR_PROGRAM_PAGE);
+			}
+			DEBUG_UART_printlnFormat("MARK %04X%02X AS %02Xh", (unsigned int)pageNo, (unsigned int)offset, flag);
+
+			// turn the page
+			offset = 0;
+			if (++pageNo > (MLOG_ADDRESS_MLOG_LAST >> 8))
+			{
+				pageNo = 0;     // back to top
+			}
+		}
+		_MLOG_tailAddressBuckUp = ((uint32_t)pageNo << 8) + offset;
+	}
+	return (MLOG_ERR_NONE);
 }
 
 uint32_t MLOG_countUploadableLog(void)

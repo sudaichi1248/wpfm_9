@@ -113,6 +113,9 @@ extern int MLOG_begin(bool checkLogs);          // check chip's ID and check all
   // log operations
 extern int MLOG_putLog(MLOG_T *log_p, bool specifySN);  // put log in fifo buffer(on Flash)
 extern int MLOG_getLog(MLOG_T *log_p);          // get oldest unuploaded log from fifo buffer(on Flash)
+extern void MLOG_tailAddressBuckUp();
+extern void MLOG_tailAddressRestore();
+extern int MLOG_updateLog();
 extern uint32_t MLOG_countUploadableLog(void);  // count number of unuploaded logs in fifo buffer(on Flash)
 extern int MLOG_findLog(uint32_t sn, MLOG_T *log_p);    // find log by seqential number
   // Control functions

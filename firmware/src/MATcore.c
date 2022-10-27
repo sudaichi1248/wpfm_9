@@ -54,6 +54,7 @@ uchar	DLC_MatRetry;
 char	DLC_MatConfigItem[32];
 uchar	DLC_MatTxType;
 bool	DLC_ForcedCallOK=false;
+bool	DLC_MatsendRepOK=false;
 
 int		DLC_MatFotaTOcnt=0;	// fota  タイムアウトカウンタ
 // 測定logリングバッファ試験用
@@ -574,6 +575,11 @@ void MTcls3()
 	if (WPFM_ForcedCall == true) {	// 強制発報
 		UTIL_startBlinkLED1(5);	// LED1 5回点滅
 		DLCMatRtcTimerset(1, 6);
+	}
+	if( DLC_MatState == MATC_STATE_RPT ){	// Report送信で
+		if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
+			MLOG_tailAddressRestore();	// tailAddress戻す
+		}
 	}
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatSend( "AT$DISCONNECT\r" );
@@ -1105,7 +1111,7 @@ void DLCMatPostStatus()
 	sprintf( tmp,"\"RSRQ\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSRQ:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"RSSI\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSSI:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"SINR\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"SINR:" ));	strcat( http_tmp,tmp );
-	sprintf( tmp,"\"Temp\":%.1f,"			,(float)(WPFM_lastTemperatureOnBoard/10) );		strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Temp\":%.1f,"			,(float)(WPFM_lastTemperatureOnBoard/10.0) );	strcat( http_tmp,tmp );
  	sprintf( tmp,"\"TxType\":%d"			,DLC_MatTxType );								strcat( http_tmp,tmp );
 	strcat( http_tmp,"}}" );
 	i = (int)(strchr(http_tmp,'}')-strstr(http_tmp,"{\"Status\":{"))+1;
@@ -1167,6 +1173,8 @@ void DLCMatPostReport()
 	char	s[32];	
 	int		i;
 	MLOG_T 	log_p;
+	MLOG_tailAddressBuckUp();
+	DLC_MatsendRepOK = false;
 	strcpy( http_tmp,http_report );
 	strcat( http_tmp,"{\"Report\":{" );
 	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );				strcat( http_tmp,tmp );
@@ -1759,10 +1767,17 @@ int DLCMatRecvDisp()
 				putst("Buf'Remain=");putdecs(DLC_MatLineIdx);putcrlf();
 				Dump( (char*)DLC_MatLineBuf,8);putcrlf();
 			}
-//			if( strstr( DLC_MatResBuf,"HTTP/1.1 200 OK" )){
-//				if( strstr( DLC_MatResBuf,"Connection: close" ))
-//					return 0;
-//			}
+			if( DLC_MatState == MATC_STATE_RPT ){
+				if( strstr( DLC_MatResBuf,"HTTP/1.1 200 OK" )){
+					if( strstr( DLC_MatResBuf,"Connection: close" )){		/* ここです */
+putst("@@@@@ wktk1\r\n");
+						if ( MLOG_updateLog() != MLOG_ERR_NONE) {	// log FLAGを通知済に変更
+							putst("write error\r\n");
+						}
+						DLC_MatsendRepOK = true;
+					}
+				}
+			}
 			if( j == 0 ){
 				DLC_MatResBuf[DLC_MatResIdx] = 0;
 				putst( DLC_MatResBuf );
