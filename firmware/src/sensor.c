@@ -183,7 +183,6 @@ void SENSOR_updateMeasurementInterval(uint16_t interval)
 {
     // Always update regardless of previous settings
     WPFM_measurementInterval = interval;
-	RTC_poweron = RTC_now;
 
     for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
     {

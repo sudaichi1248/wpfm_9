@@ -69,7 +69,6 @@ void DLCMATrtctimer();
 *   global variables
 */
 volatile uint32_t RTC_now = 0;          // Current epoch time [Sec]
-volatile uint32_t RTC_poweron = 0;      // Power ON epoch time [Sec]
 
 /*
 *   static variables and functions

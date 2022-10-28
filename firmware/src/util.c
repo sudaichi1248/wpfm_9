@@ -181,6 +181,11 @@ bool UTIL_hasConnectedUSB(void)
     return (VBUS_CHECK_Get());
 }
 
+int UTIL_checkblinkCountLED1(void)
+{
+    return (_UTIL_blinkCountLED1);
+}
+
 void fatal(const char *fmt, int info)
 {
     DEBUG_UART_printlnFormat(fmt, info);

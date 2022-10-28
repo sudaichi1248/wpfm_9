@@ -133,9 +133,6 @@ int main(void)
             DEBUG_UART_printlnFormat("MLOG ERROR: %d", stat);
             DEBUG_HALT();
         }
-		// MLOG_begin()のcheckが長いのでここから測定タイミング開始
-		WPFM_doMeasure = false;
-		RTC_poweron = RTC_now;
         WPFM_status = WPFM_STATUS_WAIT_COMMAND;
         DEBUG_UART_printlnFormat("START MEASURE MODE(%lu)", SYS_tick);
         eventLoopOnMeasurementMode();
@@ -234,7 +231,7 @@ static void eventLoopOnMeasurementMode(void)
             WPFM_status = WPFM_STATUS_MEASUREMENT;
             if (measurementCount++ < 5)
             {
-				if ((WPFM_settingParameter.measurementInterval == 4) && (measurementCount == 1)) {	// 測定間隔4秒で1回目の測定はスルー
+				if (UTIL_checkblinkCountLED1()) {	// 起動時LED点滅中の測定はスルー
 					;
 				} else {
 					if (WPFM_ForcedCall == false) {	// 強制発報でない

@@ -46,6 +46,7 @@ extern void UTIL_clearLED1(void);
 extern void UTIL_toggleLED1(void);
 extern void UTIL_startBlinkLED1(uint32_t count);
 extern void UTIL_stopBlinkLED1(void);
+extern int UTIL_checkblinkCountLED1(void);
   // EXT1_LED
 extern void UTIL_setEXT1LED(void);
 extern void UTIL_clearEXT1LED(void);
