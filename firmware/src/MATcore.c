@@ -2301,6 +2301,13 @@ int DLCMatIsSleep()
 	}
 	return 0;
 }
+int DLCMatIsCom()
+{
+	if( DLC_MatState == MATC_STATE_SLP ){							/* Sleep’† */
+		return 1;
+	}
+	return 0;
+}
 void DLCMatVersion()
 {
 	APP_writeUSB( (uint8_t const*)VerPrint(),30 );
