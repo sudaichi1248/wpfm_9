@@ -45,7 +45,7 @@ uchar	DLC_MatLineBuf[2100];
 int		DLC_MatLineIdx;
 uchar	DLC_Matfact,DLC_MatState;
 char	DLC_MatDateTime[32];
-char	DLC_MatRadioDensty[64];
+char	DLC_MatRadioDensty[80];
 char	DLC_MatNUM[16];
 char	DLC_MatIMEI[16];
 int		DLC_MatTmid;
@@ -272,7 +272,8 @@ int	DLCMatCharInt( char *p,char *title )
 		if( p[len] == '-' ){															/* マイナス */
 			q = strchr( p,'\r' );
 			if( q ){
-				str2int( &p[len+1],&wk );
+				len++;
+				str2int( &p[len],&wk );
 				wk *= -1;
 			}
 		}
