@@ -27,6 +27,7 @@
 */
 static void _SENSOR_storeLog(uint32_t occurrenceTime, uint32_t mSec);
 
+int DLCMatIsCom();
 
  /*
  *   measureRegularly() -
@@ -93,15 +94,19 @@ void WPFM_measureRegularly(bool justMeasure)
     DEBUG_UART_printlnFormat("SENSOR_readExternalBatteryVoltage(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
     DEBUG_UART_FLUSH(); APP_delay(10);
 
-    // Check two batteries and auto switch if nessesary
-    if ((stat = BATTERY_checkAndSwitchBattery()) != BATTERY_ERR_NONE)
-    {
-        if (stat == BATTERY_ERR_HALT)
-        {
-            // Halt due to low voltage in both batteries
-            WPFM_halt("Low voltage in both batteries");
-        }
-    }
+	if (DLCMatIsCom()) {	// í êMíÜÇ≈Ç»Ç¢
+	    // Check two batteries and auto switch if nessesary
+	    if ((stat = BATTERY_checkAndSwitchBattery()) != BATTERY_ERR_NONE)
+	    {
+	        if (stat == BATTERY_ERR_HALT)
+	        {
+	            // Halt due to low voltage in both batteries
+	            WPFM_halt("Low voltage in both batteries");
+	        }
+	    }
+	} else {
+		DEBUG_UART_printlnFormat("SKIP because communication now.");
+	}
     DEBUG_UART_printlnFormat("BATTERY: Status %02Xh, USE #%d/RPL #%d",
             WPFM_batteryStatus, WPFM_externalBatteryNumberInUse, WPFM_externalBatteryNumberToReplace);
     APP_delay(20);
