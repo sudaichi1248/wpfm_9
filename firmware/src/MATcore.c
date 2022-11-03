@@ -32,7 +32,8 @@ void _GO_IDLE(){DLCMatState();IDLEputch();}
 #endif
 void Moni();
 void DLCMatConfigDefault();
-void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatPostSndSub(),DLCMatPostReport();
+void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatReportSnd();
+int	DLCMatPostReport();
 void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatReset();
 void DLCMatServerChange();
 extern	char _Main_version[];
@@ -536,9 +537,15 @@ void MTopn3()
 void MTrprt()
 {
 	DLC_MatLineIdx = 0;
-	DLCMatPostReport();
-	DLCMatTimerset( 0,TIMER_7000ms );
-	DLC_MatState = MATC_STATE_RPT;
+	if( DLCMatPostReport() ){													/* Report送信処理 */
+		DLCMatTimerset( 0,TIMER_7000ms );
+		DLC_MatState = MATC_STATE_RPT;
+	}
+	else {
+		DLCMatSend( "AT$DISCONNECT\r" );
+		DLCMatTimerset( 0,TIMER_3000ms );
+		DLC_MatState = MATC_STATE_DISC;
+	}
 }
 /*
 	Post Report送信してOKを受けた、データがあれな送信 $CLOSE待ち
@@ -546,7 +553,7 @@ void MTrprt()
 void MTrpOk()
 {
 	DLC_MatLineIdx = 0;
-	DLCMatPostSndSub();
+	DLCMatReportSnd();
 	DLCMatTimerset( 0,TIMER_7000ms );
 	DLC_MatState = MATC_STATE_RPT;
 }
@@ -955,7 +962,6 @@ void DLCMatState()
 		memset( DLC_MatLineBuf,0,sizeof( DLC_MatLineBuf ));
 }
 #define	REPORT_LIST_MAX	100
-int	DLC_MatReportStack;
 void DLCMatConfigDefault()
 {
 	WPFM_SETTING_PARAMETER	config;
@@ -1004,7 +1010,7 @@ void DLCMatReortDefault()
 static char http_config[] = "POST /config HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
 static char http_status[] = "POST /status HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
 static char http_report[] = "POST /report HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
-static char http_tmp[8600];
+static char http_tmp[1024];
 char	DLC_MatSendBuff[1024*2+16];
 static WPFM_SETTING_PARAMETER	config;
 void DLCMatPostConfig()
@@ -1141,72 +1147,99 @@ void DLCMatPostStatus()
 /*
 	機能：Reportを通知、SPI-Flashに溜まっているReportを通知
 	Parameter:通知する数
+	2022.11.3 Reportを分割して送信する
 */
-static	int DLC_MatSndCnt;
-void DLCMatPostSndSub()
+//http_tmpをASCII変換して送信する。→OKを待つ、これおループ
+int		DLC_MatReportMax,DLC_MatReportCnt,DLC_MatReportFin;
+#define			DLC_REPORT_ALL_MAX		70000				/* 1度の通信で送信するReortのMAX */
+#define			DLC_REPORT_SND_LMT		10					/* MATcoreに一度にSendするReport数 */
+void DLCMatReportSndSub()
 {
 	char	tmp[3],v;
 	int		i;
-	if( DLC_MatSndCnt < 0 )
-		return;
-	putst("DLCMatPostSndSub\r\n");
+	putst("■\r\n");
 	strcpy( DLC_MatSendBuff,"AT$SEND,\"" );
 	tmp[2] = 0;
-	for( i=0;http_tmp[DLC_MatSndCnt]!=0;i++ ){
-		v = http_tmp[DLC_MatSndCnt];
+	for( i=0;http_tmp[i]!=0;i++ ){
+		v = http_tmp[i];
 		tmp[0] = outhex( v>>4 );
 		tmp[1] = outhex( v&0x0f );
 		strcat( DLC_MatSendBuff,tmp );
-		DLC_MatSndCnt++;
-		if( i == 1000 ){
-			putst("■");
-			break;
-		}
 	}
 	strcat( DLC_MatSendBuff,"\"\r" );
 	DLCMatSend( DLC_MatSendBuff );
-	if( http_tmp[DLC_MatSndCnt]==0 )
-		DLC_MatSndCnt = -1;
+	memset( http_tmp,0,sizeof( http_tmp ));
 }
-void DLCMatPostReport()
+/* 
+	ListのDLC_REPORT_SND_LMTまで分割して送る
+*/
+void DLCMatReportSnd()
 {
-	char	tmp[48],*p;
-	char	s[32];	
+	char	tmp[48],s[32];
 	int		i;
 	MLOG_T 	log_p;
-	MLOG_tailAddressBuckUp();
-	DLC_MatsendRepOK = false;
-	strcpy( http_tmp,http_report );
-	strcat( http_tmp,"{\"Report\":{" );
-	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );				strcat( http_tmp,tmp );
-	strcat( http_tmp,"\"Reportlist\":[" );
-	for(i=0;i<REPORT_LIST_MAX;i++){
+	if( DLC_MatReportFin < 0 )																		/* 送信終わり */
+		return;
+	for( i=0; DLC_MatReportCnt < DLC_MatReportMax; DLC_MatReportCnt++,i++ ){
+		if( i == DLC_REPORT_SND_LMT )
+			break;
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
 		DLCMatClockGet( &log_p,s );
-		if( i > 0)
+		if( DLC_MatReportFin ){
 			strcat( http_tmp,"," );
+		}
+		else
+			DLC_MatReportFin = 1;
 		sprintf( tmp,"{\"Time\":\"%s\","		,s );									strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch1\":%.3f,"	,log_p.measuredValues[0] );					strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch2\":%.3f,"	,log_p.measuredValues[1] );					strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Alert\":\"%02x\"}"	,log_p.alertStatus  );						strcat( http_tmp,tmp );
 	}
-	sprintf( tmp,"Report=%d\r\n",i );putst( tmp );
-	strcat( http_tmp,"]}}" );
-	i = (int)(strchr(http_tmp,']')-strstr(http_tmp,"{\"Report\":{"))+2;
-	if( i > 0 ){
+	if ( DLC_MatReportCnt == DLC_MatReportMax ){													/* 最後のList */
+		strcat( http_tmp,"]}}" );
+		DLC_MatReportFin = -1;
+	}
+	putst( http_tmp );putcrlf();
+	DLCMatReportSndSub();
+}
+int DLCMatPostReport()
+{
+	char	tmp[48],*p;
+	int		i,Len;
+	MLOG_T 	log_p;
+	DLC_MatsendRepOK = false;
+	DLC_MatReportCnt = 0;																			/* httpを作るときのReportのカウンタ */
+	DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
+	strcpy( http_tmp,http_report );
+	strcat( http_tmp,"{\"Report\":{" );
+	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );
+	strcat( http_tmp,tmp );
+	strcat( http_tmp,"\"Reportlist\":[" );
+	MLOG_tailAddressBuckUp();
+	for( DLC_MatReportMax=0; DLC_MatReportMax < DLC_REPORT_ALL_MAX; DLC_MatReportMax++ ){						/* Lengthを求めるためにmlogを仮走査 */
+		if( MLOG_getLog( &log_p ) < 0 )
+			break;
+	}
+	MLOG_tailAddressRestore();
+	if( DLC_MatReportMax ){
+		putst("Report=");putdecw( DLC_MatReportMax );putcrlf();
+		Len = 51+DLC_MatReportMax*80+2;
 		p = strstr( http_tmp,"Length:    " );
 		if( p < 0 ){
-			putst("format err1 \r\n" );
-			return;
+				putst("format err1 \r\n" );
+			return 0;
 		}
-		sprintf( tmp,"%d",i+1 );
+		sprintf( tmp,"%d",Len );
 		for( i=0;tmp[i]!=0;i++ )
 			p[7+i] = tmp[i];
 		putst( http_tmp );putcrlf();
+		DLCMatReportSndSub();																/* ヘッダだけ送信 */
+		return 1;																			/* 送信データ有 */
 	}
-	DLC_MatSndCnt = 0;
-	DLCMatPostSndSub();
+	else {
+		return 0;																			/* なし */
+	}
 }
 void DLCMatINTParamSet(char *config_p, bool end)
 {
@@ -2256,7 +2289,7 @@ void DLCMatMain()
 					if (ret == 0) {
 						break;
 					}
-					logtime += 4;
+					logtime += 1;
 				}
 				putst("##### write end #####");
 			}
