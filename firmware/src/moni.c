@@ -359,6 +359,13 @@ void Mdump( char buf[],int flg )
 		putst( (char*)"D {XXXXXXXX,XXXXXXXX} \n\r" );
 	}
 }
+void putOutHex( uchar c )
+{
+	if( c < 0x20 )
+		putch('.');
+	else
+		putch( c );
+}
 /*--------------------------------------------------------------
 	MdmpDsp( )メモリダンプ表示
 ---------------------------------------------------------------*/
@@ -390,25 +397,25 @@ void MdmpDsp( int flg )
 			if(flg){
 				for ( j = 0; j < 4; j++ ){	/* ASCII表示 */
 					c = ln[j]>>24&0xff;
-					putch( c );
+					putOutHex( c );
 					c = ln[j]>>16&0xff;
-					putch( c );
+					putOutHex( c );
 					c = ln[j]>>8&0xff;
-					putch( c );
+					putOutHex( c );
 					c = ln[j]&0xff;
-					putch( c );
+					putOutHex( c );
 				}
 			}
 			else{
 				for ( j = 0; j < 4; j++ ){	/* ASCII表示 */
 					c = ln[j]&0xff;
-					putch( c );
+					putOutHex( c );
 					c = ln[j]>>8&0xff;
-					putch( c );
+					putOutHex( c );
 					c = ln[j]>>16&0xff;
-					putch( c );
+					putOutHex( c );
 					c = ln[j]>>24&0xff;
-					putch( c );
+					putOutHex( c );
 				}
 			}
 			j = 0;
@@ -421,23 +428,23 @@ void MdmpDsp( int flg )
 		for ( i = 0; i < j; i++ ){	/* ASCII表示 */
 			if(flg){
 				c = ln[j]>>24&0xff;
-				putch( c );
+				putOutHex( c );
 				c = ln[j]>>16&0xff;
-				putch( c );
+				putOutHex( c );
 				c = ln[j]>>8&0xff;
-				putch( c );
+				putOutHex( c );
 				c = ln[j]&0xff;
-				putch( c );
+				putOutHex( c );
 			}
 			else{
 				c = ln[j]&0xff;
-				putch( c );
+				putOutHex( c );
 				c = ln[j]>>8&0xff;
-				putch( c );
+				putOutHex( c );
 				c = ln[j]>>16&0xff;
-				putch( c );
+				putOutHex( c );
 				c = ln[j]>>24&0xff;
-				putch( c );
+				putOutHex( c );
 			}
 		}
 		putst( (char*)"\n\r" );
