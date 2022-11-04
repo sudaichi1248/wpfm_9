@@ -2306,6 +2306,12 @@ void DLCMatMain()
 				putst("##### write end #####");
 			}
 			break;
+		case 'N':
+			MLOG_getNumberofLog();
+			putst("\r\nnum:");puthxw(_MLOG_NumberofLog);putcrlf();
+			putst("headtime:");puthxw(_MLOG_headTime);putcrlf();
+			putst("tailtime:");puthxw(_MLOG_tailTime);putcrlf();
+			break;
 		case 0x03:												/* CTRL+A */
 			if( CheckPasswd() ){
 				__NVIC_SystemReset();

@@ -55,6 +55,9 @@ static void dumpLog(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p);
 static uint32_t findLogBySN(uint32_t sn);
 static int _MLOG_getLogOnSRAM(MLOG_T *log_p);
 
+uint32_t	_MLOG_NumberofLog=0;
+uint32_t	_MLOG_headTime=0;
+uint32_t	_MLOG_tailTime=0;
 
 int MLOG_begin(bool fullScan)
 {
@@ -179,6 +182,26 @@ int MLOG_getLog(MLOG_T *log_p)
     _MLOG_tailAddress = ((uint32_t)pageNo << 8) + offset;
 
     return (mlogID);
+}
+
+int MLOG_getNumberofLog()
+{
+	MLOG_T mlog;
+
+	if (_MLOG_headAddress == _MLOG_tailAddress) {
+		_MLOG_NumberofLog = 0;
+	} else {
+		_MLOG_NumberofLog = ((_MLOG_headAddress - MLOG_RECORD_SIZE) - _MLOG_tailAddress) / MLOG_RECORD_SIZE;
+		if (W25Q128JV_readData((_MLOG_headAddress - MLOG_RECORD_SIZE), (uint8_t *)&mlog, MLOG_RECORD_SIZE) != W25Q128JV_ERR_NONE) {
+			return (MLOG_ERR_READ);
+		}
+		_MLOG_headTime = mlog.timestamp.second;
+		if (W25Q128JV_readData(_MLOG_tailAddress, (uint8_t *)&mlog, MLOG_RECORD_SIZE) != W25Q128JV_ERR_NONE) {
+			return (MLOG_ERR_READ);
+		}
+		_MLOG_tailTime = mlog.timestamp.second;
+	}
+	return (MLOG_ERR_NONE);
 }
 
 void MLOG_tailAddressBuckUp()

@@ -113,6 +113,7 @@ extern int MLOG_begin(bool checkLogs);          // check chip's ID and check all
   // log operations
 extern int MLOG_putLog(MLOG_T *log_p, bool specifySN);  // put log in fifo buffer(on Flash)
 extern int MLOG_getLog(MLOG_T *log_p);          // get oldest unuploaded log from fifo buffer(on Flash)
+extern int MLOG_getNumberofLog();
 extern void MLOG_tailAddressBuckUp();
 extern void MLOG_tailAddressRestore();
 extern int MLOG_updateLog();
@@ -129,6 +130,13 @@ extern bool MLOG_IsSwitchedSRAM(void);          // Has the log storage destinati
 extern int MLOG_putLogOnSRAM(MLOG_T *log_p);    // put log in fifo buffer(on SRAM)
   // Debug function
 extern void MLOG_dump(void);                    // Dump all logs in Mlog region to debug uart port
+
+/*
+*   Variables
+*/
+extern uint32_t	_MLOG_NumberofLog;
+extern uint32_t	_MLOG_headTime;
+extern uint32_t	_MLOG_tailTime;
 
 #ifdef	__cplusplus
 }
