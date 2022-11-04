@@ -961,7 +961,6 @@ void DLCMatState()
 	if( DLC_MatLineIdx == 0 )
 		memset( DLC_MatLineBuf,0,sizeof( DLC_MatLineBuf ));
 }
-#define	REPORT_LIST_MAX	100
 void DLCMatConfigDefault()
 {
 	WPFM_SETTING_PARAMETER	config;
@@ -1009,7 +1008,7 @@ void DLCMatReortDefault()
 }
 static char http_config[] = "POST /config HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
 static char http_status[] = "POST /status HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
-static char http_report[] = "POST /report HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
+static char http_report[] = "POST /report HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:      \r\n\r\n";
 static char http_tmp[1024];
 char	DLC_MatSendBuff[1024*2+16];
 static WPFM_SETTING_PARAMETER	config;
@@ -1151,8 +1150,8 @@ void DLCMatPostStatus()
 */
 //http_tmpをASCII変換して送信する。→OKを待つ、これおループ
 int		DLC_MatReportMax,DLC_MatReportCnt,DLC_MatReportFin;
-#define			DLC_REPORT_ALL_MAX		70000				/* 1度の通信で送信するReortのMAX */
-#define			DLC_REPORT_SND_LMT		10					/* MATcoreに一度にSendするReport数 */
+#define			DLC_REPORT_ALL_MAX		3000				/* 1度の通信で送信するReortのMAX */
+#define			DLC_REPORT_SND_LMT		12					/* MATcoreに一度にSendするReport数 */
 void DLCMatReportSndSub()
 {
 	char	tmp[3],v;
@@ -2285,6 +2284,19 @@ void DLCMatMain()
 			if( CheckPasswd() ){
 				logtime = RTC_now;
 				while(1) {
+					ret = mlogdumywrite(logtime);
+					if (ret == 0) {
+						break;
+					}
+					logtime += 4;
+				}
+				putst("##### write end #####");
+			}
+			break;
+		case 'J':
+			if( CheckPasswd() ){
+				logtime = RTC_now;
+				for(int i=0;i<DLC_REPORT_ALL_MAX;i++){
 					ret = mlogdumywrite(logtime);
 					if (ret == 0) {
 						break;
