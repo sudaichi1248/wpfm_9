@@ -1752,6 +1752,7 @@ putst("coco4\r\n");
 				WPFM_cancelAlert();
 				if (WPFM_isAlertPause == true ) {	// AlertPause’†?
 					WPFM_isAlertPause = false;
+					WPFM_cancelAlertDone = false;
 					strcpy(config.AlertPause, "");	// AlertPauseƒNƒŠƒA
 				}
 			}
@@ -1762,6 +1763,11 @@ putst("coco4\r\n");
 			config.alertTimeout = atoi(DLC_MatConfigItem);
 //			putst("AlertTimeOut:");puthxb(config.alertTimeout);putcrlf();
 		}
+#endif
+#if 0
+		config.measurementInterval = 20;
+		config.communicationInterval = 120;
+		config.communicationIntervalOnAlert = 60;
 #endif
 		WPFM_writeSettingParameter( &config );
 		DLCMatReflectionConfig();
@@ -2313,11 +2319,11 @@ void DLCMatMain()
 			putst("\r\nnum:");puthxw(_MLOG_NumberofLog);putcrlf();
 			putst("headtime:");puthxw(_MLOG_headTime);putcrlf();
 			RTC_convertToDateTime(_MLOG_headTime,&dt);
-			sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+			sprintf( s,"20%02d/%02d/%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 			putst(s);putcrlf();
 			putst("tailtime:");puthxw(_MLOG_tailTime);putcrlf();
 			RTC_convertToDateTime(_MLOG_tailTime,&dt);
-			sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+			sprintf( s,"20%02d/%02d/%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 			putst(s);putcrlf();
 			break;
 		case 0x03:												/* CTRL+A */

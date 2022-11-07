@@ -49,8 +49,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 #ifdef ADD_FUNCTION
         if (WPFM_isAlertPause == true)
         {
-            putst("Alert Pause\r\n");
-            WPFM_cancelAlert();
+            putst("Alert Pause(");puthxb(channelIndex+1);putst(")\r\n");
             continue;   // AlertPause中はスキップする
         }
 #endif
@@ -351,7 +350,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	}
 #endif
 
-putst("1.alertStatus:");puthxb(alertStatus);putcrlf();
+//putst("1.alertStatus:");puthxb(alertStatus);putcrlf();
 		alertStatus = WPFM_suppressAlert(alertStatus, ChangeFirst, true);	// alertStatus抑制
 putst("2.alertStatus:");puthxb(alertStatus);putcrlf();
 
@@ -482,7 +481,7 @@ putst("2.alertStatus:");puthxb(alertStatus);putcrlf();
 #endif
     }
 
-putst("1.alertStatusSuppressed:");puthxb(alertStatusSuppressed);putcrlf();
+//putst("1.alertStatusSuppressed:");puthxb(alertStatusSuppressed);putcrlf();
 	alertStatusSuppressed = WPFM_suppressAlert(alertStatusSuppressed, ChangeFirst, false);	// alertStatusSuppressed抑制
 putst("2.alertStatusSuppressed:");puthxb(alertStatusSuppressed);putcrlf();
 
@@ -672,6 +671,7 @@ uint8_t WPFM_suppressAlert(uint8_t changealert, bool changefirst, bool sw)
 #ifdef ADD_FUNCTION
 void WPFM_cancelAlert()
 {
+	putst("##### cancelAlert\r\n");
 	WPFM_lastAlertStatus = WPFM_lastAlertStatusSuppressed = 0;
 	WPFM_TxType = 0;
 	SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);

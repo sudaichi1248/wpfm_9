@@ -572,7 +572,13 @@ void WPFM_onTimeupdate(void)
         WPFM_doMeasure = true;
     }
 #ifdef ADD_FUNCTION
-    WPFM_isAlertPause = DLCMatWatchAlertPause();
+	WPFM_isAlertPause = DLCMatWatchAlertPause();
+	if (WPFM_isAlertPause == true) {
+		if (WPFM_cancelAlertDone == false) {
+			WPFM_cancelAlert();
+			WPFM_cancelAlertDone = true;
+		}
+	}
 #endif
 }
 

@@ -22,6 +22,7 @@ bool WPFM_isConnectingUSB = false;
 bool WPFM_isBeingReplacedBattery = false;
 #ifdef ADD_FUNCTION
 bool WPFM_isAlertPause = false;
+bool WPFM_cancelAlertDone = false;
 #endif
 
   // current settings and default settings

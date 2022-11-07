@@ -164,6 +164,7 @@ extern uint8_t WPFM_TxType;
 #ifdef ADD_FUNCTION
 extern time_t WPFM_lastAlertStartTimes2[2][2];   // Chattering_type2 Time when the last alert(warnin or attention) was issued [0:ch1/1:ch2] [0:limit1/1:limit2]
 extern bool WPFM_isAlertPause;
+extern bool WPFM_cancelAlertDone;
 #endif
   // for battery
 extern uint8_t WPFM_batteryStatus;                  // Last battery status (use MLOG_BAT_STATUS_BAT* bit flags defined in mlog.h)
