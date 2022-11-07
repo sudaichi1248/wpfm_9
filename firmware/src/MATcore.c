@@ -2139,6 +2139,8 @@ void DLCMatMain()
 	extern void _RTC_handlerBClr();
 	char key;
 	int ret=0;
+	RTC_DATETIME dt;
+	char s[32];
 //	PORT_GroupWrite( PORT_GROUP_1,0x1<<22,0 );
 	if( DLC_BigState == 0 ){
 		putst( VerPrint() );
@@ -2310,7 +2312,13 @@ void DLCMatMain()
 			MLOG_getNumberofLog();
 			putst("\r\nnum:");puthxw(_MLOG_NumberofLog);putcrlf();
 			putst("headtime:");puthxw(_MLOG_headTime);putcrlf();
+			RTC_convertToDateTime(_MLOG_headTime,&dt);
+			sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+			putst(s);putcrlf();
 			putst("tailtime:");puthxw(_MLOG_tailTime);putcrlf();
+			RTC_convertToDateTime(_MLOG_tailTime,&dt);
+			sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+			putst(s);putcrlf();
 			break;
 		case 0x03:												/* CTRL+A */
 			if( CheckPasswd() ){
