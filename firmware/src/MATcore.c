@@ -58,6 +58,8 @@ char	DLC_MatConfigItem[32];
 uchar	DLC_MatTxType;
 bool	DLC_ForcedCallOK=false;
 bool	DLC_MatsendRepOK=false;
+short	DLC_MatRSRP;
+short	DLC_MatRSRQ;
 
 int		DLC_MatFotaTOcnt=0;	// fota  タイムアウトカウンタ
 // 測定logリングバッファ試験用
@@ -448,7 +450,11 @@ void MTcnfg()
 	if (WPFM_ForcedCall == true) {	// 強制発報
 		UTIL_LED1_OFF();
 	}
-	DLCEventLogWrite( _ID1_OPEN_OK,0,0 );
+	DLC_MatRSRP = (short)DLCMatCharInt( DLC_MatRadioDensty,"RSRP:" );
+	DLC_MatRSRP *= -1;
+	DLC_MatRSRQ = (short)DLCMatCharInt( DLC_MatRadioDensty,"RSRQ:" );
+	DLC_MatRSRQ *= -1;
+	DLCEventLogWrite( _ID1_OPEN_OK,WPFM_ForcedCall,DLC_MatRSRP<<16|DLC_MatRSRQ );
 	DLCMatPostConfig();
 	DLC_MatState = MATC_STATE_CNFG;
 	DLCMatTimerset( 0,TIMER_7000ms );
@@ -623,6 +629,7 @@ void MTslep()
 	DLC_MatLineIdx = 0;
 	putst("【Sleep】\r\n");
 	DLCMatTimerClr( 0 );
+	DLCEventLogWrite( _ID1_SLEEP,0,0 );
 	DLC_MatState = MATC_STATE_SLP;
 }
 void MTslp1()
@@ -636,7 +643,7 @@ void MTwake()
 	DLC_MatLineIdx = 0;
 	DLC_Matknd = 0;
 	DLCMatSend( "AT$CONNECT\r" );
-	DLCEventLogWrite( _ID1_CONNECT,0,0 );
+	DLCEventLogWrite( _ID1_CONNECT,WPFM_lastBatteryVoltages[0],WPFM_lastBatteryVoltages[1] );
 	DLCMatTimerset( 0,TIMER_90s );
 	TC5_TimerStart();
 	DLC_MatState = MATC_STATE_CONN;
@@ -1819,6 +1826,7 @@ putst("@@@@@ wktk1\r\n");
 						if ( MLOG_updateLog() != MLOG_ERR_NONE) {	// log FLAGを通知済に変更
 							putst("write error\r\n");
 						}
+						DLCEventLogWrite( _ID1_HTTP_OK,0,0 );
 						DLC_MatsendRepOK = true;
 					}
 				}

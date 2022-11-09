@@ -164,8 +164,11 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_ONLINE_UPD_B_END:
 		strcat( str,"BootçXêVèIóπ ");
 		break;
-	case _ID1_BATTERY:
-		strcat( str,"BATTRY ");
+	case _ID1_ALERT1:
+		strcat( str,"ALERT1 ");
+		break;
+	case _ID1_ALERT2:
+		strcat( str,"ALERT2 ");
 		break;
 	case _ID1_CONNECT:
 		strcat( str,"CNNECT ");
@@ -175,6 +178,12 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 		break;
 	case _ID1_REPORT:
 		strcat( str,"REPORT ");
+		break;
+	case _ID1_HTTP_OK:
+		strcat( str,"HTTPok ");
+		break;
+	case _ID1_SLEEP:
+		strcat( str,"SLEEP  ");
 		break;
 	case _ID1_WATCHDOG_START:
 		strcat( str,"WDT    ");

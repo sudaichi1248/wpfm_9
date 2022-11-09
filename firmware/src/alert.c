@@ -16,6 +16,7 @@
 #include "mlog.h"
 #include "sensor.h"
 #include "moni.h"
+#include "Eventlog.h"
 #ifdef ADD_FUNCTION
 void DLCMatAlertTimeClr();
 #endif
@@ -85,6 +86,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
                 //- 上限1を超えたので、アラート状態は注意状態へ遷移する
                 alertStatus &= ~upperWarning;
                 alertStatus |= upperAttention;
+				DLCEventLogWrite( _ID1_ALERT1,alertStatus,0 );
 #ifdef ADD_FUNCTION
 				if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
 #endif
