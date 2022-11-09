@@ -1,0 +1,5 @@
+; FirmUpdate
+send #2 "000M1" #3
+pause 3
+sendln
+sendln "!!downloadfirm"

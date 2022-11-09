@@ -1,0 +1,76 @@
+;期待するプロンプト文字を定義
+;defaultPROMPT = '.'
+;message = '期待するプロンプト文字を入力(正規表現可)\n（例：“root@server:~#△”、“Router(config.*)#△”など）'
+;strspecial message
+;inputbox message 'プロンプト文字設定' defaultPROMPT
+;PROMPT = inputstr
+
+;'.'固定にした
+PROMPT = '.'
+
+;プロンプトの待ち時間タイムアウトを指定(秒)
+timeout = 10
+
+;コマンドリスト定義(filenameboxはVer4.54以降)
+filenamebox 'コマンドリスト選択'
+FN = inputstr
+
+if result<>0 then
+
+	messagebox 'ファイル送信を開始します。' 'ファイル送信'
+
+	;改行を入れて正常なプロンプトが返ってくるか確認する
+;これはいらないか
+;	sendln ''
+;	waitregex PROMPT
+;	if result=0 goto error
+;	pause 1
+
+	;コマンドリストを開く(inputstrがfilenameboxで選んだファイル名)
+	fileopen FH FN 0
+
+	while 1
+		;ファイルから1行読む
+		filereadln FH VAL
+
+		;最終まで読み込んでいたらループを抜ける
+		if result = 1 break
+
+		;空白行がきたらダイアログ表示する
+		strlen VAL
+		if result = 0 then
+			message = '空白行を検出したため、一時停止しています。\n[ OK ]を押すと続行します。'
+			strspecial message
+			messagebox message '情報'
+		endif
+
+		;読み込んだコマンドを実行
+		flushrecv
+		sendln VAL
+
+		;指定したプロンプトを待つ
+		;wait PROMPT
+		waitregex PROMPT
+
+		;timeout秒応答が得られないときはマクロ終了する
+		if result=0 goto error
+
+		;指定ミリ秒遅延させる
+;これもいらないか
+;		mpause 1
+
+	endwhile
+	;ファイルを閉じる
+	fileclose FH
+
+endif
+;正常に実行されればここでマクロ終了となる
+messagebox 'ファイル送信を終了します。' '正常終了'
+end
+
+;以下はエラー等の処理。
+:error
+	message = '期待したプロンプト文字が得られませんでした。\nマクロを終了します。'
+	strspecial message
+	messagebox message 'エラー'
+	end
