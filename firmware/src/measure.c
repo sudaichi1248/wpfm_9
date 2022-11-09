@@ -17,6 +17,7 @@
 #include "battery.h"
 #include "s5851a.h"
 #include "rtc.h"
+#include "Eventlog.h"
 
 /*
 *   Symbols
@@ -93,7 +94,7 @@ void WPFM_measureRegularly(bool justMeasure)
     SENSOR_readExternalBatteryVoltage(2, &WPFM_lastBatteryVoltages[1]);
     DEBUG_UART_printlnFormat("SENSOR_readExternalBatteryVoltage(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
     DEBUG_UART_FLUSH(); APP_delay(10);
-
+	DLCEventLogWrite( _ID1_BATTERY,WPFM_lastBatteryVoltages[0],WPFM_lastBatteryVoltages[1] );
 	if (DLCMatIsCom()) {	// í êMíÜÇ≈Ç»Ç¢
 	    // Check two batteries and auto switch if nessesary
 	    if ((stat = BATTERY_checkAndSwitchBattery()) != BATTERY_ERR_NONE)

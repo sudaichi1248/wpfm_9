@@ -45,6 +45,7 @@
 #include "mlog.h"
 #include "Moni.h"
 #include "DLCpara.h"
+#include "Eventlog.h"
 void	DLCMatMain();
 int		DLCMatIsSleep();
 /*
@@ -66,6 +67,7 @@ int main(void)
     /* Initialize all modules */
     SYS_Initialize(NULL);
 	DLCParaRead();
+	DLCEventLogInit();
     /*** FOR DEBUG ***/
     if (TEST_SW_Get() == 0)
     {
@@ -75,6 +77,7 @@ int main(void)
         // Erase flash memory chip
         W25Q128JV_begin(MEM_CS_PIN);
         int stat;
+		DLCEventLogClr();
         if ((stat = W25Q128JV_eraseChip(true)) == W25Q128JV_ERR_NONE)
         {
             DEBUG_UART_printlnString("ERASE CHIP OK.");
@@ -141,24 +144,26 @@ int main(void)
     /* Execution should not come here during normal operation */
     return (EXIT_FAILURE);
 }
-
+/* 
+	スライドスイッチのチャタリング用
+*/
+void SlideSwProc()
+{
+	if (UTIL_getPowerModeSW() != WPFM_operationMode){								// スライドスイッチの設定が変更されたか否かをチェックする
+		WPFM_reboot();																// 変更されていた時は、リブートして新しい動作モードで処理を開始する
+	}
+}
 /*
 *   測定モード時のメインループ処理
 */
 static void eventLoopOnMeasurementMode(void)
 {
+	APP_delay(20);
+	SlideSwProc();
     while (true)
     {
         SYS_Tasks();
 	    DLCMatMain();
-
-        // スライドスイッチの設定が変更されたか否かをチェックする
-        if (UTIL_getPowerModeSW() != WPFM_operationMode)
-        {
-            // 変更されていた時は、リブートして新しい動作モードで処理を開始する
-            WPFM_reboot();
-        }
-
         // タクトスイッチが押下されたどうかをチェックする
         if (WPFM_wasButtonPressed)
         {
@@ -345,23 +350,18 @@ static void eventLoopOnMeasurementMode(void)
         }
     } // end-of-while-loop
 }
-
 /*
 *   非測定モード時のメインループ処理
 */
 static void eventLoopOnNonMeasurementMode(void)
 {
+	DLCEventLogWrite( _ID1_MANTE_START,0,0 );
+	APP_delay(20);
+	SlideSwProc();
     while (true)
     {
         SYS_Tasks();
 	    DLCMatMain();
-
-        // スライドスイッチの設定が変更されたか否かをチェックする
-        if (UTIL_getPowerModeSW() != WPFM_operationMode)
-        {
-            // 変更されていた時は、リブートして新しい動作モードで処理を開始する
-            WPFM_reboot();
-        }
 
         // タクトスイッチが押下されたどうかをチェックする
         if (WPFM_wasButtonPressed)

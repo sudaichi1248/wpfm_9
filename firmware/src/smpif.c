@@ -18,6 +18,7 @@
 #include "debug.h"
 #include "uart_debug.h"
 #include "smpif.h"
+#include "Eventlog.h"
 
 void DLCMatVersion();
 void DLCMatUpdateGo();
@@ -140,9 +141,11 @@ int SMPIF_readMessage(void)
             DEBUG_UART_printlnFormat("_SMPIF_commandTableIndex: %d(%s)", _SMPIF_commandTableIndex, header + 4);
 
             //return (_SMPIF_commandTables[i].waitForCommand ? SMPIF_ERR_WAIT_FOR_COMMAND : SMPIF_ERR_NONE);
+			DLCEventLogWrite( _ID1_USB_CMD_OKNG,i,0 );
             return (SMPIF_ERR_NONE);
         }
     }
+	DLCEventLogWrite( _ID1_USB_CMD_OKNG,-1,0 );
 
     DEBUG_UART_printlnFormat("_SMPIF_commandTableIndex: not found(%s)", header + 4);
 

@@ -16,6 +16,8 @@
 #include "util.h"
 #include "wpfm.h"
 #include "DLCpara.h"
+#include "Eventlog.h"
+#include "version.h"
 #include "FOTAcmd.h"
 char *VerPrint();
 void DLCMatTimerInt();
@@ -389,6 +391,9 @@ void MTapn()
 		DLCMatSend( "AT$SETSERVER,harvest-files.soracom.io,80\r" );	// fota soracom harvest指定
 		DLC_Matknd = 3;	// fota FOTA発呼
 	}
+	DLCEventLogWrite( _ID1_USIM_CNUM,
+	(DLC_MatNUM[0]-'0')<<24|(DLC_MatNUM[1]-'0')<<20|(DLC_MatNUM[2]-'0')<<16|(DLC_MatNUM[3]-'0')<<12|(DLC_MatNUM[4]-'0')<<8|(DLC_MatNUM[5]-'0')<<4|(DLC_MatNUM[6]-'0'),
+	(DLC_MatNUM[7]-'0')<<28|(DLC_MatNUM[8]-'0')<<24|(DLC_MatNUM[9]-'0')<<20|(DLC_MatNUM[10]-'0')<<16|(DLC_MatNUM[11]-'0')<<12|(DLC_MatNUM[12]-'0')<<8|(DLC_MatNUM[13]-'0')<<4|(DLC_MatNUM[14]-'0') );
 	DLCMatTimerset( 0,TIMER_5000ms );
 	DLC_MatState = MATC_STATE_SVR;
 }
@@ -421,6 +426,7 @@ void MTrsrp()
 	else
 		DLCMatSend( "AT$CELLID\rAT$EARFCN\r" );
 	DLCMatSend( "AT$RSRP\rAT$RSRQ\rAT$RSSI\rAT$SINR\r" );
+	DLCEventLogWrite( _ID1_MAT_VERSION,0,(DLC_MatVer[0]-'0')<<12|(DLC_MatVer[1]-'0')<<8|(DLC_MatVer[3]-'0')<<4|(DLC_MatVer[4]-'0') );
 }
 void MTopnF()	// fota
 {
@@ -442,6 +448,7 @@ void MTcnfg()
 	if (WPFM_ForcedCall == true) {	// 強制発報
 		UTIL_LED1_OFF();
 	}
+	DLCEventLogWrite( _ID1_OPEN_OK,0,0 );
 	DLCMatPostConfig();
 	DLC_MatState = MATC_STATE_CNFG;
 	DLCMatTimerset( 0,TIMER_7000ms );
@@ -567,6 +574,7 @@ void MTdisc()
 	if( DLC_Matknd ){													/* 発呼要求保持 */
 		DLC_Matknd = 0;
 		DLCMatSend( "AT$CONNECT\r" );
+		DLCEventLogWrite( _ID1_CONNECT,0,0 );
 		DLCMatTimerset( 0,TIMER_90s );
 		DLC_MatState = MATC_STATE_CONN;
 	}
@@ -628,14 +636,16 @@ void MTwake()
 	DLC_MatLineIdx = 0;
 	DLC_Matknd = 0;
 	DLCMatSend( "AT$CONNECT\r" );
+	DLCEventLogWrite( _ID1_CONNECT,0,0 );
 	DLCMatTimerset( 0,TIMER_90s );
- 	TC5_TimerStart();
+	TC5_TimerStart();
 	DLC_MatState = MATC_STATE_CONN;
 }
 void MTconW()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT\r" );
+	DLCEventLogWrite( _ID1_CONNECT,0,0 );
 	DLCMatTimerset( 0,TIMER_90s );
 	DLC_MatState = MATC_STATE_CONN;
 }
@@ -1009,7 +1019,7 @@ void DLCMatReortDefault()
 static char http_config[] = "POST /config HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
 static char http_status[] = "POST /status HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:    \r\n\r\n";
 static char http_report[] = "POST /report HTTP/1.1\r\nHost:beam.soracom.io\r\nContent-Type:application/json\r\nContent-Length:      \r\n\r\n";
-static char http_tmp[1024];
+static char http_tmp[2048];
 char	DLC_MatSendBuff[1024*2+16];
 static WPFM_SETTING_PARAMETER	config;
 void DLCMatPostConfig()
@@ -1223,6 +1233,7 @@ int DLCMatPostReport()
 	MLOG_tailAddressRestore();
 	if( DLC_MatReportMax ){
 		putst("Report=");putdecw( DLC_MatReportMax );putcrlf();
+		DLCEventLogWrite( _ID1_REPORT,0,DLC_MatReportMax );
 		Len = 51+DLC_MatReportMax*80+2;
 		p = strstr( http_tmp,"Length:    " );
 		if( p < 0 ){
@@ -1555,6 +1566,7 @@ putst("\r\ncoco3\r\n");
 			config.communicationIntervalOnAlert = atoi(DLC_MatConfigItem);
 //			putst("ReprotIntervalAlert:");puthxw(config.communicationIntervalOnAlert);putcrlf();
 		}
+		DLCEventLogWrite( _ID1_CONFIGRET,0,0 );
 		config_p = strstr(DLC_MatResBuf, "Select_ch1");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
@@ -1752,7 +1764,6 @@ putst("coco4\r\n");
 				WPFM_cancelAlert();
 				if (WPFM_isAlertPause == true ) {	// AlertPause中?
 					WPFM_isAlertPause = false;
-					WPFM_cancelAlertDone = false;
 					strcpy(config.AlertPause, "");	// AlertPauseクリア
 				}
 			}
@@ -1763,11 +1774,6 @@ putst("coco4\r\n");
 			config.alertTimeout = atoi(DLC_MatConfigItem);
 //			putst("AlertTimeOut:");puthxb(config.alertTimeout);putcrlf();
 		}
-#endif
-#if 0
-		config.measurementInterval = 20;
-		config.communicationInterval = 120;
-		config.communicationIntervalOnAlert = 60;
 #endif
 		WPFM_writeSettingParameter( &config );
 		DLCMatReflectionConfig();
@@ -1989,6 +1995,7 @@ void DLCRomTest()
 {
 	char	key,buff[256];
 	int		address=0;
+	putst("You need to decide work address by 'A' command");putcrlf();
 	while(1){
 		key = toupper( getch() );
 		switch( key ){
@@ -2006,11 +2013,9 @@ void DLCRomTest()
 			Dump( (char*)buff,sizeof( buff ) );
 			break;
 		case 'R':
-			address+=0x100;
 			putch('@');puthxw( address );putcrlf();
-			NVMCTRL_Read( (uint32_t *)buff,sizeof( buff ),address );
-			putcrlf();
-			Dump( buff,sizeof( buff ) );
+			Dump( (char*)address,sizeof( buff ) );
+			address+=0x100;
 			break;
 		case 'A':
 			putst("Read mem Address=>" );
@@ -2154,6 +2159,7 @@ void DLCMatMain()
 		DLCMatReset();
 		DLCMatInit();
 		DLC_BigState = 1;
+		DLCEventLogWrite( _ID1_SYS_START,0,(_Main_version[4]-'0')<<12|(_Main_version[5]-'0')<<8|(_Main_version[7]-'0')<<4|(_Main_version[8]-'0' ));
 	}
 	key = getkey();
 	if( key ){
@@ -2192,21 +2198,42 @@ void DLCMatMain()
 				break;
 			}
 			break;
-		case 'O':
-			putst("\r\nNum=>");
-			PORT_GroupWrite( PORT_GROUP_1,0x1<<c_get32b(),0 );
+		case 'O':															/* PortOut */
+			if( CheckPasswd() ){
+				putst("\r\nGroup0 (Y/N?)=>");
+				if( toupper(getch()) == 'Y' ){
+					putst("\r\nNo.(H)=>");ret = c_get32b();
+					putst("\r\n1 (Y/N?)=>");
+					if( toupper(getch()) == 'Y' )
+						PORT_GroupWrite( PORT_GROUP_0,0x1<<ret,-1 );
+					else
+						PORT_GroupWrite( PORT_GROUP_0,0x1<<ret,0 );
+				}
+				else {
+					putst("\r\nNo.(H)=>");ret = c_get32b();
+					putst("\r\n1 (Y/N?)=>");
+					if( toupper(getch()) == 'Y' )
+						PORT_GroupWrite( PORT_GROUP_1,0x1<<ret,-1 );
+					else
+						PORT_GroupWrite( PORT_GROUP_1,0x1<<ret,0 );
+				}
+			}
 			break;
-		case 'U':
-			putst("\r\nNum=>");
-			PORT_GroupWrite( PORT_GROUP_1,0x1<<c_get32b(),-1 );
+		case ' ':
+			if( DLC_MatTmid ^= 1 )
+				PORT_GroupWrite( PORT_GROUP_1,0x1<<23,-1 );
+			else
+				PORT_GroupWrite( PORT_GROUP_1,0x1<<23,0 );
 			break;
 		case 'Z':
-			putst("\r\nNum=>");
-			PORT_GroupWrite( PORT_GROUP_0,0x1<<c_get32b(),0 );
+			if( CheckPasswd() ){
+//			DLCEventLogWrite( _ID1_CONFIGRET,-1,0 );
+			DLCEventLogClr();
 			break;
-		case 'W':
-			putst("\r\nNum=>");
-			PORT_GroupWrite( PORT_GROUP_0,0x1<<c_get32b(),-1 );
+//		case 'W':
+//			puthxw( EVENT_LOG_NUMOF_ITEM );
+//			for(int i = 0; i < 100; i++ )
+//				DLCEventLogWrite( _ID1_CONFIGRET,i,0 );
 			break;
 		case 'Y':
 			putcrlf();putst("inPORT_GROUP0:1=");
@@ -2278,7 +2305,8 @@ void DLCMatMain()
 #endif
 			break;
 		case 'V':
-			DLC_MatSPIFOTAerase();	// SPI最終セクタ消去
+//			DLC_MatSPIFOTAerase();	// SPI最終セクタ消去
+			DLCEventLogDisplay();
 			break;
 		case 'X':	// FOTA開始
 			if( CheckPasswd() )
@@ -2319,11 +2347,11 @@ void DLCMatMain()
 			putst("\r\nnum:");puthxw(_MLOG_NumberofLog);putcrlf();
 			putst("headtime:");puthxw(_MLOG_headTime);putcrlf();
 			RTC_convertToDateTime(_MLOG_headTime,&dt);
-			sprintf( s,"20%02d/%02d/%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+			sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 			putst(s);putcrlf();
 			putst("tailtime:");puthxw(_MLOG_tailTime);putcrlf();
 			RTC_convertToDateTime(_MLOG_tailTime,&dt);
-			sprintf( s,"20%02d/%02d/%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+			sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 			putst(s);putcrlf();
 			break;
 		case 0x03:												/* CTRL+A */
@@ -2390,6 +2418,7 @@ void DLCMatUpdateGo()
 */
 void DLCMatFotaGo()
 {
+	DLCEventLogWrite( _ID1_FOTA_START,0,0 );
 	DLCFotaGoAndReset();
 }
 void DLCMatServerChange()
@@ -2403,6 +2432,7 @@ void DLCMatServerChange()
 }
 void DLCMatError( int no )
 {
+	DLCEventLogWrite( _ID1_SOMETHING,0,0 );
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
 	GPIOEXP_clear(0);												/* LED全点灯 */
 	GPIOEXP_clear(1);
