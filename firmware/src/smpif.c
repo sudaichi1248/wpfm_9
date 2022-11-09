@@ -24,6 +24,7 @@ void DLCMatVersion();
 void DLCMatUpdateGo();
 void DLCMatFotaGo();
 void DLCMatServerChange();
+void DLCMatEventLog();
 /*
 *   Symbols
 */
@@ -65,6 +66,7 @@ static SMPIF_COMMAND_TABLE _SMPIF_commandTables[] =
         { "M1", DLCMatUpdateGo },
         { "M2", DLCMatFotaGo },
         { "M3", DLCMatServerChange },
+        { "M4", DLCMatEventLog },
         { NULL, NULL }
     };
 
