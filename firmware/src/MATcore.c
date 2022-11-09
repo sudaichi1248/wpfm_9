@@ -2226,7 +2226,7 @@ void DLCMatMain()
 				PORT_GroupWrite( PORT_GROUP_1,0x1<<23,0 );
 			break;
 		case 'Z':
-			if( CheckPasswd() ){
+			if( CheckPasswd() )
 //			DLCEventLogWrite( _ID1_CONFIGRET,-1,0 );
 			DLCEventLogClr();
 			break;
