@@ -1819,6 +1819,9 @@ int DLCMatRecvDisp()
 				putst("Buf'Remain=");putdecs(DLC_MatLineIdx);putcrlf();
 				Dump( (char*)DLC_MatLineBuf,8);putcrlf();
 			}
+			p = strstr( DLC_MatResBuf,"HTTP/1.1 " );
+			if( p )
+				DLCEventLogWrite( _ID1_HTTP_RES,(p[9]-'0')<<8|(p[10]-'0')<<4|(p[11]-'0'),DLC_MatState );
 			if( DLC_MatState == MATC_STATE_RPT ){
 				if( strstr( DLC_MatResBuf,"HTTP/1.1 200 OK" )){
 					if( strstr( DLC_MatResBuf,"Connection: close" )){		/* ‚±‚±‚Å‚· */
@@ -2227,12 +2230,10 @@ void DLCMatMain()
 				}
 			}
 			break;
-		case ' ':
-			if( DLC_MatTmid ^= 1 )
-				PORT_GroupWrite( PORT_GROUP_1,0x1<<23,-1 );
-			else
-				PORT_GroupWrite( PORT_GROUP_1,0x1<<23,0 );
-			break;
+//		case ' ':
+//			PORT_GroupWrite( PORT_GROUP_1,0x1<<23,-1 );
+//			PORT_GroupWrite( PORT_GROUP_1,0x1<<23,0 );
+//			break;
 		case 'Z':
 			if( CheckPasswd() )
 //			DLCEventLogWrite( _ID1_CONFIGRET,-1,0 );

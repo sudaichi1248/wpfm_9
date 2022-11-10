@@ -37,6 +37,7 @@ void DLCEventLogClr( void );
 #define		_ID1_ONLINE_UPD_B_END		0x1024
 #define		_ID1_CONNECT				0x0110
 #define		_ID1_HTTP_OK				0x0111
+#define		_ID1_HTTP_RES				0x0112
 #define		_ID1_CONFIGRET				0x0120
 #define		_ID1_REPORT   				0x0130
 #define		_ID1_SLEEP	 				0x0140

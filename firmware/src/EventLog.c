@@ -182,6 +182,9 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_HTTP_OK:
 		strcat( str,"HTTPok ");
 		break;
+	case _ID1_HTTP_RES:
+		strcat( str,"HTTP=  ");
+		break;
 	case _ID1_SLEEP:
 		strcat( str,"SLEEP  ");
 		break;
