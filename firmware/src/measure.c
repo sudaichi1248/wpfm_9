@@ -79,6 +79,11 @@ void WPFM_measureRegularly(bool justMeasure)
         {
             DEBUG_UART_printlnFormat("SENSOR_readSensorOutput(%d) NG: %d", sensorIndex + 1, stat);
         }
+		if (value > WPFM_settingParameter.upperLimits[sensorIndex]) {	// è„å¿Å^â∫å¿Ç≈ä€ÇﬂçûÇ›
+			value = WPFM_settingParameter.upperLimits[sensorIndex];
+		} else if (value < WPFM_settingParameter.lowerLimits[sensorIndex]) {
+			value = WPFM_settingParameter.lowerLimits[sensorIndex];
+		}
         WPFM_lastMeasuredValues[sensorIndex] = value;
 
         // Power off sensor power if necessary
