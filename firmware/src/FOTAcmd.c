@@ -147,7 +147,8 @@ int DLCMatRecvWriteFota()	// SPIへ受信データ書込み処理
 //			DLC_MatResBuf[DLC_MatResIdx] = 0;
 //			putst( DLC_MatResBuf );
 			DLC_MatResIdx = 0;
-			if (strstr(DLC_MatResBuf,"Connection: close") == NULL) {	/* ヘッダにConnection: closeなし=先頭以降の受信データ */
+//			if (strstr(DLC_MatResBuf,"Connection: close") == NULL) {	/* ヘッダにConnection: closeなし=先頭以降の受信データ */
+			if (strstr(DLC_MatResBuf,"Content-Type: application/octet-stream") == NULL) {	/* ヘッダにConnection: closeなし=先頭以降の受信データ */
 				fpt = DLC_MatResBuf;		/* 受信バッファの先頭アドレス */
 				len = DLC_MatSPIRemaindataFota;	/* 半端byteのレングス */
 //				if (j > 0) {	/* Rmが0でもそれは最終データではない */
