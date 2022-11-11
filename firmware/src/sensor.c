@@ -9,6 +9,7 @@
 
 //#define DEBUG_UART
 //#define DEBUG_DETAIL
+//#define	_20221111_UPDATE
 
 #include "debug.h"
 #include "wpfm.h"
@@ -16,7 +17,7 @@
 #include "gpioexp.h"
 #include "sensor.h"
 #include "rtc.h"
-
+#include "Moni.h"
 /*
 *   Symbols and Constants
 */
@@ -29,9 +30,12 @@
 */
 bool SENSOR_alwaysOnSensorPowers[2] = { false, false };
 
+#ifndef _20221111_UPDATE
 const static float _SENSOR_conversionFactor                = 0.000990000;      // Conversion to voltage factor [V/LSB]
 const static float _SENSOR_dividedRatioOfExternalBattery   = 880.0 / 200.0;    // Voltage division ratio: (R1) Corresponded to battery voltage change to 12V
-
+#else
+const static float _SENSOR_dividedRatioOfExternalBattery     = 0.004841;  // Voltage division ratio: (R1) Corresponded to battery voltage change to 12V
+#endif
 
 int SENSOR_readSensorOutput(int sensorNo, float *result_p)
 {
@@ -123,10 +127,12 @@ int SENSOR_readExternalBatteryVoltage(int externalNo, uint16_t *voltage_p)
         default:
             return (SENSOR_ERR_PARAM);
     }
-
+#ifndef _20221111_UPDATE
     float result = SENSOR_readRawValue() * _SENSOR_dividedRatioOfExternalBattery * _SENSOR_conversionFactor;
+#else
+    float result = SENSOR_readRawValue() * _SENSOR_dividedRatioOfExternalBattery ;
+#endif
     *voltage_p = (uint16_t)(result * 1000.0);      // Convert Volt to milli Volt
-
     DEBUG_UART_printlnFormat("< SENSOR_readExternalBatteryVoltage(%d,-) OK: %.3f", externalNo, result);
     return (SENSOR_ERR_NONE);
 }
