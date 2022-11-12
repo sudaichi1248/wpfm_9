@@ -266,16 +266,16 @@ void DLCMatEventLog()
 * 機能 		：イベントログ領域の削除
 * 更新記録	：14/04/22			新規
 */
-void DLCEventLogClr()
+void DLCEventLogClr(int flg)
 {
-#if 1
-	NVMCTRL_RowErase( EVENT_LOG_AREA_ADDRESS_START );puthxw( EVENT_LOG_AREA_ADDRESS_START );putst("deleted!\r\n");
-#else
-	int		address;
-
-	for(address=EVENT_LOG_AREA_ADDRESS_START;address<EVENT_LOG_AREA_ADDRESS_END;address+=EVENT_LOG_AREA_ERASE_SZ){
-		NVMCTRL_RowErase( address );puthxw( address );putst("deleted!\r\n");
+	if( flg ){
+		NVMCTRL_RowErase( EVENT_LOG_AREA_ADDRESS_START );puthxw( EVENT_LOG_AREA_ADDRESS_START );putst("deleted!\r\n");
 	}
-#endif
+	else {
+		int		address;
+		for(address=EVENT_LOG_AREA_ADDRESS_START;address<EVENT_LOG_AREA_ADDRESS_END;address+=EVENT_LOG_AREA_ERASE_SZ){
+			NVMCTRL_RowErase( address );puthxw( address );putst("deleted!\r\n");
+		}
+	}
 	DLC_EventIdx = 0;
 }

@@ -77,7 +77,7 @@ int main(void)
         // Erase flash memory chip
         W25Q128JV_begin(MEM_CS_PIN);
         int stat;
-		DLCEventLogClr();
+		DLCEventLogClr(1);
         if ((stat = W25Q128JV_eraseChip(true)) == W25Q128JV_ERR_NONE)
         {
             DEBUG_UART_printlnString("ERASE CHIP OK.");

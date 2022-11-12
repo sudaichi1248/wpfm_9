@@ -362,7 +362,8 @@ void MTVer()
 void MTimei()
 {
 	DLC_MatLineIdx = 0;
-	DLCMatSend( "AT$SETAPN,soracom.io,sora,sora,PAP\r" );
+//	DLCMatSend( "AT$SETAPN,soracom.io,sora,sora,PAP\r" );
+	DLCMatSend( "AT$SETAPN?\r" );
 	DLCMatTimerset( 0,TIMER_5000ms );
 	DLC_MatState = MATC_STATE_APN;
 }
@@ -2237,7 +2238,7 @@ void DLCMatMain()
 		case 'Z':
 			if( CheckPasswd() )
 //			DLCEventLogWrite( _ID1_CONFIGRET,-1,0 );
-			DLCEventLogClr();
+			DLCEventLogClr(0);
 			break;
 //		case 'W':
 //			puthxw( EVENT_LOG_NUMOF_ITEM );

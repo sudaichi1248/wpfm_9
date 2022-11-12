@@ -15,7 +15,7 @@ typedef struct	{											/* イベントログ				*/
 void DLCEventLogInit( void );
 void DLCEventLogWrite( ushort ID1,uint ID2,uint ID3 );
 void DLCEventLogDisplay( void );
-void DLCEventLogClr( void );
+void DLCEventLogClr( int );
 /* ID1 discribe */
 #define		_ID1_POWER_START			0x0001
 #define		_ID1_SYS_START				0x0002
