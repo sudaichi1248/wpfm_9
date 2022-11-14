@@ -785,7 +785,7 @@ void	 (*MTjmp[18][19])() = {
 /*					  0         1       2      3       4       5       6       7       8       9       10      11      12      13      14      15      16      17   18     */
 /*				  	 INIT    IDLE    IMEI    APN     SVR     CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR   */
 /* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy  },
-/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, ______, ______, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, ______, ______ },
+/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, ______, ______, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, MTdisc, ______ },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______ },
@@ -870,6 +870,11 @@ void DLCMatState()
 			memcpy( DLC_MatLineBuf,&DLC_MatLineBuf[3],DLC_MatLineIdx );
 			DLC_Matfact = MATC_FACT_OK;
 			DLC_MatRetry = 0;
+		}
+	}
+	if( DLC_MatLineIdx >= 29 ){
+		if( strstr( (char*)DLC_MatLineBuf,"$APN:soracom.io,sora,sora,PAP\r" )){
+			DLC_Matfact = MATC_FACT_OK;
 		}
 	}
 	if( DLC_MatLineIdx >= 10 ){
