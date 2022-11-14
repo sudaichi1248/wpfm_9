@@ -568,7 +568,7 @@ void MTrpOk()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatReportSnd();
-	DLCMatTimerset( 0,TIMER_7000ms );
+	DLCMatTimerset( 0,TIMER_15s );
 	DLC_MatState = MATC_STATE_RPT;
 }
 void MTdisc()
@@ -1783,6 +1783,11 @@ putst("coco4\r\n");
 //			putst("AlertTimeOut:");puthxb(config.alertTimeout);putcrlf();
 		}
 #endif
+#if 0
+		config.measurementInterval = 20;
+		config.communicationInterval = 120;
+		config.communicationIntervalOnAlert = 60;
+#endif
 		WPFM_writeSettingParameter( &config );
 		DLCMatReflectionConfig();
 	}
@@ -2327,16 +2332,35 @@ void DLCMatMain()
 				DLCFotaFinAndReset();
 			break;
 		case 'P':
-			if( CheckPasswd() ){
+			putst("1:time set 2:3000 save 3:FULL save");
+			switch( getch() ){
+			case '1':
 				logtime = RTC_now;
-				while(1) {
-					ret = mlogdumywrite(logtime);
-					if (ret == 0) {
-						break;
+				break;
+			case '2':
+				if( CheckPasswd() ){
+					for(int i=0;i<DLC_REPORT_ALL_MAX;i++){
+						ret = mlogdumywrite(logtime);
+						if (ret == 0) {
+							break;
+						}
+						logtime += 1;
 					}
-					logtime += 4;
+					putst("##### write end #####");
 				}
-				putst("##### write end #####");
+				break;
+			case '3':
+				if( CheckPasswd() ){
+					while(1) {
+						ret = mlogdumywrite(logtime);
+						if (ret == 0) {
+							break;
+						}
+						logtime += 4;
+					}
+					putst("##### write end #####");
+				}
+				break;
 			}
 			break;
 		case 'J':
