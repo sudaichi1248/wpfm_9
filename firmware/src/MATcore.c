@@ -1245,7 +1245,9 @@ void DLCMatReportSnd()
 		strcat( http_tmp,"]}}" );
 		DLC_MatReportFin = -1;
 	}
-	putst( http_tmp );putcrlf();
+	if( DLC_Para.ReportLog == 0 ){
+		putst( http_tmp );putcrlf();
+	}
 	DLCMatReportSndSub();
 }
 int DLCMatPostReport()
@@ -2397,11 +2399,24 @@ void DLCMatMain()
 					putst("##### write end #####");
 				}
 				break;
+			case '4':
+				if( CheckPasswd() ){
+					for(int i=0;i<DLC_REPORT_ALL_MAX*18;i++){
+						ret = mlogdumywrite(logtime);
+						if (ret == 0) {
+							break;
+						}
+						logtime += 1;
+						WDT_Clear();
+					}
+					putst("##### write end #####");
+				}
+				break;
 			}
 			break;
 		case 'N':
 			MLOG_getNumberofLog();
-			putst("\r\nnum:");puthxw(_MLOG_NumberofLog);putcrlf();
+			putst("\r\nnum:");putdecw(_MLOG_NumberofLog);putcrlf();
 			putst("headtime:");puthxw(_MLOG_headTime);putcrlf();
 			RTC_convertToDateTime(_MLOG_headTime,&dt);
 			sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
@@ -2487,6 +2502,15 @@ void DLCMatServerChange()
 		putst( "beam.soracom.io,8888\r" );
 	DLCParaSave();
 }
+void DLCMatRepotLogChange()
+{
+	DLC_Para.ReportLog ^= 0xff;
+	if( DLC_Para.ReportLog == 0 )
+		putst( "ReportLog=On\r" );
+	else
+		putst( "ReportLog=Off\r" );
+	DLCParaSave();
+}
 void DLCMatError( int no )
 {
 	putst("MATcore No Response!\r\n");
@@ -2502,6 +2526,7 @@ void DLC_delay( int msec )
 	for(int i=0;i<msec;i++){
 		IDLEputch();
 		APP_delay(1);
+		WDT_Clear();
 	}
 }
 /*
