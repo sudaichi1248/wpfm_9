@@ -101,6 +101,18 @@ static void GCLK1_Initialize(void)
     }
 }
 
+
+static void GCLK2_Initialize(void)
+{
+    GCLK_REGS->GCLK_GENCTRL = GCLK_GENCTRL_SRC(3U) | GCLK_GENCTRL_RUNSTDBY_Msk | GCLK_GENCTRL_GENEN_Msk | GCLK_GENCTRL_ID(2U);
+
+    GCLK_REGS->GCLK_GENDIV = GCLK_GENDIV_DIV(10U) | GCLK_GENDIV_ID(2U);
+    while((GCLK_REGS->GCLK_STATUS & GCLK_STATUS_SYNCBUSY_Msk) == GCLK_STATUS_SYNCBUSY_Msk)
+    {
+        /* wait for the Generator 2 synchronization */
+    }
+}
+
 void CLOCK_Initialize (void)
 {
     /* Function to Initialize the Oscillators */
@@ -108,9 +120,12 @@ void CLOCK_Initialize (void)
 
     FDPLL_Initialize();
     GCLK1_Initialize();
+    GCLK2_Initialize();
     GCLK0_Initialize();
 
 
+    /* Selection of the Generator and write Lock for WDT */
+    GCLK_REGS->GCLK_CLKCTRL = GCLK_CLKCTRL_ID(3U) | GCLK_CLKCTRL_GEN(0x2U)  | GCLK_CLKCTRL_CLKEN_Msk;
     /* Selection of the Generator and write Lock for EIC */
     GCLK_REGS->GCLK_CLKCTRL = GCLK_CLKCTRL_ID(5U) | GCLK_CLKCTRL_GEN(0x1U)  | GCLK_CLKCTRL_CLKEN_Msk;
     /* Selection of the Generator and write Lock for USB */

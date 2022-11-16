@@ -57,6 +57,7 @@
 #include "peripheral/clock/plib_clock.h"
 #include "peripheral/nvic/plib_nvic.h"
 #include "peripheral/systick/plib_systick.h"
+#include "peripheral/wdt/plib_wdt.h"
 #include "peripheral/pm/plib_pm.h"
 #include "peripheral/sercom/usart/plib_sercom5_usart.h"
 #include "usb/usb_chapter_9.h"
@@ -197,7 +198,7 @@ Remarks:
 
 typedef struct
 {
-	SYS_MODULE_OBJ  usbDevObject0;
+    SYS_MODULE_OBJ  usbDevObject0;
 
 	SYS_MODULE_OBJ  drvUSBFSV1Object;
 

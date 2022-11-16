@@ -28,7 +28,7 @@ void DLC_delay(int);
 //void _GO_IDLE(){command_main();DLCMatState();}
 #ifdef ADD_FUNCTION
 void DLCMatRtcTimeChk();
-void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatRtcTimeChk();}
+void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatRtcTimeChk();WDT_Clear();}
 #else
 void _GO_IDLE(){DLCMatState();IDLEputch();}
 #endif
@@ -2178,6 +2178,7 @@ void DLCMatMain()
 	if( DLC_BigState == 0 ){
 		putst( VerPrint() );
 		putst( "\r\nMATcore Task Started.\r\n" );
+		WDT_Enable();
 		DLCMatReset();
 		DLCMatInit();
 		DLC_BigState = 1;

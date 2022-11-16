@@ -62,13 +62,13 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: 8764C14D597BDBC0876C14F412BEDFA0
-- generatedChecksum: 00027F3F2D37CC2A5A5070BF70E9FDF4
+- generatedChecksum: EFAD2E038065023921AC49B04CFC01DC
   logicalPath: config/atsamd21g18a_default/peripheral/clock
   name: plib_clock.c
   physicalPath: peripheral/clock
   security: NON_SECURE
   type: SOURCE
-  userChecksum: 00027F3F2D37CC2A5A5070BF70E9FDF4
+  userChecksum: EFAD2E038065023921AC49B04CFC01DC
 - generatedChecksum: DA69E99625F46733299E44E7151D9C2B
   logicalPath: config/atsamd21g18a_default/peripheral/eic
   name: plib_eic.c
@@ -167,6 +167,13 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: 00EF2DE7FC6FB8E48FC89B7552C92CEC
+- generatedChecksum: E7FD7ADC57B6F6EEE6315C4486C4EF5C
+  logicalPath: config/atsamd21g18a_default/peripheral/wdt
+  name: plib_wdt.c
+  physicalPath: peripheral/wdt
+  security: NON_SECURE
+  type: SOURCE
+  userChecksum: E7FD7ADC57B6F6EEE6315C4486C4EF5C
 - generatedChecksum: 64C7B09EBF0E16AC27EFD31B52FDDDF8
   logicalPath: config/atsamd21g18a_default
   name: startup_xc32.c
@@ -342,13 +349,13 @@ files:
   security: NON_SECURE
   type: HEADER
   userChecksum: CB8D4E72D581CDEFB0BB729ADC52D698
-- generatedChecksum: 854D52BA00DDDB28241DE1F766D57700
+- generatedChecksum: 233F07FB2571CD7E264E85AFBE74369F
   logicalPath: config/atsamd21g18a_default
   name: definitions.h
   physicalPath: ''
   security: NON_SECURE
   type: HEADER
-  userChecksum: 854D52BA00DDDB28241DE1F766D57700
+  userChecksum: 233F07FB2571CD7E264E85AFBE74369F
 - generatedChecksum: 7200FE37B300952D70C11DFE5DA3D6B7
   logicalPath: config/atsamd21g18a_default
   name: device.h
@@ -762,6 +769,13 @@ files:
   security: NON_SECURE
   type: HEADER
   userChecksum: B226E4D7CCB0F53AFA74446005A75252
+- generatedChecksum: AD5BC432377D1EFB5B464625F65873B0
+  logicalPath: config/atsamd21g18a_default/peripheral/wdt
+  name: plib_wdt.h
+  physicalPath: peripheral/wdt
+  security: NON_SECURE
+  type: HEADER
+  userChecksum: AD5BC432377D1EFB5B464625F65873B0
 - generatedChecksum: 242CE394C762D4EF35E9A0274DCB2308
   logicalPath: packs/ATSAMD21G18A_DFP/component
   name: pm.h

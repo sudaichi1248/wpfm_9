@@ -17,7 +17,6 @@
 #include "gpioexp.h"
 #include "sensor.h"
 #include "rtc.h"
-#include "Moni.h"
 /*
 *   Symbols and Constants
 */
