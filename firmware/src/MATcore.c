@@ -60,6 +60,7 @@ bool	DLC_ForcedCallOK=false;
 bool	DLC_MatsendRepOK=false;
 short	DLC_MatRSRP;
 short	DLC_MatRSRQ;
+uchar	DLC_MatRptMore;						/* Reportが連続している */
 
 int		DLC_MatFotaTOcnt=0;	// fota  タイムアウトカウンタ
 // 測定logリングバッファ試験用
@@ -492,10 +493,12 @@ void MTdata()
 	if( rt == 0 ){												/* 残りデータなし */
 		zLogOn = 1;
 		DLCMatTimerset( 0,TIMER_300ms);							/* $CLOSE待ち */
-		if (WPFM_ForcedCall == true) {	// 強制発報
-			DLC_ForcedCallOK = true;
-			UTIL_LED1_ON();	// LED1 5秒点灯
-			DLCMatRtcTimerset(1, 6);
+		if( DLC_MatRptMore == 0 ){
+			if (WPFM_ForcedCall == true) {	// 強制発報
+				DLC_ForcedCallOK = true;
+				UTIL_LED1_ON();	// LED1 5秒点灯
+				DLCMatRtcTimerset(1, 6);
+			}
 		}
 	}
 	else {
@@ -602,6 +605,26 @@ void MTcls3()
 	if( DLC_MatState == MATC_STATE_RPT ){	// Report送信で
 		if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
 			MLOG_tailAddressRestore();	// tailAddress戻す
+		}
+	}
+	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
+	DLCMatSend( "AT$DISCONNECT\r" );
+	DLCMatTimerset( 0,TIMER_3000ms );
+	DLC_MatState = MATC_STATE_DISC;
+}
+void MTcls4()
+{
+	DLC_MatLineIdx = 0;
+	if( DLC_MatState == MATC_STATE_RPT ){	// Report送信で
+		if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
+			MLOG_tailAddressRestore();	// tailAddress戻す
+		}
+		else {
+			if( DLC_MatRptMore ){
+				DLC_MatRptMore = 0;
+				MTopn3();
+				return;
+			}
 		}
 	}
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
@@ -793,7 +816,7 @@ void	 (*MTjmp[18][19])() = {
 /* $TIME       6 */{ ______, ______, ______, ______, ______, ______, MTrsrp, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $RSRP       7 */{ ______, ______, ______, ______, ______, ______, MTOpen, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $OPEN/$WAKE 8 */{ ______, ______, ______, ______, ______, ______, ______, MTcnfg, ______, MTstst, ______, MTrprt, ______, MTconW, MTwget, ______, ______, ______, ______ },
-/* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls3, ______, MTclsF, ______, ______, ______, ______ },
+/* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, ______, MTclsF, ______, ______, ______, ______ },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______ },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, ______, MTdisc, ______ },
 /* TimOut1    12 */{ MTRdy,  MTVrT,  MTVer,  MTimei, MTdisc, MTdisc, MTdisc, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTdisc, MTledQ },
@@ -1245,7 +1268,12 @@ int DLCMatPostReport()
 	}
 	MLOG_tailAddressRestore();
 	if( DLC_MatReportMax ){
-		putst("Report=");putdecw( DLC_MatReportMax );putcrlf();
+		putst("Report=");putdecw( DLC_MatReportMax );putch(' ');
+		if( DLC_MatReportMax == DLC_REPORT_ALL_MAX ){										/* Maxまで溜まっていたら、more=1 */
+			putst("More!" );
+			DLC_MatRptMore++;
+		}
+		putcrlf();
 		DLCEventLogWrite( _ID1_REPORT,0,DLC_MatReportMax );
 		Len = 51+DLC_MatReportMax*80+2;
 		p = strstr( http_tmp,"Length:    " );
@@ -2351,6 +2379,7 @@ void DLCMatMain()
 							break;
 						}
 						logtime += 1;
+						WDT_Clear();
 					}
 					putst("##### write end #####");
 				}
@@ -2363,23 +2392,11 @@ void DLCMatMain()
 							break;
 						}
 						logtime += 4;
+						WDT_Clear();
 					}
 					putst("##### write end #####");
 				}
 				break;
-			}
-			break;
-		case 'J':
-			if( CheckPasswd() ){
-				logtime = RTC_now;
-				for(int i=0;i<DLC_REPORT_ALL_MAX;i++){
-					ret = mlogdumywrite(logtime);
-					if (ret == 0) {
-						break;
-					}
-					logtime += 1;
-				}
-				putst("##### write end #####");
 			}
 			break;
 		case 'N':
