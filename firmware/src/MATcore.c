@@ -2471,12 +2471,9 @@ void DLCMatServerChange()
 }
 void DLCMatError( int no )
 {
+	putst("MATcore No Response!\r\n");
 	DLCEventLogWrite( _ID1_SOMETHING,0,0 );
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
-	GPIOEXP_clear(0);												/* LED‘S“_“” */
-	GPIOEXP_clear(1);
-	GPIOEXP_clear(2);
-	DLCMatTimerset( 0,15000 );
 	DLC_MatState = MATC_STATE_ERR;
 }
 /*
