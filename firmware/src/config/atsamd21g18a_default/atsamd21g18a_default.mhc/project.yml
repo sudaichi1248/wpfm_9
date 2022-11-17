@@ -132,13 +132,13 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: 7BB742B85025D8ADCA8EBC28C297169D
-- generatedChecksum: 6D3B3EC7FB21663F3087914DC581A22C
+- generatedChecksum: 1EAA97A49587C36568DDB80E728C8944
   logicalPath: config/atsamd21g18a_default/peripheral/sercom/usart
   name: plib_sercom5_usart.c
   physicalPath: peripheral/sercom/usart
   security: NON_SECURE
   type: SOURCE
-  userChecksum: 6D3B3EC7FB21663F3087914DC581A22C
+  userChecksum: 1EAA97A49587C36568DDB80E728C8944
 - generatedChecksum: E6DBA5598EFE3B305C237EB3C724E915
   logicalPath: config/atsamd21g18a_default/peripheral/systick
   name: plib_systick.c

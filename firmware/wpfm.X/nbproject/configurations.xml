@@ -221,7 +221,6 @@
           <itemPath>../src/config/atsamd21g18a_default/ATSAMD21G18A.ld</itemPath>
         </logicalFolder>
       </logicalFolder>
-      <itemPath>../src/FOTAcmd.c</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
@@ -353,6 +352,7 @@
       <itemPath>../src/version.c</itemPath>
       <itemPath>../src/DLCpara.c</itemPath>
       <itemPath>../src/EventLog.c</itemPath>
+      <itemPath>../src/FOTAcmd.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
