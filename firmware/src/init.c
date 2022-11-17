@@ -20,6 +20,7 @@
 #include "mlog.h"
 #include "moni.h"
 #include "DLCpara.h"
+#include "Eventlog.h"
 void DLCMatTimerset();
 #ifdef ADD_FUNCTION
 bool DLCMatWatchAlertPause();
@@ -143,6 +144,7 @@ void WPFM_initializeApplication(void)
         // Use Battery #1, detach Battery #2
         WPFM_externalBatteryNumberInUse = 1;
         WPFM_batteryStatus = MLOG_BAT_STATUS_BAT1_IN_USE | MLOG_BAT_STATUS_BAT2_NOT_USE;
+		DLCEventLogWrite( _ID1_POWER_START,cause,0 );
         EXT2_OFF_Set();         // detach battery #2
     }
     else
@@ -154,6 +156,7 @@ void WPFM_initializeApplication(void)
         {
             WPFM_externalBatteryNumberInUse = 2;
             WPFM_batteryStatus = MLOG_BAT_STATUS_BAT2_IN_USE | MLOG_BAT_STATUS_BAT1_NOT_USE;
+			DLCEventLogWrite( _ID1_POWER_START,cause,1 );
             EXT1_OFF_Set();     // detach battery #1
         }
         else
@@ -163,6 +166,7 @@ void WPFM_initializeApplication(void)
 		        WPFM_externalBatteryNumberInUse = 1;
 		        WPFM_batteryStatus = MLOG_BAT_STATUS_BAT1_IN_USE | MLOG_BAT_STATUS_BAT2_NOT_USE;
 		        EXT2_OFF_Set();         // detach battery #2
+				DLCEventLogWrite( _ID1_POWER_START,cause,3 );
 #else
 	            UTIL_startBlinkEXT1AND2LED();
 	            while (true)
@@ -189,6 +193,7 @@ void WPFM_initializeApplication(void)
     {
         DEBUG_UART_printlnFormat("RTC_setTimeUpdateInterrupt() ERROR: %d", stat);
         DEBUG_UART_FLUSH();
+		DLCEventLogWrite( _ID1_ERROR,0,stat );
     }
 
     // Set dafault intervals

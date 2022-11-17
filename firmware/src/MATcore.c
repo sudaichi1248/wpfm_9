@@ -383,6 +383,7 @@ void MTapn()
 				return;
 			}
 		}
+		DLCEventLogWrite( _ID1_MAT_VERSION,0,(DLC_MatVer[0]-'0')<<12|(DLC_MatVer[1]-'0')<<8|(DLC_MatVer[3]-'0')<<4|(DLC_MatVer[4]-'0') );
 		switch( DLC_Para.Server ){
 		case 0:
 			DLCMatSend( "AT$SETSERVER,karugamosoft.ddo.jp,9999\r" );
@@ -430,7 +431,6 @@ void MTrsrp()
 	else
 		DLCMatSend( "AT$CELLID\rAT$EARFCN\r" );
 	DLCMatSend( "AT$RSRP\rAT$RSRQ\rAT$RSSI\rAT$SINR\r" );
-	DLCEventLogWrite( _ID1_MAT_VERSION,0,(DLC_MatVer[0]-'0')<<12|(DLC_MatVer[1]-'0')<<8|(DLC_MatVer[3]-'0')<<4|(DLC_MatVer[4]-'0') );
 }
 void MTopnF()	// fota
 {
@@ -667,7 +667,7 @@ void MTwake()
 	DLC_MatLineIdx = 0;
 	DLC_Matknd = 0;
 	DLCMatSend( "AT$CONNECT\r" );
-	DLCEventLogWrite( _ID1_CONNECT,WPFM_lastBatteryVoltages[0],WPFM_lastBatteryVoltages[1] );
+	DLCEventLogWrite( _ID1_CONNECT,0,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
 	DLCMatTimerset( 0,TIMER_90s );
 	TC5_TimerStart();
 	DLC_MatState = MATC_STATE_CONN;
@@ -2368,7 +2368,7 @@ void DLCMatMain()
 				DLCFotaFinAndReset();
 			break;
 		case 'P':
-			putst("1:time set 2:3000 save 3:FULL save");
+			putst("1:time set 2:3000Œ 3:FULL save ==>");
 			switch( getch() ){
 			case '1':
 				logtime = RTC_now;
@@ -2394,19 +2394,6 @@ void DLCMatMain()
 							break;
 						}
 						logtime += 4;
-						WDT_Clear();
-					}
-					putst("##### write end #####");
-				}
-				break;
-			case '4':
-				if( CheckPasswd() ){
-					for(int i=0;i<DLC_REPORT_ALL_MAX*18;i++){
-						ret = mlogdumywrite(logtime);
-						if (ret == 0) {
-							break;
-						}
-						logtime += 1;
 						WDT_Clear();
 					}
 					putst("##### write end #####");
@@ -2514,7 +2501,7 @@ void DLCMatRepotLogChange()
 void DLCMatError( int no )
 {
 	putst("MATcore No Response!\r\n");
-	DLCEventLogWrite( _ID1_SOMETHING,0,0 );
+	DLCEventLogWrite( _ID1_ERROR,0xffffffff,0 );
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
 	DLC_MatState = MATC_STATE_ERR;
 }

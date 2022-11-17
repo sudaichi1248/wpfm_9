@@ -54,7 +54,8 @@ void DLCEventLogInit()
 	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
 		if( sec > log->second ){
 			block = (uint)log & EVENT_LOG_AREA_BLOCK_MSK;
-			NVMCTRL_RowErase( block );puthxw( block );putst("deleted!\r\n");
+			NVMCTRL_RowErase( block );
+			//puthxw( block );putst("deleted!\r\n");
 			return;
 		}
 		DLC_EventIdx++;
@@ -191,7 +192,7 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_WATCHDOG_START:
 		strcat( str,"WDT    ");
 		break;
-	case _ID1_SOMETHING:
+	case _ID1_ERROR:
 		strcat( str,"ERR    ");
 		break;
 	case _ID1_SEREAL_NOISE:
@@ -200,8 +201,11 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_MANTE_START:
 		strcat( str,"MNT    ");
 		break;
+	case _ID1_CELLACT:
+		strcat( str,"CELL   ");
+		break;
 	case _ID1_INIT_ALL:
-		strcat( str,"INIT   ");
+		strcat( str,"ROM CLR");
 		break;
 	case 0:
 		strcat( str,"       ");

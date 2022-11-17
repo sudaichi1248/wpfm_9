@@ -15,6 +15,7 @@
 #include "debug.h"
 #include "mlog.h"
 #include "battery.h"
+#include "Eventlog.h"
 
 /*
 *   外部電池の電圧をチェックし、条件がそろえば、使用する電池を交換する
@@ -90,6 +91,7 @@ int BATTERY_checkAndSwitchBattery(void)
             // Current uising battery # is 2
             WPFM_externalBatteryNumberInUse = 2;
             DEBUG_UART_printlnString("Exchange Battery #1 -> #2");
+			DLCEventLogWrite( _ID1_CELLACT,batteryStatus,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
         }
 
         WPFM_batteryStatus = batteryStatus;
@@ -122,6 +124,7 @@ int BATTERY_checkAndSwitchBattery(void)
             // Current uising battery # is 1
             WPFM_externalBatteryNumberInUse = 1;
             DEBUG_UART_printlnString("Exchange Battery #2 -> #1");
+			DLCEventLogWrite( _ID1_CELLACT,batteryStatus,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
         }
 
         WPFM_batteryStatus = batteryStatus;

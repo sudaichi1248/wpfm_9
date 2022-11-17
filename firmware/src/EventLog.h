@@ -41,8 +41,9 @@ void DLCEventLogClr( int );
 #define		_ID1_CONFIGRET				0x0120
 #define		_ID1_REPORT   				0x0130
 #define		_ID1_SLEEP	 				0x0140
+#define		_ID1_CELLACT 				0x0200
 #define		_ID1_WATCHDOG_START			0x1030
-#define		_ID1_SOMETHING				0x1031
+#define		_ID1_ERROR					0x1031
 #define		_ID1_SEREAL_NOISE			0x1032
 #define		_ID1_MANTE_START			0x1033
 #define		_ID1_INIT_ALL				0x1034

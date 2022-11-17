@@ -77,7 +77,7 @@ int main(void)
         // Erase flash memory chip
         W25Q128JV_begin(MEM_CS_PIN);
         int stat;
-		DLCEventLogClr(1);
+		DLCEventLogClr(0);
         if ((stat = W25Q128JV_eraseChip(true)) == W25Q128JV_ERR_NONE)
         {
             DEBUG_UART_printlnString("ERASE CHIP OK.");
@@ -87,6 +87,7 @@ int main(void)
             DEBUG_UART_printlnFormat("ERASE CHIP ERROR: %d", stat);
         }
         UTIL_stopBlinkLED1();
+		DLCEventLogWrite( _ID1_INIT_ALL,0,0 );
     }
 
     /* Get current operation mode */
@@ -179,6 +180,7 @@ static void eventLoopOnMeasurementMode(void)
                 DEBUG_UART_printlnString(">>LONG PRSD");
                 if (WPFM_isBeingReplacedBattery)
                 {
+					DLCEventLogWrite( _ID1_CELLACT,0xfe,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
                     // 電池交換を終了する
                     DEBUG_UART_printFormat("END REPLACE(#%d)", WPFM_externalBatteryNumberToReplace);
                     int stat;
@@ -202,6 +204,7 @@ static void eventLoopOnMeasurementMode(void)
                 }
                 else
                 {
+					DLCEventLogWrite( _ID1_CELLACT,0xff,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
                     // 電池交換を開始する
                     DEBUG_UART_printFormat("BEGIN REPLACE(#%d)", WPFM_externalBatteryNumberToReplace);
                     int stat;
