@@ -1103,7 +1103,7 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"Chattering_ch2\":%d,"		,config.alertChatteringTimes[1] );			strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Chattering_type\":%d,"		,config.alertChatteringKind );				strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertPause\":\"%s\","		,config.AlertPause );						strcat( http_tmp,tmp );
-	sprintf( tmp,"\"AlertTimeOut\":%d"			,config.alertTimeout );						strcat( http_tmp,tmp );
+	sprintf( tmp,"\"AlertTimeOut\":%ld"			,config.alertTimeout );						strcat( http_tmp,tmp );
 	strcat( http_tmp,"}}" );
 #ifdef ADD_FUNCTION
 	config.Measurment = 0;	// =1だった場合、1度Config送信したら戻す
@@ -1548,7 +1548,7 @@ void DLCMatAlertTimeStart()
 {
 	if (DLC_MatRtcTimer[0].cnt == 0) {	// AlertTime無起動?
 		DLCMatRtcTimerset(0, WPFM_settingParameter.alertTimeout);
-putst("\r\nAlertTime start:");puthxs(WPFM_settingParameter.alertTimeout);putcrlf();
+putst("\r\nAlertTime start:");puthxw(WPFM_settingParameter.alertTimeout);putcrlf();
 	}
 }
 void DLCMatRtcTimeChk()
@@ -1758,7 +1758,7 @@ putst("\r\ncoco3\r\n");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
 			config.alertChatteringTimes[0] = atoi(DLC_MatConfigItem);
-//			putst("Chattering_ch1:");puthxb(config.alertChatteringTimes[0]);putcrlf();
+//			putst("Chattering_ch1:");puthxs(config.alertChatteringTimes[0]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Measure_ch2");
 		if (config_p) {
@@ -1776,7 +1776,7 @@ putst("\r\ncoco3\r\n");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
 			config.alertChatteringTimes[1] = atoi(DLC_MatConfigItem);
-//			putst("Chattering_ch2:");puthxb(config.alertChatteringTimes[1]);putcrlf();
+//			putst("Chattering_ch2:");puthxs(config.alertChatteringTimes[1]);putcrlf();
 		}
 		config_p = strstr(DLC_MatResBuf, "Chattering_type");
 		if (config_p) {
@@ -1815,7 +1815,7 @@ putst("coco4\r\n");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, true);
 			config.alertTimeout = atoi(DLC_MatConfigItem);
-//			putst("AlertTimeOut:");puthxb(config.alertTimeout);putcrlf();
+//			putst("AlertTimeOut:");puthxw(config.alertTimeout);putcrlf();
 		}
 #endif
 #if 0
@@ -2323,8 +2323,8 @@ void DLCMatMain()
 #endif
 			putst("Select_ch1:");puthxb(config.sensorKinds[0]);putcrlf();
 			putst("Select_ch2:");puthxb(config.sensorKinds[1]);putcrlf();
-			putst("Upper0_ch1:");puthxb(config.upperLimits[0]);putcrlf();
-			putst("Upper0_ch2:");puthxb(config.upperLimits[1]);putcrlf();
+			putst("Upper0_ch1:");puthxs(config.upperLimits[0]);putcrlf();
+			putst("Upper0_ch2:");puthxs(config.upperLimits[1]);putcrlf();
 			putst("Lower0_ch1:");puthxb(config.lowerLimits[0]);putcrlf();
 			putst("Lower0_ch2:");puthxb(config.lowerLimits[1]);putcrlf();
 			putst("AlertSw_U2_ch1:");puthxb(config.alertEnableKinds[0][0][1]);putcrlf();
@@ -2352,7 +2352,7 @@ void DLCMatMain()
 			putst("Chattering_type:");puthxb(config.alertChatteringKind);putcrlf();
 #ifdef ADD_FUNCTION
 			putst("AlertPause:");putst(config.AlertPause);putcrlf();
-			putst("AlertTimeOut:");puthxb(config.alertTimeout);putcrlf();
+			putst("AlertTimeOut:");puthxw(config.alertTimeout);putcrlf();
 #endif
 			break;
 		case 'V':

@@ -119,7 +119,7 @@ typedef struct
     float           alertLowerLimits[2][2];             // アラート下限値[0:ch1/1:ch2] [0:下限値1/1:下限値2] [V/mA]
     uint16_t        alertChatteringTimes[2];            // アラートチャタリング時間 [0:ch1/1:ch2] [Sec]
     WPFM_CHATTERING_KIND alertChatteringKind;           // CH共通チャタリング種別
-    uint16_t        alertTimeout;                       // 警報タイムアウト時間 [Sec]
+    uint32_t        alertTimeout;                       // 警報タイムアウト時間 [Sec]
     // Calibration
     uint16_t        calibrationUpperValues[2][4];       // 上限の校正値[0:ch1/1:ch2] [0-3:センサ種別] [LSB]
     uint16_t        calibrationLowerValues[2][4];       // 下限の校正値[0:ch1/1:ch2] [0-3:センサ種別] [LSB]
