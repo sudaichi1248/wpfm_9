@@ -2489,15 +2489,6 @@ void DLCMatServerChange()
 		putst( "beam.soracom.io,8888\r" );
 	DLCParaSave();
 }
-void DLCMatRepotLogChange()
-{
-	DLC_Para.ReportLog ^= 0xff;
-	if( DLC_Para.ReportLog == 0 )
-		putst( "ReportLog=On\r" );
-	else
-		putst( "ReportLog=Off\r" );
-	DLCParaSave();
-}
 void DLCMatError( int no )
 {
 	putst("MATcore No Response!\r\n");

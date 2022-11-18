@@ -16,6 +16,7 @@
 #include "mlog.h"
 #include "util.h"
 #include "wpfm.h"
+#include "Moni.h"
 #include "DLCpara.h"
 #define		DLC_PARAMETER_ADDRESS	0x3E000
 #define		FIRM_SUM_ADDRESS		0x3DFFC
@@ -77,4 +78,35 @@ void DLCFotaNGAndReset()
 	DLCParaSave();
 	APP_delay(100);
 	__NVIC_SystemReset();														/* 装置リセット */
+}
+void DLCMaParaRes( char *resp )
+{
+	resp[0] = 0x02;
+	resp[1] = '0';
+	resp[2] = '0';
+	resp[3] = '0';
+	resp[4] = 'O';
+	resp[5] = 'K';
+	resp[6] = 0x03;
+	resp[7] = 0x00;
+	APP_printUSB(resp);
+}
+void DLCMatRepotLogChange(const char *param, char *resp)
+{
+	DLC_Para.ReportLog ^= 0xff;
+	if( DLC_Para.ReportLog == 0 )
+		putst( "ReportLog=On\r" );
+	else
+		putst( "ReportLog=Off\r" );
+	DLCParaSave();
+	DLCMaParaRes( resp );
+}
+void DLCMatBatCarivChange(const char *param, char *resp)
+{
+	if( param[0] == '0' )
+		DLC_Para.BatCarivFlg = 0;
+	else
+		DLC_Para.BatCarivFlg = 0xff;
+	DLCParaSave();
+	DLCMaParaRes( resp );
 }

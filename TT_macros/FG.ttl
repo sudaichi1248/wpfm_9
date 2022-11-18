@@ -1,2 +1,0 @@
-; FotaGo
-send #2 "000FG" #3
