@@ -553,10 +553,10 @@ void APP_Tasks(void)
         {
             case WPFM_TACTSW_STATUS_PRESSING:
                 WPFM_tactSwStatus = WPFM_TACTSW_STATUS_PRESSED;
+                WPFM_wasButtonPressed = true;
                 break;
             case WPFM_TACTSW_STATUS_RELEASING:
                 WPFM_tactSwStatus = WPFM_TACTSW_STATUS_NORMAL;
-                WPFM_wasButtonPressed = true;
                 break;
             default:
                 break;

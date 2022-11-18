@@ -168,66 +168,64 @@ static void eventLoopOnMeasurementMode(void)
         // タクトスイッチが押下されたどうかをチェックする
         if (WPFM_wasButtonPressed)
         {
-            if (WPFM_lastButtonReleasedTime - WPFM_lastButtonPressedTime < WPFM_LONG_PRESSED_TIME)
-            {
-                // 短押しされたとき
-                DEBUG_UART_printlnString(">>SHORT PRSD");
-                WPFM_uploadOneShot(true);       // 未送信のログデータをアップロード
-            }
-            else
-            {
-                // 長押しされたとき
-                DEBUG_UART_printlnString(">>LONG PRSD");
-                if (WPFM_isBeingReplacedBattery)
-                {
-					DLCEventLogWrite( _ID1_CELLACT,0xfe,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
-                    // 電池交換を終了する
-                    DEBUG_UART_printFormat("END REPLACE(#%d)", WPFM_externalBatteryNumberToReplace);
-                    int stat;
-                    if ((stat = BATTERY_leaveReplaceBattery()) == BATTERY_ERR_NONE)
-                    {
-                        // 電池交換の終了に成功したとき
-                        DEBUG_UART_printlnString(" - OK");
-                        if ((stat = MLOG_returnToFlash()) != MLOG_ERR_NONE)
-                        {
-                            DEBUG_UART_printlnFormat("MLOG_returnToFlash() error: %d", stat);
-                        }
+            if ((SYS_tick-WPFM_lastButtonPressedTime) >=  WPFM_LONG_PRESSED_TIME ){
+			    if (TEST_SW_Get()){	                // ボタン押されてない
+	                DEBUG_UART_printlnString(">>SHORT PRSD");
+	                WPFM_uploadOneShot(true);       // 未送信のログデータをアップロード
+	            }
+	            else {				                // 押されたまま
+	                DEBUG_UART_printlnString(">>LONG PRSD");
+	                if (WPFM_isBeingReplacedBattery)
+	                {
+						DLCEventLogWrite( _ID1_CELLACT,0xfe,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
+	                    // 電池交換を終了する
+	                    DEBUG_UART_printFormat("END REPLACE(#%d)", WPFM_externalBatteryNumberToReplace);
+	                    int stat;
+	                    if ((stat = BATTERY_leaveReplaceBattery()) == BATTERY_ERR_NONE)
+	                    {
+	                        // 電池交換の終了に成功したとき
+	                        DEBUG_UART_printlnString(" - OK");
+	                        if ((stat = MLOG_returnToFlash()) != MLOG_ERR_NONE)
+	                        {
+	                            DEBUG_UART_printlnFormat("MLOG_returnToFlash() error: %d", stat);
+	                        }
 
-                        WPFM_isBeingReplacedBattery = false;
-                    }
-                    else
-                    {
-                        // 電池交換の終了に失敗したとき（交換した電池の電圧が低い）は、終了せず、何もしない
-                        DEBUG_UART_printlnFormat(" - ERROR: %d", stat);
-                    }
-                    DEBUG_UART_FLUSH();
-                }
-                else
-                {
-					DLCEventLogWrite( _ID1_CELLACT,0xff,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
-                    // 電池交換を開始する
-                    DEBUG_UART_printFormat("BEGIN REPLACE(#%d)", WPFM_externalBatteryNumberToReplace);
-                    int stat;
-                    if ((stat = BATTERY_enterReplaceBattery()) == BATTERY_ERR_NONE)
-                    {
-                        // 電池交換の開始に成功したとき
-                        DEBUG_UART_printlnString(" - OK");
-                        if ((stat = MLOG_switchToSRAM()) != MLOG_ERR_NONE)
-                        {
-                            DEBUG_UART_printlnFormat("MLOG_switchToSRAM() error: %d", stat);
-                        }
-                        WPFM_isBeingReplacedBattery = true;
-                        WPFM_startExchangingBatteryTime = RTC_now;
-                    }
-                    else
-                    {
-                        // 電池交換の開始に失敗したとき（電池交換が必要ないとき）は、無視する
-                        DEBUG_UART_printlnFormat(" - ERROR: %d", stat);
-                    }
-                    DEBUG_UART_FLUSH();
-                }
-            }
-            WPFM_wasButtonPressed = false;
+	                        WPFM_isBeingReplacedBattery = false;
+	                    }
+	                    else
+	                    {
+	                        // 電池交換の終了に失敗したとき（交換した電池の電圧が低い）は、終了せず、何もしない
+	                        DEBUG_UART_printlnFormat(" - ERROR: %d", stat);
+	                    }
+	                    DEBUG_UART_FLUSH();
+	                }
+	                else
+	                {
+						DLCEventLogWrite( _ID1_CELLACT,0xff,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
+	                    // 電池交換を開始する
+	                    DEBUG_UART_printFormat("BEGIN REPLACE(#%d)", WPFM_externalBatteryNumberToReplace);
+	                    int stat;
+	                    if ((stat = BATTERY_enterReplaceBattery()) == BATTERY_ERR_NONE)
+	                    {
+	                        // 電池交換の開始に成功したとき
+	                        DEBUG_UART_printlnString(" - OK");
+	                        if ((stat = MLOG_switchToSRAM()) != MLOG_ERR_NONE)
+	                        {
+	                            DEBUG_UART_printlnFormat("MLOG_switchToSRAM() error: %d", stat);
+	                        }
+	                        WPFM_isBeingReplacedBattery = true;
+	                        WPFM_startExchangingBatteryTime = RTC_now;
+	                    }
+	                    else
+	                    {
+	                        // 電池交換の開始に失敗したとき（電池交換が必要ないとき）は、無視する
+	                        DEBUG_UART_printlnFormat(" - ERROR: %d", stat);
+	                    }
+	                    DEBUG_UART_FLUSH();
+	                }
+	            }
+	            WPFM_wasButtonPressed = false;
+	        }
         }
 
         // 定期計測のタイミングかどうかチェックする
@@ -373,23 +371,25 @@ static void eventLoopOnNonMeasurementMode(void)
         // タクトスイッチが押下されたどうかをチェックする
         if (WPFM_wasButtonPressed)
         {
-            if (WPFM_lastButtonReleasedTime - WPFM_lastButtonPressedTime < WPFM_LONG_PRESSED_TIME)
-            {
-                // 短押しされたとき
-                DEBUG_UART_printlnFormat("SHORT PRESSED: %u %u", (unsigned int)WPFM_lastButtonReleasedTime, (unsigned int)WPFM_lastButtonPressedTime);
-                WPFM_uploadOneShot(false);      // 空のデータをアップロード
-            }
-            else
-            {
-                // 長押しされたとき
-                DEBUG_UART_printlnFormat("LONG PRESSED: %u %u", (unsigned int)WPFM_lastButtonReleasedTime, (unsigned int)WPFM_lastButtonPressedTime);
-                // 非測定モードの時は電池交換を許容しないので、何もしない
+            if ((SYS_tick-WPFM_lastButtonPressedTime) >=  WPFM_LONG_PRESSED_TIME ){
+			    if (TEST_SW_Get()){ 	                // ボタン押されてない
+	                DEBUG_UART_printlnFormat("SHORT PRESSED: %u %u", (unsigned int)WPFM_lastButtonReleasedTime, (unsigned int)WPFM_lastButtonPressedTime);
+	                WPFM_uploadOneShot(false);      // 空のデータをアップロード
+	            }
+	            else
+	            {
+	                // 長押しされたとき
+	                DEBUG_UART_printlnFormat("LONG PRESSED: %u %u", (unsigned int)WPFM_lastButtonReleasedTime, (unsigned int)WPFM_lastButtonPressedTime);
+	                // 非測定モードの時は電池交換を許容しないので、何もしない
 
-                // デバッグ用
-                MLOG_dump();        // FOR DEBUG! @remove
-                MLOG_checkLogs(false);
-            }
-            WPFM_wasButtonPressed = false;
+	                // デバッグ用
+	                WDT_Disable();
+	                MLOG_dump();        // FOR DEBUG! @remove
+	                MLOG_checkLogs(false);
+	                WDT_Enable();
+	            }
+	            WPFM_wasButtonPressed = false;
+			}
         }
 
         if (WPFM_isConnectingUSB)
