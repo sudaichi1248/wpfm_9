@@ -34,7 +34,7 @@ void SMPIF_getOperationalCondition(const char *param, char *resp)
 
     char buffer[100];
     snprintf(buffer, sizeof(buffer) - 1,
-        "%d,%u,%u,%d,%.3f,%d,%.3f,%d,%.3f,%d,%.3f,%u,",
+        "%d,%d,%d,%d,%.3f,%d,%.3f,%d,%.3f,%d,%.3f,%u,",
         WPFM_settingParameter.sensorKinds[0],
         WPFM_settingParameter.upperLimits[0], WPFM_settingParameter.lowerLimits[0],
         WPFM_settingParameter.alertEnableKinds[0][0][1], WPFM_settingParameter.alertUpperLimits[0][1],
@@ -46,7 +46,7 @@ void SMPIF_getOperationalCondition(const char *param, char *resp)
     strcat(resp + 6, buffer);
 
     snprintf(buffer, sizeof(buffer) - 1,
-        "%d,%u,%u,%d,%.3f,%d,%.3f,%d,%.3f,%d,%.3f,%u,",
+        "%d,%d,%d,%d,%.3f,%d,%.3f,%d,%.3f,%d,%.3f,%u,",
         WPFM_settingParameter.sensorKinds[1],
         WPFM_settingParameter.upperLimits[1], WPFM_settingParameter.lowerLimits[1],
         WPFM_settingParameter.alertEnableKinds[1][0][1], WPFM_settingParameter.alertUpperLimits[1][1],
@@ -58,7 +58,7 @@ void SMPIF_getOperationalCondition(const char *param, char *resp)
     strcat(resp + 6, buffer);
 
     snprintf(buffer, sizeof(buffer) - 1,
-        "%d,%u",
+        "%d,%lu",
         WPFM_settingParameter.alertChatteringKind,
         WPFM_settingParameter.alertTimeout
     );
