@@ -224,6 +224,7 @@ static void eventLoopOnMeasurementMode(void)
 	                    DEBUG_UART_FLUSH();
 	                }
 	            }
+                WPFM_tactSwStatus = WPFM_TACTSW_STATUS_NORMAL;
 	            WPFM_wasButtonPressed = false;
 	        }
         }
@@ -389,6 +390,7 @@ static void eventLoopOnNonMeasurementMode(void)
 	                WDT_Enable();
 	            }
 	            WPFM_wasButtonPressed = false;
+                WPFM_tactSwStatus = WPFM_TACTSW_STATUS_NORMAL;
 			}
         }
 
