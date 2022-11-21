@@ -1259,22 +1259,27 @@ void DLCMatReportSnd()
 int DLCMatPostReport()
 {
 	char	tmp[48],*p;
-	int		i,Len;
+	int		i,Len,extbyte=0;
 	MLOG_T 	log_p;
 	DLC_MatsendRepOK = false;
 	DLC_MatReportCnt = 0;																			/* httpを作るときのReportのカウンタ */
 	DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
+	MLOG_tailAddressBuckUp();
+	for( DLC_MatReportMax=0; DLC_MatReportMax < DLC_REPORT_ALL_MAX; DLC_MatReportMax++ ){			/* Lengthを求めるためにmlogを仮走査 */
+		if( MLOG_getLog( &log_p ) < 0 )
+			break;
+		sprintf( tmp,"%.3f"	,log_p.measuredValues[0] );												/* #.### 以外のレングス増え分を求める */
+		extbyte += (strlen( tmp )-5);
+		sprintf( tmp,"%.3f"	,log_p.measuredValues[1] );
+		extbyte += (strlen( tmp )-5);
+	}
+	putst("extbyte=");putdecs( extbyte );putcrlf();
+	MLOG_tailAddressRestore();
 	strcpy( http_tmp,http_report );
 	strcat( http_tmp,"{\"Report\":{" );
 	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );
 	strcat( http_tmp,tmp );
 	strcat( http_tmp,"\"Reportlist\":[" );
-	MLOG_tailAddressBuckUp();
-	for( DLC_MatReportMax=0; DLC_MatReportMax < DLC_REPORT_ALL_MAX; DLC_MatReportMax++ ){						/* Lengthを求めるためにmlogを仮走査 */
-		if( MLOG_getLog( &log_p ) < 0 )
-			break;
-	}
-	MLOG_tailAddressRestore();
 	if( DLC_MatReportMax ){
 		putst("Report=");putdecw( DLC_MatReportMax );putch(' ');
 		if( DLC_MatReportMax == DLC_REPORT_ALL_MAX ){										/* Maxまで溜まっていたら、more=1 */
@@ -1283,7 +1288,7 @@ int DLCMatPostReport()
 		}
 		putcrlf();
 		DLCEventLogWrite( _ID1_REPORT,0,DLC_MatReportMax );
-		Len = 51+DLC_MatReportMax*80+2;
+		Len = 51+DLC_MatReportMax*80+2+extbyte;
 		p = strstr( http_tmp,"Length:    " );
 		if( p < 0 ){
 				putst("format err1 \r\n" );
