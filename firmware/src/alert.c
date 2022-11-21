@@ -90,7 +90,9 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 #ifdef ADD_FUNCTION
 				if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
 #endif
-					WPFM_TxType = 11;
+					if (WPFM_settingParameter.alertEnableKinds[channelIndex][0][0] == WPFM_ALERT_KIND_ENABLED) {
+						WPFM_TxType = 11;
+					}
 	                WPFM_lastAlertStartTimes[channelIndex][0] = occurrenceTime;
 #ifdef ADD_FUNCTION
 				} else {	// チャタリングタイプ2
@@ -190,7 +192,9 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 #ifdef ADD_FUNCTION
 				if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
 #endif
-					WPFM_TxType = 11;
+					if (WPFM_settingParameter.alertEnableKinds[channelIndex][0][0] == WPFM_ALERT_KIND_ENABLED) {
+						WPFM_TxType = 11;
+					}
 	                WPFM_lastAlertStartTimes[channelIndex][0] = occurrenceTime;
 #ifdef ADD_FUNCTION
 				} else {	// チャタリングタイプ2
@@ -223,7 +227,9 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 #ifdef ADD_FUNCTION
 				if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
 #endif
-					WPFM_TxType = 11;
+					if (WPFM_settingParameter.alertEnableKinds[channelIndex][1][0] == WPFM_ALERT_KIND_ENABLED) {
+						WPFM_TxType = 11;
+					}
 	                WPFM_lastAlertStartTimes[channelIndex][1] = occurrenceTime;
 #ifdef ADD_FUNCTION
 				} else {	// チャタリングタイプ2
@@ -323,7 +329,9 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 #ifdef ADD_FUNCTION
 				if (WPFM_settingParameter.alertChatteringKind == 1) {	// チャタリングタイプ1
 #endif
-					WPFM_TxType = 11;
+					if (WPFM_settingParameter.alertEnableKinds[channelIndex][1][0] == WPFM_ALERT_KIND_ENABLED) {
+						WPFM_TxType = 11;
+					}
 	                WPFM_lastAlertStartTimes[channelIndex][1] = occurrenceTime;
 #ifdef ADD_FUNCTION
 				} else {	// チャタリングタイプ2
@@ -497,77 +505,93 @@ uint8_t WPFM_suppressAlert(uint8_t changealert, bool changefirst, bool sw)
     // Suppress CH1 alert and nitification according to disable specification
 	if (sw == true) {	// alertStatus
 	    WPFM_ALERT_KIND enableKind = WPFM_settingParameter.alertEnableKinds[0][0][1];
-	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)	// 上限2がdisable
 	    {
-			if (enableKind == WPFM_ALERT_KIND_DISABLED) {
-				enableKind = WPFM_settingParameter.alertEnableKinds[0][0][0];
-				if ((enableKind == WPFM_ALERT_KIND_ENABLED) && ((changealert & 0x0F) == MLOG_ALERT_STATUS_CH1_UPPER_WARNING)) {	// 上限1がenableかつ、alertStatus=警報なら
+			enableKind = WPFM_settingParameter.alertEnableKinds[0][0][0];
+			if (enableKind == WPFM_ALERT_KIND_ENABLED) {	// 上限1がenable
+				if ((changealert & 0x0F) == MLOG_ALERT_STATUS_CH1_UPPER_WARNING) {	// alertStatus=警報
 					changealert &= ~MLOG_ALERT_STATUS_CH1_UPPER_WARNING;	// 注意に変更
 					changealert |= MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION;
+				}
+			} else {
+				if ((changealert & 0x0F) <= MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION) {	// 上限1超え
+					changealert &= MLOG_ALERT_STATUS_CH1_NORMAL | 0xF0;	// 通常に変更
 				}
 			}
 	    }
 	    enableKind = WPFM_settingParameter.alertEnableKinds[0][0][0];
-	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)	// 上限1がdisable
 	    {
-			if ((changealert & 0x0F) <= MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION) {	// 上限1超え
-				changealert &= MLOG_ALERT_STATUS_CH1_NORMAL | 0xF0;
+			if ((changealert & 0x0F) == MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION) {	// 上限1
+				changealert &= MLOG_ALERT_STATUS_CH1_NORMAL | 0xF0;	// 通常に変更
 			}
 		}
 	    enableKind = WPFM_settingParameter.alertEnableKinds[0][1][1];
-	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)	// 下限2がdisable
 	    {
-			if (enableKind == WPFM_ALERT_KIND_DISABLED) {
-				enableKind = WPFM_settingParameter.alertEnableKinds[0][1][0];
-				if ((enableKind == WPFM_ALERT_KIND_ENABLED) && ((changealert & 0x0F) == MLOG_ALERT_STATUS_CH1_LOWER_WARNING)) {	// 下限1がenableかつ、alertStatus=警報なら
+			enableKind = WPFM_settingParameter.alertEnableKinds[0][1][0];
+			if (enableKind == WPFM_ALERT_KIND_ENABLED) {	// 下限1がenable
+				if ((changealert & 0x0F) == MLOG_ALERT_STATUS_CH1_LOWER_WARNING) {	// alertStatus=警報
 					changealert &= ~MLOG_ALERT_STATUS_CH1_LOWER_WARNING;	// 注意に変更
 					changealert |= MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION;
+				}
+			} else {
+				if ((changealert & 0x0F) >= MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION) {	// 下限1超え
+					changealert &= MLOG_ALERT_STATUS_CH1_NORMAL | 0xF0;	// 通常に変更
 				}
 			}
 	    }
 	    enableKind = WPFM_settingParameter.alertEnableKinds[0][1][0];
 	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
 	    {
-			if ((changealert & 0x0F) >= MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION) {	// 下限1超え
-				changealert &= MLOG_ALERT_STATUS_CH1_NORMAL | 0xF0;
+			if ((changealert & 0x0F) == MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION) {	// 下限1
+				changealert &= MLOG_ALERT_STATUS_CH1_NORMAL | 0xF0;	// 通常に変更
 			}
 		}
 
 	    // Suppress CH2 alert and nitification according to disable specification
 	    enableKind = WPFM_settingParameter.alertEnableKinds[1][0][1];
-	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)	// 上限2がdisable
 	    {
-			if (enableKind == WPFM_ALERT_KIND_DISABLED) {
-				enableKind = WPFM_settingParameter.alertEnableKinds[1][0][0];
-				if ((enableKind == WPFM_ALERT_KIND_ENABLED) && ((changealert & 0xF0) == MLOG_ALERT_STATUS_CH2_UPPER_WARNING)) {	// 上限1がenableかつ、alertStatus=警報なら
+			enableKind = WPFM_settingParameter.alertEnableKinds[1][0][0];
+			if (enableKind == WPFM_ALERT_KIND_ENABLED) {	// 上限1がenable
+				if ((changealert & 0xF0) == MLOG_ALERT_STATUS_CH2_UPPER_WARNING) {	// alertStatus=警報
 					changealert &= ~MLOG_ALERT_STATUS_CH2_UPPER_WARNING;	// 注意に変更
 					changealert |= MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION;
+				}
+			} else {
+				if ((changealert & 0xF0) <= MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION) {	// 上限1超え
+					changealert &= MLOG_ALERT_STATUS_CH2_NORMAL | 0x0F;	// 通常に変更
 				}
 			}
 	    }
 	    enableKind = WPFM_settingParameter.alertEnableKinds[1][0][0];
-	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)	// 上限1がdisable
 	    {
-			if ((changealert & 0xF0) <= MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION) {	// 上限1超え
-				changealert &= MLOG_ALERT_STATUS_CH2_NORMAL | 0x0F;
+			if ((changealert & 0xF0) == MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION) {	// 上限1
+				changealert &= MLOG_ALERT_STATUS_CH2_NORMAL | 0x0F;	// 通常に変更
 			}
 		}
 	    enableKind = WPFM_settingParameter.alertEnableKinds[1][1][1];
-	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
+	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)	// 下限2がdisable
 	    {
-			if (enableKind == WPFM_ALERT_KIND_DISABLED) {
-				enableKind = WPFM_settingParameter.alertEnableKinds[1][1][0];
-				if ((enableKind == WPFM_ALERT_KIND_ENABLED) && ((changealert & 0xF0) == MLOG_ALERT_STATUS_CH2_LOWER_WARNING)) {	// 下限1がenableかつ、alertStatus=警報なら
+			enableKind = WPFM_settingParameter.alertEnableKinds[1][1][0];
+			if (enableKind == WPFM_ALERT_KIND_ENABLED) {	// 下限1がenable
+				if ((changealert & 0xF0) == MLOG_ALERT_STATUS_CH2_LOWER_WARNING) {	// alertStatus=警報
 					changealert &= ~MLOG_ALERT_STATUS_CH2_LOWER_WARNING;	// 注意に変更
 					changealert |= MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION;
+				}
+			} else {
+				if ((changealert & 0xF0) >= MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION) {	// 下限1超え
+					changealert &= MLOG_ALERT_STATUS_CH2_NORMAL | 0x0F;	// 通常に変更
 				}
 			}
 	    }
 	    enableKind = WPFM_settingParameter.alertEnableKinds[1][1][0];
 	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
 	    {
-			if ((changealert & 0xF0) >= MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION) {	// 下限1超え
-				changealert &= MLOG_ALERT_STATUS_CH2_NORMAL | 0x0F;
+			if ((changealert & 0xF0) == MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION) {	// 下限1
+				changealert &= MLOG_ALERT_STATUS_CH2_NORMAL | 0x0F;	// 通常に変更
 			}
 		}
 	} else {	// alertStatusSuppressed
@@ -575,7 +599,7 @@ uint8_t WPFM_suppressAlert(uint8_t changealert, bool changefirst, bool sw)
 	    WPFM_ALERT_KIND enableKind = WPFM_settingParameter.alertEnableKinds[0][0][0];
 	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
 	    {
-			if ((changealert & 0x0F) <= MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION) {	// 上限1超え
+			if ((changealert & 0x0F) == MLOG_ALERT_STATUS_CH1_UPPER_ATTENTION) {	// 上限1
 				changealert &= MLOG_ALERT_STATUS_CH1_NORMAL | 0xF0;
 			}
 	    }
@@ -598,7 +622,7 @@ uint8_t WPFM_suppressAlert(uint8_t changealert, bool changefirst, bool sw)
 	    enableKind = WPFM_settingParameter.alertEnableKinds[0][1][0];
 	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
 	    {
-			if ((changealert & 0x0F) >= MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION) {	// 下限1超え
+			if ((changealert & 0x0F) == MLOG_ALERT_STATUS_CH1_LOWER_ATTENTION) {	// 下限1
 				changealert &= MLOG_ALERT_STATUS_CH1_NORMAL | 0xF0;
 			}
 	    }
@@ -623,7 +647,7 @@ uint8_t WPFM_suppressAlert(uint8_t changealert, bool changefirst, bool sw)
 	    enableKind = WPFM_settingParameter.alertEnableKinds[1][0][0];
 	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
 	    {
-			if ((changealert & 0xF0) <= MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION) {	// 上限1超え
+			if ((changealert & 0xF0) == MLOG_ALERT_STATUS_CH2_UPPER_ATTENTION) {	// 上限1
 				changealert &= MLOG_ALERT_STATUS_CH2_NORMAL | 0x0F;
 			}
 	    }
@@ -646,7 +670,7 @@ uint8_t WPFM_suppressAlert(uint8_t changealert, bool changefirst, bool sw)
 	    enableKind = WPFM_settingParameter.alertEnableKinds[1][1][0];
 	    if (enableKind == WPFM_ALERT_KIND_DISABLED || enableKind == WPFM_ALERT_KIND_PAUSED)
 	    {
-			if ((changealert & 0xF0) >= MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION) {	// 下限1超え
+			if ((changealert & 0xF0) == MLOG_ALERT_STATUS_CH2_LOWER_ATTENTION) {	// 下限1
 				changealert &= MLOG_ALERT_STATUS_CH2_NORMAL | 0x0F;
 			}
 	    }
