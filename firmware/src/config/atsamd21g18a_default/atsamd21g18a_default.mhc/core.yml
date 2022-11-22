@@ -3768,6 +3768,13 @@ children:
       - type: User
         attributes: {value: 'true'}
   - type: Boolean
+    attributes: {id: XOSC32K_AAMPEN}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: 'true'}
+  - type: Boolean
     attributes: {id: XOSC32K_EN32K}
     children:
     - type: Values
