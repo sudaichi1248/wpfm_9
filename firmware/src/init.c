@@ -321,6 +321,7 @@ void WPFM_onPressed(uintptr_t p)
         WPFM_tactSwStatus = WPFM_TACTSW_STATUS_PRESSING;
         WPFM_lastButtonPressedTime = SYS_tick;
     }
+#if 0
     else
     {
 		putst("Push-\r\n");
@@ -342,6 +343,7 @@ void WPFM_onPressed(uintptr_t p)
         WPFM_tactSwStatus = WPFM_TACTSW_STATUS_RELEASING;
         WPFM_lastButtonReleasedTime = SYS_tick;
     }
+#endif
 }
 
 /*******************************************************************************
