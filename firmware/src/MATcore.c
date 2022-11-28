@@ -923,14 +923,18 @@ void DLCMatState()
 		if( p ){
 			if( strchr( p,'\r' )){							/* <cr>まで受信済み */
 				DLC_Matfact = MATC_FACT_TIM;
-				RTC_DATETIME dt;
-				dt.year   = (p[6]-'0')*10 + (p[7]-'0');
-				dt.month  = (p[9]-'0')*10 + (p[10]-'0');
-				dt.day	  = (p[12]-'0')*10 + (p[13]-'0');
-				dt.hour	  = (p[15]-'0')*10 + (p[16]-'0');
-				dt.minute = (p[18]-'0')*10 + (p[19]-'0');
-				dt.second = (p[21]-'0')*10 + (p[22]-'0');
-				RTC_setDateTime( dt );
+				RTC_DATETIME dt1,dt2;
+				RTC_getDatetime( &dt1 );
+				dt2.year   = (p[6]-'0')*10 + (p[7]-'0');
+				dt2.month  = (p[9]-'0')*10 + (p[10]-'0');
+				dt2.day	   = (p[12]-'0')*10 + (p[13]-'0');
+				dt2.hour   = (p[15]-'0')*10 + (p[16]-'0');
+				dt2.minute = (p[18]-'0')*10 + (p[19]-'0');
+				dt2.second = (p[21]-'0')*10 + (p[22]-'0');
+				if( memcmp( &dt2,&dt1,4 ) ){
+					RTC_setDateTime( dt2 );
+					putst("時刻補正!\r\n");
+				}
 			}
 		}
 	}
@@ -2463,6 +2467,8 @@ int DLCMatIsSleep()
 		return 0;
 	if( DLC_Matdebug.wx != DLC_Matdebug.rx )						/* ログ表示中 */
 		return 0;
+	if( SERCOM0_USART_WriteCountGet() )
+		return 0;
 	if( DLC_MatState == MATC_STATE_SLP ){							/* Sleepしてよい */
 		TC5_TimerStop();
 		return 1;
@@ -2537,4 +2543,12 @@ void DLCMatReset( )
 	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );		/* ON */
 	DLCMatTimerset( 0,15000 );
 	DLC_MatState = MATC_STATE_INIT;
+}
+/*
+	ROM設定のクリアT
+*/
+void DLCMatSettingClear()
+{
+	putst("保存パラメータ削除\r\n");
+	NVMCTRL_RowErase( 0x0003FE00 );				/* 保存パラメータ削除 */
 }
