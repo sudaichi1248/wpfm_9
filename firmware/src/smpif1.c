@@ -103,6 +103,9 @@ void SMPIF_setOperationalCondition(const char *param, char *resp)
         // Update some parameters (asume not in alert)
         WPFM_updateCommunicationInterval(WPFM_settingParameter.communicationInterval);
         SENSOR_updateMeasurementInterval(WPFM_settingParameter.measurementInterval);
+		if (WPFM_operationMode == WPFM_OPERATION_MODE_NON_MEASUREMENT) {	// 非測定モード
+			SENSOR_updateMeasurementInterval(1);	// VSコマンドのため測定間隔1秒
+		}
 		WPFM_InAlert = false;
 
         sprintf(resp, "%c000OK%c", SMPIF_STX, SMPIF_ETX);
