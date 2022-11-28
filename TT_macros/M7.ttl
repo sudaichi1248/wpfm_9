@@ -1,0 +1,2 @@
+; Setting Clear
+send #2 "000M7" #3
