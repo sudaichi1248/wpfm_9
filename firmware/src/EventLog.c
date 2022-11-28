@@ -243,6 +243,7 @@ void DLCEventLogDisplay()
 		++log;
 		DLC_delay(40);
 	}
+	APP_printUSB( "--Finish--\n" );
 }
 void DLCMatEventLog()
 {

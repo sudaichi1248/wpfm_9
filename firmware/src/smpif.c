@@ -27,6 +27,7 @@ void DLCMatServerChange();
 void DLCMatEventLog();
 void DLCMatRepotLogChange();
 void DLCMatBatCarivChange();
+void DLCMatSettingClear();
 /*
 *   Symbols
 */
@@ -71,6 +72,7 @@ static SMPIF_COMMAND_TABLE _SMPIF_commandTables[] =
         { "M4", DLCMatEventLog },
         { "M5", DLCMatRepotLogChange },
         { "M6", DLCMatBatCarivChange },
+        { "M7", DLCMatSettingClear },
         { NULL, NULL }
     };
 
