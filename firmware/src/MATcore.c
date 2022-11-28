@@ -63,6 +63,7 @@ short	DLC_MatRSRQ;
 uchar	DLC_MatRptMore;						/* Reportが連続している */
 
 int		DLC_MatFotaTOcnt=0;	// fota  タイムアウトカウンタ
+int		DLC_MatFotaExe=0;	// fota  実行フラグ
 // 測定logリングバッファ試験用
 int mlogdumywrite(uint32_t logtime);
 uint32_t logtime;
@@ -539,9 +540,14 @@ void MTopn2()
 		DLCMatRtcTimerset(1, 6);
 	}
 	DLC_ForcedCallOK = false;
-	DLCMatSend( "AT$OPEN\r" );
-	DLCMatTimerset( 0,TIMER_15s );
-	DLC_MatState = MATC_STATE_OPN2;
+	if (DLC_MatFotaExe == 1) {	// fota
+		DLC_MatFotaExe = 0;
+		DLCFotaGoAndReset();
+	} else {
+		DLCMatSend( "AT$OPEN\r" );
+		DLCMatTimerset( 0,TIMER_15s );
+		DLC_MatState = MATC_STATE_OPN2;
+	}
 }
 void MTstst()
 {
@@ -1837,6 +1843,13 @@ putst("coco4\r\n");
 		WPFM_writeSettingParameter( &config );
 		DLCMatReflectionConfig();
 	}
+// fota
+	config_p = strstr(DLC_MatResBuf, "FOTA");
+	if (config_p) {
+		DLCMatINTParamSet(config_p, false);
+		DLC_MatFotaExe = atoi(DLC_MatConfigItem);
+		putst("fotaexe:");puthxb(DLC_MatFotaExe);putcrlf();
+	}
 }
 int DLCMatRecvDisp()
 {
@@ -1895,11 +1908,6 @@ putst("@@@@@ wktk1\r\n");
 //putst("coco2\r\n");
 					DLCMatConfigRet();
 				}
-// fota				if( strstr( DLC_MatResBuf,"Status" )){
-// fota					if (strstr(DLC_MatResBuf, "\"LTEVersion\":")) {	// fota StatusでF/W version指定されたらFOTA起動?
-// fota						// フラグを維持したまま再起動したい
-// fota					}
-// fota				}
 			}
 			else {
 //				strcpy( &DLC_MatResBuf[DLC_MatResIdx],"★" );
