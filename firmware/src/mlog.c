@@ -6,8 +6,10 @@
  *          2022/09/09 (R0.1) Support temporary SRAM log
  *          2022/10/08 (R0.3) fix bug related to return error value of findLogBySN()
  *          2022/10/19 (R0.4) fix MLOG_checkLogs() as release mode
+ *          2022/11/27 (R0.5) fix MLOG_returnToFlash() and MLOG_checkLogs()
+ *          2022/11/28 (R0.6) fix MLOG_returnToFlash()
  * Note:
- *          Use 2KB of SRAM for temporary SRAM log (R1)
+ *          Use (2KB + 256B) of SRAM for temporary SRAM log (R0.5)
  */
 
 // build configuration
@@ -46,8 +48,8 @@ static uint32_t     _MLOG_oldestSequentialNumber = 0;   // oldest sequentila num
   // SRAM
 static bool         _MLOG_switchToSRAM   = false;       // is the storage destination SRAM ?
 static uint8_t      _MLOG_storages[MLOG_SRAM_SIZE];     // log buffer on SRAM (not ring buffer)
-static uint32_t     _MLOG_headAddressOnSRAM= 0;         // address of head log (point next address) on SRAM
-static uint32_t     _MLOG_tailAddressOnSRAM= 0;         // address of tail log for upload on SRAM
+static uint32_t     _MLOG_headAddressOnSRAM = 0;        // address of head log (point next address) on SRAM
+static uint32_t     _MLOG_tailAddressOnSRAM = 0;        // address of tail log for upload on SRAM
   // for work
 static uint8_t      _MLOG_pageBuffer[W25Q128JV_PAGE_SIZE];  // Working buffer(on SRAM)
 
@@ -504,7 +506,7 @@ int MLOG_checkLogs(bool oldestOnly)
         }
         else
         {
-            latestAddr2 += W25Q128JV_PAGE_SIZE;
+            // latestAddr2 += W25Q128JV_PAGE_SIZE;  // remove @R0.5
             if (latestAddr2 >= (MLOG_ADDRESS_MLOG_LAST & 0xffff00))
             {
                 latestAddr2 = 0;
@@ -567,6 +569,8 @@ int MLOG_returnToFlash(void)
         }
     }
 
+    // Set up temporaly SRAM buffer - fix @R0.6
+    _MLOG_headAddressOnSRAM = _MLOG_tailAddressOnSRAM = (uint32_t)_MLOG_storages;
 
     if (stat != MLOG_ERR_EMPTY)
     {

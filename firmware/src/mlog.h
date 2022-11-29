@@ -6,8 +6,11 @@
  *          2022/09/09 (R0.1) Support temporary SRAM log
  *			2022/09/13 (R0.2) Bitassign update  Alert status(CH1/CH2)
  *          2022/10/08 (R0.3) fix bug related to return error value of findLogBySN()
+ *          2022/10/19 (R0.4) fix MLOG_checkLogs() as release mode
+ *          2022/11/27 (R0.5) increase value of MLOG_SRAM_SIZE, fix MLOG_returnToFlash() and MLOG_checkLogs()
+ *          2022/11/28 (R0.6) fix MLOG_returnToFlash()
  * Note:
- *          Use 2KB of SRAM for temporary SRAM log (R1)
+ *          Use (2KB + 256B) of SRAM for temporary SRAM log (R0.5)
  */
 
 #ifndef MLOG_H
@@ -38,7 +41,7 @@ extern "C" {
 #define MLOG_ADDRESS_RESERVED_TOP       0xC00000    // Reserved region top
 #define MLOG_ADDRESS_RESERVED_LAST      0xFFFFFF    // Reserved region last
   // (3) SRAM
-#define MLOG_SRAM_SIZE                  2048        // Temporary Mlog storage region size on SRAM [bytes]
+#define MLOG_SRAM_SIZE                  (2048 + 256)    // Temporary Mlog storage region size on SRAM [bytes] -- Large enough to hold 75 Mlogs @R0.5
 
 // Error codes
 #define MLOG_ERR_NONE                   0           // Success(no error)
