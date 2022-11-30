@@ -1237,6 +1237,8 @@ void DLCMatReportSndSub()
 void DLCMatReportSnd()
 {
 	char	tmp[48],s[32];
+	float old1=0;
+	float old2=0;
 	int		i;
 	MLOG_T 	log_p;
 	if( DLC_MatReportFin < 0 )																		/* 送信終わり */
@@ -1253,8 +1255,22 @@ void DLCMatReportSnd()
 		else
 			DLC_MatReportFin = 1;
 		sprintf( tmp,"{\"Time\":\"%s\","		,s );									strcat( http_tmp,tmp );
-		sprintf( tmp,"\"Value_ch1\":%.3f,"	,log_p.measuredValues[0] );					strcat( http_tmp,tmp );
-		sprintf( tmp,"\"Value_ch2\":%.3f,"	,log_p.measuredValues[1] );					strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Value_ch1\":%.3f,"	,log_p.measuredValues[0] );
+		if(( '0' > tmp[12] )||( tmp[12] > '9' )){
+			sprintf( tmp,"\"Value_ch1\":%.3f,"	,old1 );
+			putst("Strange1=");puthxw(log_p.measuredValues[0] );putcrlf();
+		}
+		else
+			old1=log_p.measuredValues[0];
+		strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Value_ch2\":%.3f,"	,log_p.measuredValues[1] );
+		if(( '0' > tmp[12] )||( tmp[12] > '9' )){
+			sprintf( tmp,"\"Value_ch2\":%.3f,"	,old2 );
+			putst("Strange2=");puthxw(log_p.measuredValues[1] );putcrlf();
+		}
+		else
+			old2=log_p.measuredValues[1];
+		strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Alert\":\"%02x\"}"	,log_p.alertStatus  );						strcat( http_tmp,tmp );
 	}
 	if ( DLC_MatReportCnt == DLC_MatReportMax ){													/* 最後のList */
@@ -1279,9 +1295,15 @@ int DLCMatPostReport()
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
 		sprintf( tmp,"%.3f"	,log_p.measuredValues[0] );												/* #.### 以外のレングス増え分を求める */
-		extbyte += (strlen( tmp )-5);
+		if(( '0' > tmp[0] )||( tmp[0] > '9' ))
+			;
+		else
+			extbyte += (strlen( tmp )-5);
 		sprintf( tmp,"%.3f"	,log_p.measuredValues[1] );
-		extbyte += (strlen( tmp )-5);
+		if(( '0' > tmp[0] )||( tmp[0] > '9' ))
+			;
+		else
+			extbyte += (strlen( tmp )-5);
 	}
 	putst("extbyte=");putdecs( extbyte );putcrlf();
 	MLOG_tailAddressRestore();
