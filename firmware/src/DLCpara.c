@@ -79,7 +79,7 @@ void DLCFotaNGAndReset()
 	APP_delay(100);
 	__NVIC_SystemReset();														/* 装置リセット */
 }
-void DLCMaParaRes( char *resp )
+void DLCMatParaRes( char *resp )
 {
 	resp[0] = 0x02;
 	resp[1] = '0';
@@ -99,7 +99,7 @@ void DLCMatRepotLogChange(const char *param, char *resp)
 	else
 		putst( "ReportLog=Off\r" );
 	DLCParaSave();
-	DLCMaParaRes( resp );
+	DLCMatParaRes( resp );
 }
 void DLCMatBatCarivChange(const char *param, char *resp)
 {
@@ -108,5 +108,45 @@ void DLCMatBatCarivChange(const char *param, char *resp)
 	else
 		DLC_Para.BatCarivFlg = 0xff;
 	DLCParaSave();
-	DLCMaParaRes( resp );
+	DLCMatParaRes( resp );
+}
+void DLCMatSetClock(const char *p, char *resp)
+{
+	RTC_DATETIME dt;
+	dt.year   = (p[0]-'0')*10 + (p[1]-'0');
+	dt.month  = (p[2]-'0')*10 + (p[3]-'0');
+	dt.day	   = (p[4]-'0')*10 + (p[5]-'0');
+	dt.hour   = (p[6]-'0')*10 + (p[7]-'0');
+	dt.minute = (p[8]-'0')*10 + (p[9]-'0');
+	dt.second = (p[10]-'0')*10 + (p[11]-'0');
+	RTC_setDateTime( dt );
+	putst("時刻補正!\r\n");
+	DLCMatParaRes( resp );
+}
+void DLCMatGetClock(const char *param, char *resp)
+{
+	RTC_DATETIME 	dt;
+	RTC_getDatetime( &dt );
+	resp[0] = 0x02;
+	resp[1] = '0';
+	resp[2] = '1';
+	resp[3] = '2';
+	resp[4] = 'O';
+	resp[5] = 'K';
+	resp[6] = dt.year/10+'0';
+	resp[7] = dt.year%10+'0';
+	resp[8] = dt.month/10+'0';
+	resp[9] = dt.month%10+'0';
+	resp[10] = dt.day/10+'0';
+	resp[11] = dt.day%10+'0';
+	resp[12] = dt.hour/10+'0';
+	resp[13] = dt.hour%10+'0';
+	resp[14] = dt.minute/10+'0';
+	resp[15] = dt.minute%10+'0';
+	resp[16] = dt.second/10+'0';
+	resp[17] = dt.second%10+'0';
+	resp[18] = 0x03;
+	resp[19] = 0x00;
+	APP_printUSB(resp);
+	DLCMatParaRes( resp );
 }

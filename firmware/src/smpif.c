@@ -19,15 +19,8 @@
 #include "uart_debug.h"
 #include "smpif.h"
 #include "Eventlog.h"
-
-void DLCMatVersion();
-void DLCMatUpdateGo();
-void DLCMatFotaGo();
-void DLCMatServerChange();
-void DLCMatEventLog();
-void DLCMatRepotLogChange();
-void DLCMatBatCarivChange();
-void DLCMatSettingClear();
+#include "Moni.h"
+#include "DLCpara.h"
 /*
 *   Symbols
 */
@@ -65,6 +58,8 @@ static SMPIF_COMMAND_TABLE _SMPIF_commandTables[] =
         { "CS", SMPIF_setCallibrationValues },
         { "CN", SMPIF_notifyCallibrationTarget },
         { "CR", SMPIF_readCallibrationValues },
+        { "TS", DLCMatSetClock },
+        { "TG", DLCMatGetClock },
         { "M0", DLCMatVersion },
         { "M1", DLCMatUpdateGo },
         { "M2", DLCMatFotaGo },
