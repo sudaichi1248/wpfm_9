@@ -409,7 +409,6 @@ void WPFM_sleep(void)
     UTIL_setLED1();         // turn off LED1
     UTIL_setEXT1LED();      // turn off EXT1_LED
     UTIL_setEXT2LED();      // turn off EXT2_LED
-	WDT_Disable();			// WDT disable
 
     /** ENTER STAND-BY MODE **/
 
