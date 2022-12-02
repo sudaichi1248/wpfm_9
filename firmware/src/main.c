@@ -343,7 +343,6 @@ static void eventLoopOnMeasurementMode(void)
 
             // Fall asleep if there is no work to do
             WPFM_status = WPFM_STATUS_SLEEP;
-            DEBUG_UART_printlnString(">SLEEP");
 PORT_GroupWrite( PORT_GROUP_1,0x1<<23,-1 );
 ADC_Disable(  );
             APP_delay(1);
@@ -351,8 +350,8 @@ ADC_Disable(  );
 PORT_GroupWrite( PORT_GROUP_1,0x1<<23,0 );
 ADC_Enable(  );
             APP_delay(1);
-            DEBUG_UART_printlnString("<WAKE UP");
-           WPFM_status = WPFM_STATUS_IDLE;
+            putch('.');
+            WPFM_status = WPFM_STATUS_IDLE;
         }
     } // end-of-while-loop
 }
@@ -446,10 +445,8 @@ static void eventLoopOnNonMeasurementMode(void)
         else if( DLCMatIsSleep() ){
             // USBが接続されていないとき
             WPFM_isInSendingRegularly = false;  // USBケーブルがVEなしで抜かれた時のために
-
             // Fall asleep if there is no work to do
             WPFM_status = WPFM_STATUS_SLEEP;
-            DEBUG_UART_printlnString(">SLEEP");
 PORT_GroupWrite( PORT_GROUP_1,0x1<<23,-1 );
 ADC_Disable(  );
             APP_delay(1);
