@@ -362,7 +362,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 
 //putst("1.alertStatus:");puthxb(alertStatus);putcrlf();
 		alertStatus = WPFM_suppressAlert(alertStatus, ChangeFirst, true);	// alertStatus抑制
-putst("2.alertStatus:");puthxb(alertStatus);putcrlf();
+//putst("2.alertStatus:");puthxb(alertStatus);putcrlf();
 
     // Suppress alerts during chattering time (pretend it didn't happen)
     uint8_t alertStatusSuppressed = alertStatus;
@@ -493,7 +493,7 @@ putst("2.alertStatus:");puthxb(alertStatus);putcrlf();
 
 //putst("1.alertStatusSuppressed:");puthxb(alertStatusSuppressed);putcrlf();
 	alertStatusSuppressed = WPFM_suppressAlert(alertStatusSuppressed, ChangeFirst, false);	// alertStatusSuppressed抑制
-putst("2.alertStatusSuppressed:");puthxb(alertStatusSuppressed);putcrlf();
+//putst("2.alertStatusSuppressed:");puthxb(alertStatusSuppressed);putcrlf();
 
     WPFM_lastAlertStatusSuppressed = alertStatusSuppressed;
 
