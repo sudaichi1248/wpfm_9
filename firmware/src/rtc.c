@@ -141,7 +141,6 @@ int RTC_initialize(EIC_PIN interruptPinA, EIC_PIN interruptPinB)
         return (RTC_ERR_INTERNAL);
     }
 #endif // RTC_DETAIL_TEST
-    NVIC_EnableIRQ(EIC_IRQn);
 
     return (RTC_ERR_NONE);
 }
