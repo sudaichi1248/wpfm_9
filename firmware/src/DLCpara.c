@@ -17,6 +17,7 @@
 #include "util.h"
 #include "wpfm.h"
 #include "Moni.h"
+#include "Eventlog.h"
 #include "DLCpara.h"
 #define		DLC_PARAMETER_ADDRESS	0x3E000
 #define		FIRM_SUM_ADDRESS		0x3DFFC
@@ -55,6 +56,7 @@ void DLCsumBreakAndReset()
 */
 void DLCFotaGoAndReset()
 {
+	DLCEventLogWrite( _ID1_FOTA_START,0,0 );
 	DLC_Para.FOTAact = 0;														/* FOTA開始フラグ */
 	DLCParaSave();
 	APP_delay(100);
@@ -65,6 +67,7 @@ void DLCFotaGoAndReset()
 */
 void DLCFotaFinAndReset()
 {
+	DLCEventLogWrite( _ID1_FOTA_END,0,0 );
 	DLC_Para.FOTAact = 0xFF;													/* FOTA完了フラグ */
 	DLCParaSave();
 	DLCsumBreakAndReset();

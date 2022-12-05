@@ -38,7 +38,7 @@ void DLCEventLogInit()
 		DLC_EventFull = 1;
 	log = (_EventLog*)EVENT_LOG_AREA_ADDRESS_START;
 	DLC_EventIdx = 0;
-	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
+	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++,++log ){
 		if( (uint)log > EVENT_LOG_AREA_ADDRESS_END )
 			break;
 		if( (uint)log < EVENT_LOG_AREA_ADDRESS_START )
@@ -47,11 +47,13 @@ void DLCEventLogInit()
 			return;
 		DLC_EventIdx++;
 		sec = log->second;
-		++log;
 	}
 	DLC_EventIdx = 0;
 	log = (_EventLog*)EVENT_LOG_AREA_ADDRESS_START;
-	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
+	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ,++log){
+//		puthxw( log->second );putcrlf();
+		if( log->second < 100 )
+			continue;
 		if( sec > log->second ){
 			block = (uint)log & EVENT_LOG_AREA_BLOCK_MSK;
 			NVMCTRL_RowErase( block );
@@ -60,7 +62,6 @@ void DLCEventLogInit()
 		}
 		DLC_EventIdx++;
 		sec = log->second;
-		++log;
 	}
 
 }
