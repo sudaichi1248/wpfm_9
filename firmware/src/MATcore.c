@@ -540,14 +540,9 @@ void MTopn2()
 		DLCMatRtcTimerset(1, 6);
 	}
 	DLC_ForcedCallOK = false;
-	if (DLC_MatFotaExe == 1) {	// fota
-		DLC_MatFotaExe = 0;
-		DLCFotaGoAndReset();
-	} else {
-		DLCMatSend( "AT$OPEN\r" );
-		DLCMatTimerset( 0,TIMER_15s );
-		DLC_MatState = MATC_STATE_OPN2;
-	}
+	DLCMatSend( "AT$OPEN\r" );
+	DLCMatTimerset( 0,TIMER_15s );
+	DLC_MatState = MATC_STATE_OPN2;
 }
 void MTstst()
 {
@@ -589,6 +584,10 @@ void MTrpOk()
 void MTdisc()
 {
 	DLC_MatLineIdx = 0;
+	if (DLC_MatFotaExe == 1) {	// fota
+		DLC_MatFotaExe = 0;
+		DLCFotaGoAndReset();
+	}
 	if (WPFM_ForcedCall == true) {	// ‹­§”­•ñ
 		UTIL_startBlinkLED1(5);	// LED1 5‰ñ“_–Å
 		DLCMatRtcTimerset(1, 6);
@@ -683,6 +682,12 @@ void MTwake()
 	DLCMatTimerset( 0,TIMER_90s );
 	TC5_TimerStart();
 	DLC_MatState = MATC_STATE_CONN;
+}
+void MTFwak()
+{
+	putst("yFWakz\r\n");
+	DLC_MatLineIdx = 0;
+	DLCMatWake();
 }
 void MTconW()
 {
@@ -835,7 +840,7 @@ void	 (*MTjmp[18][19])() = {
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, MTwake, ______ },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
-/* $SLEEP     16 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTslep, MTslep, MTslep, MTslep, MTslep, ______, ______, ______, ______, MTslep, ______ },
+/* $SLEEP     16 */{ MTFwak, ______, ______, ______, ______, ______, ______, ______, MTslep, MTslep, MTslep, MTslep, MTslep, ______, ______, ______, ______, MTslep, ______ },
 /* TimeOut2   17 */{ MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2, MTtim2 },
 							};
 void DLCMatState()
@@ -2351,6 +2356,10 @@ void DLCMatMain()
 			if( CheckPasswd() )
 				DLCMatConfigDefault();
 			break;
+		case 'K':
+			if( CheckPasswd() )
+				DLCMatCall( 2 );
+			break;
 		case 'R':
 			if( CheckPasswd() )
 				DLCRomTest();
@@ -2413,6 +2422,8 @@ void DLCMatMain()
 				DLCFotaFinAndReset();
 			break;
 		case 'P':
+			if( !CheckPasswd() )
+				break;
 			putst("1:time set 2:3000Œ 3:FULL save ==>");
 			switch( getch() ){
 			case '1':
@@ -2470,6 +2481,8 @@ void DLCMatMain()
            	}
 			break;
 		case 'S':												/* Flash Powerdown */
+			if( !CheckPasswd() )
+				break;
 			W25Q128JV_powerDown();
 			break;
 		case 'H':
@@ -2524,7 +2537,6 @@ void DLCMatUpdateGo()
 */
 void DLCMatFotaGo()
 {
-	DLCEventLogWrite( _ID1_FOTA_START,0,0 );
 	DLCFotaGoAndReset();
 }
 void DLCMatServerChange()
