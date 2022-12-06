@@ -705,9 +705,10 @@ void MTtoF()	// fota T/O
 		DLCMatSend( "AT$RECV,1024\r" );
 		putst("リトライ(*o*)\r\n");
 	} else {
-		// FOTA失敗 次回契機に実行
+		// FOTA失敗 再実行
 		putst("FOTA FAILED(T/O).\r\n");
 		DLC_MatSPIFOTAerase();	// SPI最終セクタ消去
+		DLCFotaGoAndReset();
 	}
 }
 struct {

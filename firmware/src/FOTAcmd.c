@@ -84,6 +84,10 @@ void DLCMatFOTAdataRcvFin()
 		}
 //		putst("BufData2:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
 	}
+	if (DLC_MatFotaDataLen == 0) {
+putst("@@@@@ length = 0\r\n");
+		DLC_MatFotaWriteNG = true;
+	}
 	if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし? */
 putst("length:");puthxw(DLC_MatFotaDataLen);putcrlf();
 putst("writelength:");puthxw(DLC_MatWriteFotaDataLen);putcrlf();
@@ -122,11 +126,13 @@ int DLCMatRecvWriteFota()	// SPIへ受信データ書込み処理
 		p = str2int( &p[10],&i );										/* $RECVDATA,i,j,"...."<cr> */
 		if( p < 0 ){													/* p            q  */
 			putst( "format err2\r\n" );
+			DLC_MatFotaWriteNG = true;
 			return -2;
 		}
 		p = str2int( p,&j );
 		if( p < 0 ){
 			putst( "format err3\r\n" );
+			DLC_MatFotaWriteNG = true;
 			return -3;
 		}
 		putst("Ln=");puthxs(i);putst(" Rm=");puthxs(j);putcrlf();
@@ -339,11 +345,14 @@ putst("header len:");puthxw(len);putcrlf();
 		}
 		else {
 			putst("format err4\r\n");
+			DLC_MatFotaWriteNG = true;
 			return -4;
 		}
 	}
-	else
+	else {
 		putst("format err1\r\n");
+		DLC_MatFotaWriteNG = true;
+	}
 	return -1;
 }
 void DLC_MatSPIFOTAerase()	// SPI最終セクタ消去
