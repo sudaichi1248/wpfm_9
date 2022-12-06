@@ -530,6 +530,7 @@ void MTfirm()	// fota
 		DLCMatSend( "AT$RECV,1024\r" );
 	} else {
 		putst("RecvDataERROR\r\n");
+		DLCFotaNGAndReset();
 	}
 }
 void MTopn2()
