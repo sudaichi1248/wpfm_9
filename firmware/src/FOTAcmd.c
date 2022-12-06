@@ -244,6 +244,7 @@ putst("mjca1\r\n");
 				len = strlen(DLC_MatResBuf) + 1;	/* ヘッダのレングス */
 				len += 8;	// サイズとチェックサムの8byte
 putst("header len:");puthxw(len);putcrlf();
+				recvlen -= len;
 				DLC_MatFotaDataLen = *fpt;	// FOTAデータレングス
 				fpt++;
 				DLC_MatFotaDataLen |= *fpt << 8;
@@ -256,11 +257,19 @@ putst("header len:");puthxw(len);putcrlf();
 				memcpy(DLC_MatFotaCRC, fpt, sizeof(DLC_MatFotaCRC));
 				fpt += 4;
 				putst("DLC_MatFotaCRC[]:");Dump(DLC_MatFotaCRC, sizeof(DLC_MatFotaCRC));putcrlf();
-				if (j > 0) {	/* データが1024byte以上の場合 */
-					putst("RecvData3:\r\n");
+//				if (j > 0) {	/* データが1024byte以上の場合 */
+				if (1) {	/* Rmが0の場合もあり */
+					if (j > 0) {	/* データが1024byte以上の場合 */
+						putst("RecvData3:\r\n");
+					} else {
+						putst("RecvData4:\r\n");
+					}
 //					Dump(fpt, DLC_MatSPIFlashSector - len);putcrlf();
 					fotaaddress /= DLC_MatSPIFlashPage;
 					for (k = 0; k < ((DLC_MatSPIFlashSector - len) / DLC_MatSPIFlashPage); k++) {	/* ヘッダを抜いたFOTAデータを256byte毎書込み */
+						if (recvlen < DLC_MatSPIFlashPage) {	/* データが1ページ未満? */
+							break;
+						}
 						if (W25Q128JV_programPage(fotaaddress + k, 0, (uint8_t*)(fpt + DLC_MatSPIFlashPage * k), DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){
 							puthxw(DLC_MatSPIFlashPage * (fotaaddress + k));
 							putst(":OK");putcrlf();
@@ -281,13 +290,15 @@ putst("header len:");puthxw(len);putcrlf();
 							DLC_MatFotaWriteNG = true;
 							putst("PROG NG\r\n");
 						}
+						recvlen -= DLC_MatSPIFlashPage;
 					}
 					memset(DLC_MatSPIRemainbufFota, 0xFF, sizeof(DLC_MatSPIRemainbufFota));	/* 半端byte保持バッファFF初期化 */
-					DLC_MatSPIRemaindataFota = (DLC_MatSPIFlashSector - len) - (DLC_MatSPIFlashPage * k);	/* 1ページ未満の半端byte数 */
+					DLC_MatSPIRemaindataFota = recvlen;	/* 1ページ未満の半端byte数 */
 //					putst("DLC_MatSPIRemaindataFota3:");puthxs(DLC_MatSPIRemaindataFota);putcrlf();
 					memcpy(DLC_MatSPIRemainbufFota, fpt + DLC_MatSPIFlashPage * k ,DLC_MatSPIRemaindataFota);	/* 半端byte保持バッファに保持 */
 					DLC_MatSPIWritePageFota = k;	/* SPI書込みページインデックス保持 */
 //					putst("RemainData3:\r\n");Dump(DLC_MatSPIRemainbufFota, sizeof(DLC_MatSPIRemainbufFota));putcrlf();
+#if 0
 				} else {	/* データが1024byte未満の場合(現状ありえない) */
 					putst("RecvData4:\r\n");
 //					Dump(fpt, i - len);putcrlf();
@@ -320,6 +331,7 @@ putst("header len:");puthxw(len);putcrlf();
 					}
 					DLC_MatSPIRemaindataFota = recvlen;	/* 1ページ未満の半端byte数 */
 					DLC_MatSPIWritePageFota = k;	/* SPI書込みページインデックス保持 */
+#endif
 				}
 			}
 			DLC_MatResIdx = 0;
