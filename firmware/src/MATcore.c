@@ -263,7 +263,6 @@ void DLCMatSend( char *s )
 	rmn = sz%64;
 	for( i=0;i<blk;i++){
 		SERCOM5_USART_Write( (uint8_t*)&s[i*64],64 );
-//		APP_delay(57);
 	}
 	if( rmn ){
 		SERCOM5_USART_Write( (uint8_t*)&s[i*64],rmn );
@@ -601,10 +600,14 @@ void MTdisc()
 		DLC_MatState = MATC_STATE_CONN;
 	}
 	else {
-		DLCMatTimerset( 0,TIMER_7000ms );
-		putst("Go Sleep\r\n");
-		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
-		DLC_MatState = MATC_STATE_DISC;
+		if (DLC_Para.FOTAact != 0) {									/* ‰^—pŽž */
+			DLCMatTimerset( 0,TIMER_7000ms );
+			putst("Go Sleep\r\n");
+			PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );					/* Sleep! */
+			DLC_MatState = MATC_STATE_DISC;
+		}
+		else
+			DLCFotaNGAndReset();										/* FOTA Ž¸”s‚Å‰^—p‚Ö */
 	}
 }
 void MTcls3()
