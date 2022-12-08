@@ -215,11 +215,12 @@ void DLCMATrtctimer()
 	MATcoreをWAKEUPさせる処理
 	3秒待つ
 */
-void DLCMatWake()
+#define		WAKE_CHECK_RETRY	300
+int DLCMatWake()
 {
 	int		i;
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
-	for(i=0;i<300;i++){
+	for(i=0;i<WAKE_CHECK_RETRY;i++){
 		APP_delay(10);
 		if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11))
 			break;
@@ -227,8 +228,12 @@ void DLCMatWake()
 		APP_delay(1);
 		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );
 	}
-	if( i == 300 )
+	if( i == WAKE_CHECK_RETRY ){
+		DLCMatError(0);
 		putst("MATcore Wake Err!\r\n");
+		return 1;
+	}
+	return 0;
 }
 /* 
 	Function:通信タスクの変数初期化、TC5(内部タイマー)のコールバック登録
@@ -343,7 +348,7 @@ void MTVrT()
 {
 	DLC_MatLineIdx = 0;
 	if( DLC_MatRetry++ > 5 ){
-		DLCMatError(0);
+		__NVIC_SystemReset();
 		return;
 	}
 	DLCMatSend( "AT$VER\r" );
@@ -696,7 +701,8 @@ void MTFwak()
 void MTwVer()
 {
 	DLCMatWake();
-	MTRdy();
+	if(	DLC_MatState != MATC_STATE_ERR )
+		MTRdy();
 }
 void MTconW()
 {
