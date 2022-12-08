@@ -584,10 +584,6 @@ void MTrpOk()
 void MTdisc()
 {
 	DLC_MatLineIdx = 0;
-	if (DLC_MatFotaExe == 1) {	// fota
-		DLC_MatFotaExe = 0;
-		DLCFotaGoAndReset();
-	}
 	if (WPFM_ForcedCall == true) {	// ã≠êßî≠ïÒ
 		UTIL_startBlinkLED1(5);	// LED1 5âÒì_ñ≈
 		DLCMatRtcTimerset(1, 6);
@@ -666,6 +662,10 @@ void MTRSlp()
 void MTslep()
 {
 	DLC_MatLineIdx = 0;
+	if (DLC_MatFotaExe == 1) {	// fota
+		DLC_MatFotaExe = 0;
+		DLCFotaGoAndReset();
+	}
 	putst("ÅySleepÅz\r\n");
 	DLCMatTimerClr( 0 );
 	DLCEventLogWrite( _ID1_SLEEP,0,0 );
@@ -692,6 +692,11 @@ void MTFwak()
 	putst("ÅyFWakÅz\r\n");
 	DLC_MatLineIdx = 0;
 	DLCMatWake();
+}
+void MTwVer()
+{
+	DLCMatWake();
+	MTRdy();
 }
 void MTconW()
 {
@@ -841,7 +846,7 @@ void	 (*MTjmp[18][19])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, ______, MTclsF, ______, ______, ______, ______ },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______ },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, ______, MTdisc, ______ },
-/* TimOut1    12 */{ MTRdy,  MTVrT,  MTVer,  MTRapn, MTdisc, MTdisc, MTdisc, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTdisc, MTledQ },
+/* TimOut1    12 */{ MTwVer, MTVrT,  MTVer,  MTRapn, MTdisc, MTdisc, MTdisc, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTdisc, MTledQ },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, MTwake, ______ },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
@@ -1027,7 +1032,7 @@ void DLCMatState()
 	}
 	if( DLC_Matfact != 0xff ){
 		char	s[20];
-		DLCMatClockDisplay(s);putst( s );putst("Åy");puthxb( DLC_Matfact );putch(':');puthxb( DLC_MatState );putst("Åz\r\n");
+		DLCMatClockDisplay(s);putst( s );putch('.');putdecs(SYS_mSec);putst("Åy");puthxb( DLC_Matfact );putch(':');puthxb( DLC_MatState );putst("Åz\r\n");
 		(*MTjmp[DLC_Matfact][DLC_MatState])();
 	}
 	if( DLC_MatLineIdx == 0 )
