@@ -454,7 +454,7 @@ ADC_Disable(  );
 PORT_GroupWrite( PORT_GROUP_1,0x1<<23,0 );
 ADC_Enable(  );
             APP_delay(1);
-            DEBUG_UART_printlnString("<WAKE UP");
+            putch(',');
             WPFM_status = WPFM_STATUS_IDLE;
         }
     }
