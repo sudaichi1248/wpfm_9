@@ -16,6 +16,7 @@
 #include "mlog.h"
 #include "rtc.h"
 #include "smpif.h"
+#include "Moni.h"
 
 /*
 *   Symbols
@@ -72,12 +73,21 @@ void SMPIF_getStatus(const char *param, char *resp)
     SMPIF_dumpMessage("RESP", resp);
     APP_delay(10);
 }
-
+int ISINFNAN( float a )
+{
+	char	tmp[16];
+	sprintf( tmp,"%.3f",a );
+	if((tmp[0] >= '0')&&(tmp[0] <= '9'))
+		return 1;
+	putst("š");putst( tmp );putcrlf();
+	return 0;
+}
 void SMPIF_getData(const char *param, char *resp)
 {
     uint32_t sequentialNumber = (uint32_t)atoi(param);
     bool failed = false, first = true;
     MLOG_T mlog;
+    float V1=0,V2=0;
     int stat, number = 0;
     while ((stat = MLOG_findLog(sequentialNumber, &mlog)) == MLOG_ERR_NONE)
     {
@@ -92,13 +102,17 @@ void SMPIF_getData(const char *param, char *resp)
             break;
         }
         static char buf[80];
+        if(ISINFNAN(mlog.measuredValues[0]))
+        	V1 = mlog.measuredValues[0];
+        if(ISINFNAN(mlog.measuredValues[1]))
+        	V2 = mlog.measuredValues[1];
         if (first)
         {
             snprintf(buf, sizeof(buf) - 1,
                     (number == 0) ? "%lu,%s,%.3f,%.3f,%08ld" : "/%lu,%s,%.3f,%.3f,%08ld",
                     mlog.sequentialNumber,
                     datetime,
-                    mlog.measuredValues[0], mlog.measuredValues[1],
+                    V1, V2,
                     alertStatusFormat(mlog.alertStatus)
             );
             first = false;
@@ -108,7 +122,7 @@ void SMPIF_getData(const char *param, char *resp)
             snprintf(buf, sizeof(buf) - 1,
                     (number == 0) ? "%s,%.3f,%.3f,%08ld" : "/%s,%.3f,%.3f,%08ld",
                     datetime,
-                    mlog.measuredValues[0], mlog.measuredValues[1],
+                    V1, V2,
                     alertStatusFormat(mlog.alertStatus)
             );
         }
