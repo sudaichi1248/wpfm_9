@@ -215,11 +215,12 @@ void DLCMATrtctimer()
 	MATcoreをWAKEUPさせる処理
 	3秒待つ
 */
-void DLCMatWake()
+#define		WAKE_CHECK_RETRY	300
+int DLCMatWake()
 {
 	int		i;
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
-	for(i=0;i<300;i++){
+	for(i=0;i<WAKE_CHECK_RETRY;i++){
 		APP_delay(10);
 		if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11))
 			break;
@@ -227,8 +228,12 @@ void DLCMatWake()
 		APP_delay(1);
 		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );
 	}
-	if( i == 300 )
+	if( i == WAKE_CHECK_RETRY ){
+		DLCMatError(0);
 		putst("MATcore Wake Err!\r\n");
+		return 1;
+	}
+	return 0;
 }
 /* 
 	Function:通信タスクの変数初期化、TC5(内部タイマー)のコールバック登録
@@ -343,7 +348,7 @@ void MTVrT()
 {
 	DLC_MatLineIdx = 0;
 	if( DLC_MatRetry++ > 5 ){
-		DLCMatError(0);
+		__NVIC_SystemReset();
 		return;
 	}
 	DLCMatSend( "AT$VER\r" );
@@ -490,6 +495,7 @@ void MTrvTO()
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatSend( "AT$CLOSE\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
+	DLC_MatState = MATC_STATE_SLP;
 }
 void MTdata()
 {
@@ -606,6 +612,13 @@ void MTdisc()
 			DLCFotaNGAndReset();										/* FOTA 失敗で運用へ */
 	}
 }
+void MTcls0()
+{
+	DLC_MatLineIdx = 0;
+	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
+	DLCMatSend( "AT$DISCONNECT\r" );
+	DLCMatTimerset( 0,TIMER_3000ms );
+}
 void MTcls3()
 {
 	DLC_MatLineIdx = 0;
@@ -642,6 +655,11 @@ void MTcls4()
 	DLCMatSend( "AT$DISCONNECT\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
 	DLC_MatState = MATC_STATE_DISC;
+}
+void MTcls5()
+{
+	DLCEventLogWrite( _ID1_SYS_ERROR,1,0 );
+	__NVIC_SystemReset();
 }
 void MTclsF()	// fota
 {
@@ -696,7 +714,8 @@ void MTFwak()
 void MTwVer()
 {
 	DLCMatWake();
-	MTRdy();
+	if(	DLC_MatState != MATC_STATE_ERR )
+		MTRdy();
 }
 void MTconW()
 {
@@ -835,7 +854,7 @@ void	 (*MTjmp[18][19])() = {
 /*					  0         1       2      3       4       5       6       7       8       9       10      11      12      13      14      15      16      17   18     */
 /*				  	 INIT    IDLE    IMEI    APN     SVR     CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR   */
 /* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy  },
-/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, ______, ______, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, MTdisc, ______ },
+/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, ______, ______, MTcls3, MTcls5, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, MTdisc, ______ },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______ },
@@ -843,9 +862,9 @@ void	 (*MTjmp[18][19])() = {
 /* $TIME       6 */{ ______, ______, ______, ______, ______, ______, MTrsrp, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $RSRP       7 */{ ______, ______, ______, ______, ______, ______, MTOpen, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $OPEN/$WAKE 8 */{ ______, ______, ______, ______, ______, ______, ______, MTcnfg, ______, MTstst, ______, MTrprt, ______, MTconW, MTwget, ______, ______, ______, ______ },
-/* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, ______, MTclsF, ______, ______, ______, ______ },
+/* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, MTcls0, MTclsF, ______, ______, ______, ______ },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______ },
-/* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, ______, MTdisc, ______ },
+/* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, MTdisc, ______ },
 /* TimOut1    12 */{ MTwVer, MTVrT,  MTVer,  MTRapn, MTdisc, MTdisc, MTdisc, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTdisc, MTledQ },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, MTwake, ______ },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
@@ -1042,7 +1061,7 @@ void DLCMatConfigDefault()
 {
 	WPFM_SETTING_PARAMETER	config;
 	config.isInvalid = 1;
-	config.serialNumber 					= 9999999;
+	config.serialNumber 					= 99999999;
 	config.measurementInterval 				= 60;
 	config.communicationInterval 			= 300;
 	config.measurementIntervalOnAlert	 	= 30;
@@ -2421,7 +2440,7 @@ void DLCMatMain()
 			break;
 		case 'V':
 //			DLC_MatSPIFOTAerase();	// SPI最終セクタ消去
-			DLCEventLogDisplay();
+			DLCEventLogDisplay();	/*			イベントログ表氏 */
 			break;
 		case 'X':	// FOTA開始
 			if( CheckPasswd() )
@@ -2561,7 +2580,7 @@ void DLCMatServerChange()
 void DLCMatError( int no )
 {
 	putst("MATcore No Response!\r\n");
-	DLCEventLogWrite( _ID1_ERROR,0xffffffff,0 );
+	DLCEventLogWrite( _ID1_ERROR,0xffffffff,no );
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
 	DLC_MatState = MATC_STATE_ERR;
 }
