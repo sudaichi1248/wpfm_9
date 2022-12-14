@@ -16,6 +16,7 @@
 #include "mlog.h"
 #include "rtc.h"
 #include "smpif.h"
+#include "EventLog.h"
 #include "Moni.h"
 
 /*
