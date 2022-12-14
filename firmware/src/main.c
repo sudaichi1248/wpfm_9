@@ -67,7 +67,6 @@ int main(void)
     /* Initialize all modules */
     SYS_Initialize(NULL);
 	DLCParaRead();
-	DLCEventLogInit();
     /*** FOR DEBUG ***/
     if (TEST_SW_Get() == 0)
     {

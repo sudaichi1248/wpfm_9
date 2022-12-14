@@ -132,6 +132,7 @@ void WPFM_initializeApplication(void)
 
     //- Initialize SPI-Flash
     W25Q128JV_begin(MEM_CS_PIN);
+	DLCEventLogInit();	// Initialize EventLog
 
     // Control external batteries
 //    uint16_t voltage = 0;
