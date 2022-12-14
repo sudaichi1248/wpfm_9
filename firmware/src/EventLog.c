@@ -1,6 +1,9 @@
 /*
 	EventLog関数
 */
+
+#define EVENTLOG_SPI
+
 #include <stdio.h>
 #include <stddef.h>                     // Defines NULL
 #include <stdbool.h>                    // Defines true
@@ -28,7 +31,49 @@ void DLC_delay( int msec );
 *****/
 void DLCEventLogInit()
 {
-	int				i,sec,block;
+	int				i,sec;
+#ifdef EVENTLOG_SPI
+	_EventLog	log;
+	uint32_t	readAddress;
+	W25Q128JV_readData(EVENT_LOG_AREA_ADDRESS_END - EVENT_LOG_AREA_WRITE_SZ, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
+	if( log.second & 0x80000000 )															/* 最終レコードが書き込み済みなら１周済 */
+		;
+	else
+		DLC_EventFull = 1;
+	readAddress = EVENT_LOG_AREA_ADDRESS_START;
+	W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);;
+	DLC_EventIdx = 0;
+	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
+		if( readAddress > EVENT_LOG_AREA_ADDRESS_END )
+			break;
+		if( readAddress < EVENT_LOG_AREA_ADDRESS_START )
+			break;
+		if( log.second & 0x80000000 )
+			return;
+		DLC_EventIdx++;
+		sec = log.second;
+		readAddress += EVENT_LOG_AREA_WRITE_SZ;
+		W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);;
+	}
+	DLC_EventIdx = 0;
+	readAddress = EVENT_LOG_AREA_ADDRESS_START;
+	W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);;
+	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
+//		puthxw( log->second );putcrlf();
+		if( log.second < 100 )
+			continue;
+		if( sec > log.second ){
+			W25Q128JV_eraseSctor(readAddress/EVENT_LOG_AREA_ERASE_SZ, true);
+			//puthxw( readAddress );putst("deleted!\r\n");
+			return;
+		}
+		DLC_EventIdx++;
+		sec = log.second;
+		readAddress += EVENT_LOG_AREA_WRITE_SZ;
+		W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);;
+	}
+#else
+	int				block;
 	_EventLog		*log;
 	log = (_EventLog*)EVENT_LOG_AREA_ADDRESS_END;
 	log--;
@@ -63,13 +108,14 @@ void DLCEventLogInit()
 		DLC_EventIdx++;
 		sec = log->second;
 	}
-
+#endif
 }
 /*****
 * TITLE		：DLC イベントログの保存
 * RETURN	：
 * 機能 		：最初だけ、DLC_EventIdxで空いてるまで探す、２回目からは、DLC_EventIdxで直書く
 *****/
+#ifndef EVENTLOG_SPI
 void DLCLogWrite(int address,uchar *data )
 {
 	uchar	tmp[64];
@@ -82,9 +128,17 @@ void DLCLogWrite(int address,uchar *data )
 	NVMCTRL_PageWrite( (uint32_t*)tmp,(const uint32_t)block );
 //	puthxw( block );puthxb( offset );putst("  wrote!\r\n");
 }
+#endif
 void DLCEventLogWrite( ushort ID1,uint ID2,uint ID3 )
 {
+#ifdef EVENTLOG_SPI
+	_EventLog	log;
+	uint32_t	writeAddress;
+	uint16_t	pageNo;
+	uint8_t		offset;
+#else
 	_EventLog	*log;
+#endif
 	uchar		flg=0;
 	DLC_EventLog.second = RTC_now;															/* 現時刻 Get!秒 */
 	DLC_EventLog.mSecond = SYS_mSec;														/* 現時刻 Get!m秒 */
@@ -92,6 +146,21 @@ void DLCEventLogWrite( ushort ID1,uint ID2,uint ID3 )
 	DLC_EventLog.ID2 = ID2;
 	DLC_EventLog.ID3 = ID3;
 Retry:
+#ifdef EVENTLOG_SPI
+	writeAddress = EVENT_LOG_AREA_ADDRESS_START + (DLC_EventIdx * EVENT_LOG_AREA_WRITE_SZ);
+	W25Q128JV_readData(writeAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
+	if( log.second & 0x80000000 ){															/* 空きレコードでない */
+		pageNo = writeAddress >> 8;
+		offset = writeAddress & 0xff;
+		W25Q128JV_programPage(pageNo, offset, (uint8_t*)&DLC_EventLog, EVENT_LOG_AREA_WRITE_SZ, true);
+		DLC_EventIdx++;
+		if( DLC_EventIdx == EVENT_LOG_NUMOF_ITEM ){
+			DLC_EventIdx = 0;
+			DLC_EventFull = 1;
+			W25Q128JV_eraseSctor(EVENT_LOG_AREA_ADDRESS_START/EVENT_LOG_AREA_ERASE_SZ, true);
+		}
+	}
+#else
 	log = (_EventLog*)EVENT_LOG_AREA_ADDRESS_START;
 	log += DLC_EventIdx;																	/* 開始アドレス */
 	if( log->second & 0x80000000 ){															/* 空きレコードでない */
@@ -103,6 +172,7 @@ Retry:
 			NVMCTRL_RowErase( EVENT_LOG_AREA_ADDRESS_START );
 		}
 	}
+#endif
 	else {
 		DLCEventLogInit();
 		++flg;
@@ -229,6 +299,26 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 void DLCEventLogDisplay()
 {
 	int				i;
+#ifdef EVENTLOG_SPI
+	_EventLog	log;
+	uint32_t	printAddress;
+	printAddress = EVENT_LOG_AREA_ADDRESS_START;
+	W25Q128JV_readData(printAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
+	putcrlf();
+	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
+		if( printAddress > EVENT_LOG_AREA_ADDRESS_END )
+			break;
+		if( printAddress < EVENT_LOG_AREA_ADDRESS_START )
+			break;
+		if(( log.second & 0x80000000 )&&( DLC_EventFull == 0))
+			break;
+		/* イベントログ表示 */
+		NcuEventLogPrint( &log,0 );
+		printAddress += EVENT_LOG_AREA_WRITE_SZ;
+		W25Q128JV_readData(printAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);;
+		DLC_delay(40);
+	}
+#else
 	_EventLog		*log;
 	log = (_EventLog*)EVENT_LOG_AREA_ADDRESS_START;
 	putcrlf();
@@ -244,11 +334,31 @@ void DLCEventLogDisplay()
 		++log;
 		DLC_delay(40);
 	}
-	APP_printUSB( "--Finish--\n" );
+#endif
 }
 void DLCMatEventLog()
 {
 	int				i;
+#ifdef EVENTLOG_SPI
+	_EventLog	log;
+	uint32_t	printAddress;
+	printAddress = EVENT_LOG_AREA_ADDRESS_START;
+	W25Q128JV_readData(printAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
+	putcrlf();
+	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
+		if( printAddress > EVENT_LOG_AREA_ADDRESS_END )
+			break;
+		if( printAddress < EVENT_LOG_AREA_ADDRESS_START )
+			break;
+		if(( log.second & 0x80000000 )&&( DLC_EventFull == 0))
+			break;
+		/* イベントログ表示 */
+		NcuEventLogPrint( &log,1 );
+		printAddress += EVENT_LOG_AREA_WRITE_SZ;
+		W25Q128JV_readData(printAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);;
+		DLC_delay(40);
+	}
+#else
 	_EventLog		*log;
 	log = (_EventLog*)EVENT_LOG_AREA_ADDRESS_START;
 	putcrlf();
@@ -264,6 +374,8 @@ void DLCMatEventLog()
 		++log;
 		DLC_delay(40);
 	}
+#endif
+	APP_printUSB( "--Finish--\n" );
 }
 /*****
 * ﾀｲﾄﾙ		：Flashのログ領域を削除する。
@@ -274,6 +386,20 @@ void DLCMatEventLog()
 */
 void DLCEventLogClr(int flg)
 {
+#ifdef EVENTLOG_SPI
+	int		address;
+	if( flg ){
+		W25Q128JV_eraseSctor(EVENT_LOG_AREA_ADDRESS_START/EVENT_LOG_AREA_ERASE_SZ, true);
+		puthxw( EVENT_LOG_AREA_ADDRESS_START );putst("deleted!\r\n");
+	}
+	else {
+		for(address=EVENT_LOG_AREA_ADDRESS_START;address<EVENT_LOG_AREA_ADDRESS_END;address+=EVENT_LOG_AREA_BLOCK_SZ){
+			W25Q128JV_eraseBlock64(address/EVENT_LOG_AREA_BLOCK_SZ, true);
+			WDT_Clear();
+			puthxw( address );putst("deleted!\r\n");
+		}
+	}
+#else
 	if( flg ){
 		NVMCTRL_RowErase( EVENT_LOG_AREA_ADDRESS_START );puthxw( EVENT_LOG_AREA_ADDRESS_START );putst("deleted!\r\n");
 	}
@@ -283,5 +409,6 @@ void DLCEventLogClr(int flg)
 			NVMCTRL_RowErase( address );puthxw( address );putst("deleted!\r\n");
 		}
 	}
+#endif
 	DLC_EventIdx = 0;
 }

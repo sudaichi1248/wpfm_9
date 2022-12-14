@@ -1,3 +1,5 @@
+#define EVENTLOG_SPI
+
 typedef struct	{											/* イベントログ				*/
 	unsigned int	second;
 	unsigned short	mSecond;
@@ -5,13 +7,22 @@ typedef struct	{											/* イベントログ				*/
 	unsigned int	ID2;
 	unsigned int	ID3;
 } _EventLog;
+#ifdef EVENTLOG_SPI
+#define EVENT_LOG_AREA_ADDRESS_START        0xC00000	// SPIフラッシュ書込みアドレス
+#define EVENT_LOG_AREA_ADDRESS_END	        0xFF0000
+//#define EVENT_LOG_AREA_ADDRESS_END	        0xC01000
+#define EVENT_LOG_AREA_WRITE_SZ				sizeof(_EventLog)
+#define EVENT_LOG_AREA_ERASE_SZ				0x001000
+#define EVENT_LOG_AREA_BLOCK_SZ				0x010000
+#define	EVENT_LOG_NUMOF_ITEM 	((EVENT_LOG_AREA_ADDRESS_END-EVENT_LOG_AREA_ADDRESS_START)/sizeof(_EventLog))
+#else
 #define EVENT_LOG_AREA_ADDRESS_START        0x3E200
 #define EVENT_LOG_AREA_ADDRESS_END	        0x3FD00
 #define EVENT_LOG_AREA_WRITE_SZ				0x00040
 #define EVENT_LOG_AREA_ERASE_SZ				0x00100
 #define EVENT_LOG_AREA_BLOCK_MSK			0xFFFC0
 #define	EVENT_LOG_NUMOF_ITEM 	((EVENT_LOG_AREA_ADDRESS_END-EVENT_LOG_AREA_ADDRESS_START)/sizeof(_EventLog))
-
+#endif
 void DLCEventLogInit( void );
 void DLCEventLogWrite( ushort ID1,uint ID2,uint ID3 );
 void DLCEventLogDisplay( void );
