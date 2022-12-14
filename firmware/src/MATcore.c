@@ -470,7 +470,7 @@ void MTcnfg()
 	DLCEventLogWrite( _ID1_OPEN_OK,WPFM_ForcedCall,DLC_MatRSRP<<16|DLC_MatRSRQ );
 	DLCMatPostConfig();
 	DLC_MatState = MATC_STATE_CNFG;
-	DLCMatTimerset( 0,TIMER_7000ms );
+	DLCMatTimerset( 0,TIMER_3000ms );
 }
 void MTwget()	// fota
 {
@@ -483,7 +483,7 @@ void MTwget()	// fota
 */
 void MTrrcv()
 {
-	DLCMatTimerset( 0,TIMER_7000ms );
+	DLCMatTimerset( 0,TIMER_3000ms );
 }
 void MTrvTO()
 {
@@ -554,7 +554,7 @@ void MTstst()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatPostStatus();
-	DLCMatTimerset( 0,TIMER_7000ms );
+	DLCMatTimerset( 0,TIMER_3000ms );
 	DLC_MatState = MATC_STATE_STAT;
 }
 void MTopn3()
@@ -1293,17 +1293,19 @@ void DLCMatReportSnd()
 		if(( '0' > tmp[12] )||( tmp[12] > '9' )){
 			sprintf( tmp,"\"Value_ch1\":%.3f,"	,old1 );
 			putst("Strange1=");puthxw(log_p.measuredValues[0] );putcrlf();
+			DLCEventLogWrite( _ID1_ERROR,10,(tmp[12]<<8)|(tmp[12]&0xFF) );
 		}
 		else
-			old1=log_p.measuredValues[0];
+			old1 = log_p.measuredValues[0];
 		strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch2\":%.3f,"	,log_p.measuredValues[1] );
 		if(( '0' > tmp[12] )||( tmp[12] > '9' )){
 			sprintf( tmp,"\"Value_ch2\":%.3f,"	,old2 );
 			putst("Strange2=");puthxw(log_p.measuredValues[1] );putcrlf();
+			DLCEventLogWrite( _ID1_ERROR,11,(tmp[12]<<8)|(tmp[12]&0xFF) );
 		}
 		else
-			old2=log_p.measuredValues[1];
+			old2 = log_p.measuredValues[1];
 		strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Alert\":\"%02x\"}"	,log_p.alertStatus  );						strcat( http_tmp,tmp );
 	}

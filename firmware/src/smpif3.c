@@ -80,6 +80,7 @@ int ISINFNAN( float a )
 	if((tmp[0] >= '0')&&(tmp[0] <= '9'))
 		return 1;
 	putst("š");putst( tmp );putcrlf();
+	DLCEventLogWrite( _ID1_ERROR,12,(tmp[0]<<8)|(tmp[0]&0xFF) );
 	return 0;
 }
 void SMPIF_getData(const char *param, char *resp)
