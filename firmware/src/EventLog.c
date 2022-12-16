@@ -41,7 +41,7 @@ void DLCEventLogInit()
 	else
 		DLC_EventFull = 1;
 	readAddress = EVENT_LOG_AREA_ADDRESS_START;
-	W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);;
+	W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
 	DLC_EventIdx = 0;
 	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
 		if( readAddress > EVENT_LOG_AREA_ADDRESS_END )
@@ -53,15 +53,18 @@ void DLCEventLogInit()
 		DLC_EventIdx++;
 		sec = log.second;
 		readAddress += EVENT_LOG_AREA_WRITE_SZ;
-		W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);;
+		W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
 	}
 	DLC_EventIdx = 0;
 	readAddress = EVENT_LOG_AREA_ADDRESS_START;
-	W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);;
+	W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
 	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
-//		puthxw( log->second );putcrlf();
-		if( log.second < 100 )
+//		puthxw( log.second );putcrlf();
+		if( log.second < 100 ){
+			readAddress += EVENT_LOG_AREA_WRITE_SZ;
+			W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
 			continue;
+		}
 		if( sec > log.second ){
 			W25Q128JV_eraseSctor(readAddress/EVENT_LOG_AREA_ERASE_SZ, true);
 			//puthxw( readAddress );putst("deleted!\r\n");
@@ -70,7 +73,7 @@ void DLCEventLogInit()
 		DLC_EventIdx++;
 		sec = log.second;
 		readAddress += EVENT_LOG_AREA_WRITE_SZ;
-		W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);;
+		W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
 	}
 #else
 	int				block;
@@ -315,8 +318,8 @@ void DLCEventLogDisplay()
 		/* イベントログ表示 */
 		NcuEventLogPrint( &log,0 );
 		printAddress += EVENT_LOG_AREA_WRITE_SZ;
-		W25Q128JV_readData(printAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);;
-		DLC_delay(40);
+		W25Q128JV_readData(printAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
+		DLC_delay(50);
 	}
 #else
 	_EventLog		*log;
@@ -355,7 +358,7 @@ void DLCMatEventLog()
 		/* イベントログ表示 */
 		NcuEventLogPrint( &log,1 );
 		printAddress += EVENT_LOG_AREA_WRITE_SZ;
-		W25Q128JV_readData(printAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);;
+		W25Q128JV_readData(printAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
 		DLC_delay(40);
 	}
 #else
@@ -375,7 +378,7 @@ void DLCMatEventLog()
 		DLC_delay(40);
 	}
 #endif
-	APP_printUSB( "--Finish--\n" );
+	APP_printUSB( "--Finish--\r\n" );
 }
 /*****
 * ﾀｲﾄﾙ		：Flashのログ領域を削除する。
@@ -411,4 +414,5 @@ void DLCEventLogClr(int flg)
 	}
 #endif
 	DLC_EventIdx = 0;
+	DLC_EventFull = 0;
 }
