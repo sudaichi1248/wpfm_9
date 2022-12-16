@@ -1246,7 +1246,7 @@ void DLCMatPostStatus()
 */
 //http_tmpをASCII変換して送信する。→OKを待つ、これおループ
 int		DLC_MatReportMax,DLC_MatReportCnt,DLC_MatReportFin;
-#define			DLC_REPORT_ALL_MAX		3000				/* 1度の通信で送信するReortのMAX */
+#define			DLC_REPORT_ALL_MAX		300					/* 1度の通信で送信するReortのMAX */
 #define			DLC_REPORT_SND_LMT		12					/* MATcoreに一度にSendするReport数 */
 void DLCMatReportSndSub()
 {
