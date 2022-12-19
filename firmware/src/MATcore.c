@@ -25,16 +25,17 @@ void DLCMatState();
 void IDLEputch();
 void command_main();
 void DLC_delay(int);
+void MatMsgSend( int msg );
 //void _GO_IDLE(){command_main();DLCMatState();}
 #ifdef ADD_FUNCTION
 void DLCMatRtcTimeChk();
-void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatRtcTimeChk();WDT_Clear();}
+void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatRtcTimeChk();}
 #else
 void _GO_IDLE(){DLCMatState();IDLEputch();}
 #endif
 void Moni();
 void DLCMatConfigDefault();
-void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatReportSnd();
+void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatReportSnd(),DLCMatPostReptInit();
 int	DLCMatPostReport();
 void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatReset();
 void DLCMatServerChange();
@@ -203,6 +204,7 @@ int	DLCMatRtcChk(int tmid)
 }
 void DLCMATrtctimer()
 {
+	WDT_Clear();
 	for(int i=0;i<RTC_TIMER_NUM;i++ ){
 		if( DLC_MatRtcTimer[i].cnt != 0 ){
 			DLC_MatRtcTimer[i].cnt--;
@@ -336,6 +338,10 @@ int	DLCMatCharInt( char *p,char *title )
 #define		MATC_STATE_FTP  16
 #define		MATC_STATE_DISC	17
 #define		MATC_STATE_ERR 	18
+#define		MSGID_TIMER		1
+#define		MSGID_WAKEUP	2
+#define		MSGID_DELAY		3
+
 void ______(){	DLC_MatLineIdx = 0;};
 void MTRdy()
 {
@@ -562,19 +568,25 @@ void MTopn3()
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$OPEN\r" );
 	DLCMatTimerset( 0,TIMER_15s );
+	DLCMatPostReptInit();
 	DLC_MatState = MATC_STATE_OPN3;
 }
 void MTrprt()
 {
 	DLC_MatLineIdx = 0;
-	if( DLCMatPostReport() ){													/* Report送信処理 */
-		DLCMatTimerset( 0,TIMER_7000ms );
-		DLC_MatState = MATC_STATE_RPT;
-	}
-	else {
+	switch( DLCMatPostReport() ){													/* Report送信処理 */
+	case 0:
 		DLCMatSend( "AT$DISCONNECT\r" );
 		DLCMatTimerset( 0,TIMER_3000ms );
 		DLC_MatState = MATC_STATE_DISC;
+		break;
+	case 1:
+		DLCMatTimerset( 0,TIMER_7000ms );
+		DLC_MatState = MATC_STATE_RPT;
+		break;
+	case 2:
+		MatMsgSend( MSGID_DELAY );
+		break;
 	}
 }
 /*
@@ -744,8 +756,6 @@ struct {
 	uchar	rx;
 	int		msg[0x20];
 } DLC_MatMsg;
-#define		MSGID_TIMER		1
-#define		MSGID_WAKEUP	2
 int	 MatGetMsgStack()
 {
 	int msg;
@@ -866,7 +876,7 @@ void	 (*MTjmp[18][19])() = {
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______ },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, MTdisc, ______ },
 /* TimOut1    12 */{ MTwVer, MTVrT,  MTVer,  MTRapn, MTdisc, MTdisc, MTdisc, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTdisc, MTledQ },
-/* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, MTwake, ______ },
+/* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTrprt, ______, MTwake, ______, ______, ______, MTwake, ______ },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $SLEEP     16 */{ MTFwak, ______, ______, ______, ______, ______, ______, ______, MTslep, MTslep, MTslep, MTslep, MTslep, ______, ______, ______, ______, MTslep, ______ },
@@ -1042,6 +1052,9 @@ void DLCMatState()
 				DLC_Matfact = MATC_FACT_TO1;
 				break;
 			case MSGID_WAKEUP:
+				DLC_Matfact = MATC_FACT_WUP;
+				break;
+			case MSGID_DELAY:
 				DLC_Matfact = MATC_FACT_WUP;
 				break;
 			default:
@@ -1245,8 +1258,8 @@ void DLCMatPostStatus()
 	2022.11.3 Reportを分割して送信する
 */
 //http_tmpをASCII変換して送信する。→OKを待つ、これおループ
-int		DLC_MatReportMax,DLC_MatReportCnt,DLC_MatReportFin;
-#define			DLC_REPORT_ALL_MAX		300					/* 1度の通信で送信するReortのMAX */
+int		DLC_MatReportMax,DLC_MatReportCnt,DLC_MatReportFin,DLC_MatExtbyte;
+#define			DLC_REPORT_ALL_MAX		3000					/* 1度の通信で送信するReortのMAX */
 #define			DLC_REPORT_SND_LMT		12					/* MATcoreに一度にSendするReport数 */
 void DLCMatReportSndSub()
 {
@@ -1318,30 +1331,37 @@ void DLCMatReportSnd()
 	}
 	DLCMatReportSndSub();
 }
-int DLCMatPostReport()
+void DLCMatPostReptInit()
 {
-	char	tmp[48],*p;
-	int		i,Len,extbyte=0;
-	MLOG_T 	log_p;
+	DLC_MatReportMax = 0;
 	DLC_MatsendRepOK = false;
 	DLC_MatReportCnt = 0;																			/* httpを作るときのReportのカウンタ */
 	DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
 	MLOG_tailAddressBuckUp();
-	for( DLC_MatReportMax=0; DLC_MatReportMax < DLC_REPORT_ALL_MAX; DLC_MatReportMax++ ){			/* Lengthを求めるためにmlogを仮走査 */
+	DLC_MatExtbyte = 0;
+}
+int DLCMatPostReport()
+{
+	char	tmp[48],*p;
+	int		i,Len;
+	MLOG_T 	log_p;
+	for( i=0; DLC_MatReportMax < DLC_REPORT_ALL_MAX; DLC_MatReportMax++,i++ ){			/* Lengthを求めるためにmlogを仮走査 */
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
 		sprintf( tmp,"%.3f"	,log_p.measuredValues[0] );												/* #.### 以外のレングス増え分を求める */
 		if(( '0' > tmp[0] )||( tmp[0] > '9' ))
 			;
 		else
-			extbyte += (strlen( tmp )-5);
+			DLC_MatExtbyte += (strlen( tmp )-5);
 		sprintf( tmp,"%.3f"	,log_p.measuredValues[1] );
 		if(( '0' > tmp[0] )||( tmp[0] > '9' ))
 			;
 		else
-			extbyte += (strlen( tmp )-5);
+			DLC_MatExtbyte += (strlen( tmp )-5);
+		if( i == 300 )
+			return 2;
 	}
-	putst("extbyte=");putdecs( extbyte );putcrlf();
+	putst("extbyte=");putdecs( DLC_MatExtbyte );putcrlf();
 	MLOG_tailAddressRestore();
 	strcpy( http_tmp,http_report );
 	strcat( http_tmp,"{\"Report\":{" );
@@ -1356,7 +1376,7 @@ int DLCMatPostReport()
 		}
 		putcrlf();
 		DLCEventLogWrite( _ID1_REPORT,0,DLC_MatReportMax );
-		Len = 51+DLC_MatReportMax*80+2+extbyte;
+		Len = 51+DLC_MatReportMax*80+2+DLC_MatExtbyte;
 		p = strstr( http_tmp,"Length:    " );
 		if( p < 0 ){
 				putst("format err1 \r\n" );
