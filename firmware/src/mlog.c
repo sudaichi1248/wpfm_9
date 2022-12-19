@@ -24,6 +24,8 @@
 // 測定logリングバッファ試験用
 #include "rtc.h"
 #include "wpfm.h"
+#include "Eventlog.h"
+#include "Moni.h"
 
 /*
 *   Macros
@@ -88,7 +90,13 @@ int MLOG_begin(bool fullScan)
 
 int MLOG_putLog(MLOG_T *log_p, bool specifySN)
 {
+	RTC_DATETIME dt;
+	RTC_convertToDateTime(log_p->timestamp.second,&dt);
     DEBUG_UART_printlnFormat("_MLOG_headAddress=%06x,%d", (unsigned int)_MLOG_headAddress, specifySN); APP_delay(2);
+    if( dt.second%WPFM_measurementInterval ){
+		DLCEventLogWrite( _ID1_ERROR,100,(dt.day<<24)|(dt.hour<<16)|(dt.minute<<8)|dt.second );
+		putst("★★★");putcrlf();
+	}
     if ((_MLOG_headAddress & 0xfff) == 0)
     {
         // if page number and offset are zero - first log in current sector
