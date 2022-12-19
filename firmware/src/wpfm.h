@@ -8,6 +8,7 @@
 
 #ifndef WPFM_H
 #define	WPFM_H
+#include "version.h"
 
 #define ADD_FUNCTION									// Additional Function ChatteringType2 etc
 
