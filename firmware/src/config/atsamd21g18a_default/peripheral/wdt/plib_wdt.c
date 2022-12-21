@@ -133,3 +133,21 @@ void WDT_ClearWithSync( void )
     }
 }
 
+// Set 4096 clock cycle
+void WDT_SetClkCycle( void )
+{
+    /* Wait for synchronization */
+    while(WDT_REGS->WDT_STATUS != 0U)
+    {
+        /* Do nothing */
+    }
+
+    WDT_REGS->WDT_CONFIG = (WDT_REGS->WDT_CONFIG) & (~WDT_CONFIG_PER_Msk);
+    WDT_REGS->WDT_CONFIG |= WDT_CONFIG_PER_4K_Val;
+
+    /* Wait for synchronization */
+    while(WDT_REGS->WDT_STATUS != 0U)
+    {
+        /* Do nothing */
+    }
+}
