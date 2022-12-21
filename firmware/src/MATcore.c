@@ -489,7 +489,7 @@ void MTwget()	// fota
 */
 void MTrrcv()
 {
-	DLCMatTimerset( 0,TIMER_3000ms );
+	DLCMatTimerset( 0,TIMER_7000ms );
 }
 void MTrvTO()
 {
