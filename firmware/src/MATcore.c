@@ -501,7 +501,7 @@ void MTrvTO()
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatSend( "AT$CLOSE\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
-	DLC_MatState = MATC_STATE_SLP;
+	DLC_MatState = MATC_STATE_REPT;
 }
 void MTdata()
 {
@@ -1259,7 +1259,7 @@ void DLCMatPostStatus()
 */
 //http_tmpをASCII変換して送信する。→OKを待つ、これおループ
 int		DLC_MatReportMax,DLC_MatReportCnt,DLC_MatReportFin,DLC_MatExtbyte;
-#define			DLC_REPORT_ALL_MAX		3000					/* 1度の通信で送信するReortのMAX */
+#define			DLC_REPORT_ALL_MAX		3000				/* 1度の通信で送信するReortのMAX */
 #define			DLC_REPORT_SND_LMT		12					/* MATcoreに一度にSendするReport数 */
 void DLCMatReportSndSub()
 {
