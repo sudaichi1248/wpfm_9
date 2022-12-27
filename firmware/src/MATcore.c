@@ -864,7 +864,7 @@ void	 (*MTjmp[18][19])() = {
 /*					  0         1       2      3       4       5       6       7       8       9       10      11      12      13      14      15      16      17   18     */
 /*				  	 INIT    IDLE    IMEI    APN     SVR     CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR   */
 /* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy  },
-/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, ______, ______, MTcls3, MTcls5, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, MTdisc, ______ },
+/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, MTcls3, MTcls3, MTcls3, MTcls5, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, MTdisc, ______ },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______ },
@@ -2482,30 +2482,24 @@ void DLCMatMain()
 				logtime = RTC_now;
 				break;
 			case '2':
-				if( CheckPasswd() ){
-					for(int i=0;i<DLC_REPORT_ALL_MAX;i++){
-						ret = mlogdumywrite(logtime);
-						if (ret == 0) {
-							break;
-						}
-						logtime += 1;
-						WDT_Clear();
-					}
-					putst("##### write end #####");
+				for(int i=0;i<DLC_REPORT_ALL_MAX;i++){
+					ret = mlogdumywrite(logtime);
+					if (ret == 0)
+						break;
+					logtime += 1;
+					WDT_Clear();
 				}
+				putst("##### write end #####");
 				break;
 			case '3':
-				if( CheckPasswd() ){
-					while(1) {
-						ret = mlogdumywrite(logtime);
-						if (ret == 0) {
-							break;
-						}
-						logtime += 4;
-						WDT_Clear();
-					}
-					putst("##### write end #####");
+				while(1) {
+					ret = mlogdumywrite(logtime);
+					if (ret == 0)
+						break;
+					logtime += 4;
+					WDT_Clear();
 				}
+				putst("##### write end #####");
 				break;
 			}
 			break;
