@@ -501,7 +501,7 @@ void MTrvTO()
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatSend( "AT$CLOSE\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
-	DLC_MatState = MATC_STATE_REPT;
+	DLC_MatState = MATC_STATE_RPT;
 }
 void MTdata()
 {
