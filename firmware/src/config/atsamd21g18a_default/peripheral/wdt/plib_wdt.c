@@ -133,7 +133,7 @@ void WDT_ClearWithSync( void )
     }
 }
 
-// Set 4096 clock cycle
+// Set 8192 clock cycle
 void WDT_SetClkCycle( void )
 {
     /* Wait for synchronization */
@@ -143,7 +143,7 @@ void WDT_SetClkCycle( void )
     }
 
     WDT_REGS->WDT_CONFIG = (WDT_REGS->WDT_CONFIG) & (~WDT_CONFIG_PER_Msk);
-    WDT_REGS->WDT_CONFIG |= WDT_CONFIG_PER_4K_Val;
+    WDT_REGS->WDT_CONFIG |= WDT_CONFIG_PER_8K_Val;
 
     /* Wait for synchronization */
     while(WDT_REGS->WDT_STATUS != 0U)
