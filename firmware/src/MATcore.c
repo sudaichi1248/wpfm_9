@@ -29,7 +29,7 @@ void MatMsgSend( int msg );
 //void _GO_IDLE(){command_main();DLCMatState();}
 #ifdef ADD_FUNCTION
 void DLCMatRtcTimeChk();
-void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatRtcTimeChk();}
+void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatRtcTimeChk();WDT_Clear();}
 #else
 void _GO_IDLE(){DLCMatState();IDLEputch();}
 #endif
@@ -121,6 +121,7 @@ void IDLEputch( )
 #define		TIMER_3000ms	3000
 #define		TIMER_5000ms	5000
 #define		TIMER_7000ms	7000
+#define		TIMER_10s		10000
 #define		TIMER_12s		12000
 #define		TIMER_15s		15000
 #define		TIMER_30s		30000
@@ -169,6 +170,9 @@ int	DLCMatTmChk(int tmid)
 	}
 	return 0;
 }
+int		z2500ms;
+uchar	zWDTflg;
+extern void _RTC_handlerBClr();
 void DLCMatTimerInt()
 {
 	for(int i=0;i<TIMER_NUM;i++ ){
@@ -178,7 +182,18 @@ void DLCMatTimerInt()
 				DLC_MatTimer[i].TO = 2;
 		}
 	}
-//	putch('t');
+	z2500ms++;
+	if( z2500ms > 2500 ){
+		z2500ms = 0;
+		putch('*');
+		if( zWDTflg == 0 ){
+			_RTC_handlerBClr();
+			putst("☆");
+			DLCEventLogWrite( _ID1_SYS_ERROR,0x55,0 );
+		}
+		else
+			zWDTflg = 0;
+	}
 }
 /*
 	Function:RTCタイマー関数通信タスクのTO通知の確認
@@ -204,6 +219,8 @@ int	DLCMatRtcChk(int tmid)
 }
 void DLCMATrtctimer()
 {
+//	putch('t');
+	zWDTflg = 1;
 	WDT_Clear();
 	for(int i=0;i<RTC_TIMER_NUM;i++ ){
 		if( DLC_MatRtcTimer[i].cnt != 0 ){
@@ -261,12 +278,13 @@ void DLCMatLog(int len)
 }
 void DLCMatSend( char *s )
 {
-	int i,sz,blk,rmn;
+	int i,sz,rmn;
 	sz = strlen( s );
 	if( sz < 64 ){
 		putst( s );putch('\n');
 	}
-	blk = sz/64;
+#if 0
+	int blk = sz/64;
 	rmn = sz%64;
 	for( i=0;i<blk;i++){
 		SERCOM5_USART_Write( (uint8_t*)&s[i*64],64 );
@@ -274,6 +292,15 @@ void DLCMatSend( char *s )
 	if( rmn ){
 		SERCOM5_USART_Write( (uint8_t*)&s[i*64],rmn );
 	}
+#else
+	for( i=0;i<100;i++){
+		rmn = SERCOM5_USART_Write( (uint8_t*)s,sz );
+		if( rmn == sz )
+			return;
+		s += rmn;
+		sz = sz-rmn;
+	}
+#endif
 }
 int	DLCMatCharInt( char *p,char *title )
 {
@@ -489,7 +516,7 @@ void MTwget()	// fota
 */
 void MTrrcv()
 {
-	DLCMatTimerset( 0,TIMER_7000ms );
+	DLCMatTimerset( 0,TIMER_15s );
 }
 void MTrvTO()
 {
@@ -1305,17 +1332,17 @@ void DLCMatReportSnd()
 		sprintf( tmp,"\"Value_ch1\":%.3f,"	,log_p.measuredValues[0] );
 		if(( '0' > tmp[12] )||( tmp[12] > '9' )){
 			sprintf( tmp,"\"Value_ch1\":%.3f,"	,old1 );
+			DLCEventLogWrite( _ID1_ERROR,11,(tmp[12]<<24)|(tmp[13]<<16)|(tmp[14]<<8)|tmp[15] );
 			putst("Strange1=");puthxw(log_p.measuredValues[0] );putcrlf();
-			DLCEventLogWrite( _ID1_ERROR,10,(tmp[12]<<8)|(tmp[12]&0xFF) );
 		}
 		else
 			old1 = log_p.measuredValues[0];
 		strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch2\":%.3f,"	,log_p.measuredValues[1] );
 		if(( '0' > tmp[12] )||( tmp[12] > '9' )){
+			DLCEventLogWrite( _ID1_ERROR,11,(tmp[12]<<24)|(tmp[13]<<16)|(tmp[14]<<8)|tmp[15] );
 			sprintf( tmp,"\"Value_ch2\":%.3f,"	,old2 );
 			putst("Strange2=");puthxw(log_p.measuredValues[1] );putcrlf();
-			DLCEventLogWrite( _ID1_ERROR,11,(tmp[12]<<8)|(tmp[12]&0xFF) );
 		}
 		else
 			old2 = log_p.measuredValues[1];
@@ -1973,11 +2000,13 @@ int DLCMatRecvDisp()
 				if( strstr( DLC_MatResBuf,"HTTP/1.1 200 OK" )){
 					if( strstr( DLC_MatResBuf,"Connection: close" )){		/* ここです */
 putst("@@@@@ wktk1\r\n");
+#if 1
 						if ( MLOG_updateLog() != MLOG_ERR_NONE) {	// log FLAGを通知済に変更
 							putst("write error\r\n");
 						}
 						DLCEventLogWrite( _ID1_HTTP_OK,0,0 );
 						DLC_MatsendRepOK = true;
+#endif
 					}
 				}
 			}
@@ -2300,7 +2329,6 @@ void MATRts()
 }
 void DLCMatMain()
 {
-	extern void _RTC_handlerBClr();
 	char key;
 	int ret=0;
 	RTC_DATETIME dt;
