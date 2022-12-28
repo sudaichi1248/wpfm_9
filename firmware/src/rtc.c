@@ -566,7 +566,6 @@ static int _RTC_writeRegisters(uint8_t register_, uint8_t values[], int nbytes)
 void _RTC_handlerBClr()
 {
     uint8_t value = 0;
-	DLCMATrtctimer();
     if (_RTC_readRegister(RTC_REGISTER_CONTROL2, &value) == RTC_ERR_NONE)
     {
         if (value & REGISTER_CONTROL2_CTFG)
