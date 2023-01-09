@@ -94,7 +94,7 @@ int MLOG_putLog(MLOG_T *log_p, bool specifySN)
 	RTC_convertToDateTime(log_p->timestamp.second,&dt);
     DEBUG_UART_printlnFormat("_MLOG_headAddress=%06x,%d", (unsigned int)_MLOG_headAddress, specifySN); APP_delay(2);
     if( dt.second%WPFM_measurementInterval ){
-		DLCEventLogWrite( _ID1_ERROR,100,(dt.day<<24)|(dt.hour<<16)|(dt.minute<<8)|dt.second );
+		DLCEventLogWrite( _ID1_ERROR,0x0100,(dt.day<<24)|(dt.hour<<16)|(dt.minute<<8)|dt.second );
 		putst("ššš");putcrlf();
 	}
     if ((_MLOG_headAddress & 0xfff) == 0)

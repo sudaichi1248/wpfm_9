@@ -200,6 +200,9 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_SYS_START:
 		strcat( str,"SYSTEM ");
 		break;
+	case _ID1_SYS_ERROR:
+		strcat( str,"S ERR  ");
+		break;
 	case _ID1_MAT_VERSION:
 		strcat( str,"MATVer ");
 		break;
@@ -339,9 +342,13 @@ void DLCEventLogDisplay()
 	}
 #endif
 }
-void DLCMatEventLog()
+void DLCMatEventLog(const char *param, char *resp)
 {
 	int				i;
+	if( param[0] == 'D' ){							/* LogClear */
+		DLCEventLogClr(0);
+		return;
+	}
 #ifdef EVENTLOG_SPI
 	_EventLog	log;
 	uint32_t	printAddress;
