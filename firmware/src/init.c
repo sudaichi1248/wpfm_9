@@ -81,30 +81,30 @@ void WPFM_initializeApplication(void)
     DEBUG_UART_printlnFormat("** DLC-04(F/W Ver%s) **", WPFM_FW_VERSION);
     DEBUG_UART_printlnString("Initialize..");
 
-    DEBUG_UART_printString("RESET CAUSE is ");
+    putst("RESET CAUSE is ");
     PM_RESET_CAUSE cause = PM_ResetCauseGet();
     switch (cause)
     {
         case PM_RESET_CAUSE_POR_RESET:
-            DEBUG_UART_printlnString("POR");
+            putst("POR ");
             break;
         case PM_RESET_CAUSE_BOD12_RESET:
-            DEBUG_UART_printlnString("BOD12");
+            putst("BOD12 ");
             break;
         case PM_RESET_CAUSE_BOD33_RESET:
-            DEBUG_UART_printlnString("BOD33");
+            putst("BOD33 ");
             break;
         case PM_RESET_CAUSE_EXT_RESET:
-            DEBUG_UART_printlnString("EXT_RESET");
+            putst("EXT_RESET ");
             break;
         case PM_RESET_CAUSE_WDT_RESET:
-            DEBUG_UART_printlnString("WDT_RESET");
+            putst("WDT_RESET ");
             break;
         case PM_RESET_CAUSE_SYST_RESET:
-            DEBUG_UART_printlnString("SYS_RESET");
+            putst("SYS_RESET ");
             break;
         default:
-            DEBUG_UART_printlnString("UNKNOWN");
+            putst("UNKNOWN ");
             break;
     }
     SYSTICK_DelayMs(10);
@@ -112,20 +112,20 @@ void WPFM_initializeApplication(void)
     // Load setting parameter from internal-flash
     if (! WPFM_readSettingParameter(&WPFM_settingParameter))
     {
-        DEBUG_UART_printlnString("parameter read error.");
+        putst("parameter read error.");
     }
     //if (true)
     if (WPFM_settingParameter.isInvalid)
     {
         // Set default values
-        DEBUG_UART_printlnString("Set default parameter.");
+        putst("Set default parameter.");
         if (! WPFM_writeSettingParameter(&WPFM_settingParameterDefault))
         {
-            DEBUG_UART_printlnString("parameter write error!");
+            putst("parameter write error!");
         }
         if (! WPFM_readSettingParameter(&WPFM_settingParameter))
         {
-            DEBUG_UART_printlnString("parameter read error!");
+            putst("parameter read error!");
         }
     }
     WPFM_dumpSettingParameter(&WPFM_settingParameter);
