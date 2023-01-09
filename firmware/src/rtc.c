@@ -455,6 +455,7 @@ static void _RTC_handlerB(uintptr_t ptr)
     uint8_t value = 0;
 	SlideSwProc();
 	DLCMATrtctimer();
+Repeat:
     if (_RTC_readRegister(RTC_REGISTER_CONTROL2, &value) == RTC_ERR_NONE)
     {
         if (value & REGISTER_CONTROL2_CTFG)
@@ -482,6 +483,11 @@ static void _RTC_handlerB(uintptr_t ptr)
             }
         }
     }
+    else {
+	 	putch('%');								/* ƒŠƒgƒ‰ƒC 23.01.09 kasai */
+		UTIL_delayMicros(100);
+		goto Repeat;
+	}
 }
 
 static int _RTC_readRegister(uint8_t register_, uint8_t *value_p)
