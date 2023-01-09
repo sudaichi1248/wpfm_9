@@ -29,7 +29,7 @@ void MatMsgSend( int msg );
 //void _GO_IDLE(){command_main();DLCMatState();}
 #ifdef ADD_FUNCTION
 void DLCMatRtcTimeChk();
-void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatRtcTimeChk();WDT_Clear();}
+void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatRtcTimeChk();}
 #else
 void _GO_IDLE(){DLCMatState();IDLEputch();}
 #endif
@@ -81,13 +81,14 @@ char getkey()
 char getch()
 {
 	char	c;
-	while(1){
+	for(int i=0;i<100;i++){
 		if( SERCOM0_USART_Read( (unsigned char*)&c,1 ) ){
 			putch(c);
 			return c;
 		}
-		_GO_IDLE();
+		DLC_delay(1000);
 	}
+    return -1;
 }
 #define	_DEBUG_PUTCH_SZ_MAX		0x1000
 #define	_DEBUG_PUTCH_SZ_MSK		0x0FFF
@@ -170,8 +171,6 @@ int	DLCMatTmChk(int tmid)
 	}
 	return 0;
 }
-int		z2500ms;
-uchar	zWDTflg;
 extern void _RTC_handlerBClr();
 void DLCMatTimerInt()
 {
@@ -181,18 +180,6 @@ void DLCMatTimerInt()
 			if( DLC_MatTimer[i].cnt == 0 )
 				DLC_MatTimer[i].TO = 2;
 		}
-	}
-	z2500ms++;
-	if( z2500ms > 2500 ){
-		z2500ms = 0;
-		putch('*');
-		if( zWDTflg == 0 ){
-			_RTC_handlerBClr();
-			putst("☆");
-			DLCEventLogWrite( _ID1_SYS_ERROR,0x55,0 );
-		}
-		else
-			zWDTflg = 0;
 	}
 }
 /*
@@ -219,8 +206,7 @@ int	DLCMatRtcChk(int tmid)
 }
 void DLCMATrtctimer()
 {
-//	putch('t');
-	zWDTflg = 1;
+//	putch('@');
 	WDT_Clear();
 	for(int i=0;i<RTC_TIMER_NUM;i++ ){
 		if( DLC_MatRtcTimer[i].cnt != 0 ){
@@ -240,11 +226,11 @@ int DLCMatWake()
 	int		i;
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
 	for(i=0;i<WAKE_CHECK_RETRY;i++){
-		APP_delay(10);
+		DLC_delay(10);
 		if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11))
 			break;
 		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );
-		APP_delay(1);
+		DLC_delay(1);
 		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );
 	}
 	if( i == WAKE_CHECK_RETRY ){
@@ -300,6 +286,8 @@ void DLCMatSend( char *s )
 		s += rmn;
 		sz = sz-rmn;
 	}
+	putst("☆彡");
+	DLCEventLogWrite( _ID1_ERROR,0x66,sz );
 #endif
 }
 int	DLCMatCharInt( char *p,char *title )
@@ -580,6 +568,7 @@ void MTopn2()
 	}
 	DLC_ForcedCallOK = false;
 	DLCMatSend( "AT$OPEN\r" );
+	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatTimerset( 0,TIMER_15s );
 	DLC_MatState = MATC_STATE_OPN2;
 }
@@ -594,6 +583,7 @@ void MTopn3()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$OPEN\r" );
+	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatTimerset( 0,TIMER_15s );
 	DLCMatPostReptInit();
 	DLC_MatState = MATC_STATE_OPN3;
@@ -839,7 +829,7 @@ void DLCMatSleepWait()
 		if( DLC_MatState == MATC_STATE_SLP ){
 			return;
 		}
-		APP_delay(10);
+		DLC_delay(10);
 	}
 	putst("MATcore Startup Err\r\n");
 }
@@ -891,7 +881,7 @@ void	 (*MTjmp[18][19])() = {
 /*					  0         1       2      3       4       5       6       7       8       9       10      11      12      13      14      15      16      17   18     */
 /*				  	 INIT    IDLE    IMEI    APN     SVR     CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR   */
 /* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy  },
-/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, MTcls3, MTcls3, MTcls3, MTcls5, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, MTdisc, ______ },
+/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, MTdisc, ______ },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______ },
@@ -1285,8 +1275,8 @@ void DLCMatPostStatus()
 	2022.11.3 Reportを分割して送信する
 */
 //http_tmpをASCII変換して送信する。→OKを待つ、これおループ
-int		DLC_MatReportMax,DLC_MatReportCnt,DLC_MatReportFin,DLC_MatExtbyte;
-#define			DLC_REPORT_ALL_MAX		3000				/* 1度の通信で送信するReortのMAX */
+int		DLC_MatReportMax,DLC_MatReportCnt,DLC_MatReportFin,DLC_MatExtbyte,DLC_MatReportLmt;
+#define			DLC_REPORT_ALL_MAX		3000				/* HTTP ReportのMaxList数 */
 #define			DLC_REPORT_SND_LMT		12					/* MATcoreに一度にSendするReport数 */
 void DLCMatReportSndSub()
 {
@@ -1332,7 +1322,7 @@ void DLCMatReportSnd()
 		sprintf( tmp,"\"Value_ch1\":%.3f,"	,log_p.measuredValues[0] );
 		if(( '0' > tmp[12] )||( tmp[12] > '9' )){
 			sprintf( tmp,"\"Value_ch1\":%.3f,"	,old1 );
-			DLCEventLogWrite( _ID1_ERROR,11,(tmp[12]<<24)|(tmp[13]<<16)|(tmp[14]<<8)|tmp[15] );
+			DLCEventLogWrite( _ID1_ERROR,0x11,(tmp[12]<<24)|(tmp[13]<<16)|(tmp[14]<<8)|tmp[15] );
 			putst("Strange1=");puthxw(log_p.measuredValues[0] );putcrlf();
 		}
 		else
@@ -1340,7 +1330,7 @@ void DLCMatReportSnd()
 		strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch2\":%.3f,"	,log_p.measuredValues[1] );
 		if(( '0' > tmp[12] )||( tmp[12] > '9' )){
-			DLCEventLogWrite( _ID1_ERROR,11,(tmp[12]<<24)|(tmp[13]<<16)|(tmp[14]<<8)|tmp[15] );
+			DLCEventLogWrite( _ID1_ERROR,0x12,(tmp[12]<<24)|(tmp[13]<<16)|(tmp[14]<<8)|tmp[15] );
 			sprintf( tmp,"\"Value_ch2\":%.3f,"	,old2 );
 			putst("Strange2=");puthxw(log_p.measuredValues[1] );putcrlf();
 		}
@@ -1366,6 +1356,10 @@ void DLCMatPostReptInit()
 	DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
 	MLOG_tailAddressBuckUp();
 	DLC_MatExtbyte = 0;
+	DLC_MatReportLmt = DLC_Para.Http_Report_max;
+	if(( DLC_MatReportLmt >= 10000 )||( DLC_MatReportLmt < 0 ))
+		DLC_MatReportLmt = DLC_REPORT_ALL_MAX;
+	putst("ReportLmt=");putdech(DLC_MatReportLmt);putcrlf();
 }
 int DLCMatPostReport()
 {
@@ -2000,13 +1994,13 @@ int DLCMatRecvDisp()
 				if( strstr( DLC_MatResBuf,"HTTP/1.1 200 OK" )){
 					if( strstr( DLC_MatResBuf,"Connection: close" )){		/* ここです */
 putst("@@@@@ wktk1\r\n");
-#if 1
-						if ( MLOG_updateLog() != MLOG_ERR_NONE) {	// log FLAGを通知済に変更
-							putst("write error\r\n");
+						if( DLC_Para.Http_Report_Hold == 0xff ){
+							if ( MLOG_updateLog() != MLOG_ERR_NONE) {	// log FLAGを通知済に変更
+								putst("write error\r\n");
+							}
+							DLCEventLogWrite( _ID1_HTTP_OK,0,0 );
+							DLC_MatsendRepOK = true;
 						}
-						DLCEventLogWrite( _ID1_HTTP_OK,0,0 );
-						DLC_MatsendRepOK = true;
-#endif
 					}
 				}
 			}
@@ -2056,7 +2050,7 @@ void DLCSPIFlashTest()
 						putst("ERASE OK");putcrlf();
 						sprintf(line, "%03X", (unsigned int)j);
 						putst(line);putcrlf();
-						APP_delay(300);
+						DLC_delay(300);
 						address = (j << 4);								/* 0,0x10,0x20,0x30... */
 						for( int i=0;i<16;i++ ){
 							if( W25Q128JV_programPage( address++,(uint8_t)0,DmyData,(uint16_t)sizeof(DmyData),true ) == W25Q128JV_ERR_NONE ){
@@ -2107,7 +2101,7 @@ void DLCSPIFlashTest()
 					else{
 						putst("Read NG ");puthxw( addr );putcrlf();
 					}
-					APP_delay(2);
+					DLC_delay(2);
 				}
 			}
 			else {
@@ -2224,7 +2218,7 @@ void DLCMatBypass()
 			SERCOM0_USART_Read( &c, 1 );
 			SERCOM5_USART_Write( &c, 1 );				/* MATcoreに出力 */
 		}
-		APP_delay(10);
+		DLC_delay(10);
 		if( SERCOM5_USART_Read( &c, 1 )){				/* MATcoreから入力 */
 			SERCOM0_USART_Write( &c, 1 );				/* UARTへ出力 */
 			if( c == '\r' ){
@@ -2232,7 +2226,7 @@ void DLCMatBypass()
 				SERCOM0_USART_Write( &c, 1 );			/* UARTへ出力 */
 			}
 		}
-		APP_delay(10);
+		DLC_delay(10);
 	}
 }
 void DLCMatTest()
@@ -2637,7 +2631,7 @@ void DLC_delay( int msec )
 	for(int i=0;i<msec;i++){
 		IDLEputch();
 		APP_delay(1);
-		WDT_Clear();
+//		WDT_Clear();
 	}
 }
 /*
