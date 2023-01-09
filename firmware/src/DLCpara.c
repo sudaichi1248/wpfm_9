@@ -153,3 +153,16 @@ void DLCMatGetClock(const char *param, char *resp)
 	APP_printUSB(resp);
 	DLCMatParaRes( resp );
 }
+void DLCMatReportLmt(const char *param, char *resp)
+{
+}
+void DLCMatReportFlg(const char *param, char *resp)
+{
+	DLC_Para.Http_Report_Hold ^= 0xff;
+	if( DLC_Para.Http_Report_Hold == 0 )
+		putst( "Report Debug\n\r" );
+	else
+		putst( "Report Normal\n\r" );
+	DLCParaSave();
+	DLCMatParaRes( resp );
+}
