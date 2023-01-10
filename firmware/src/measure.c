@@ -35,8 +35,10 @@ int DLCMatIsCom();
  */
 void WPFM_measureRegularly(bool justMeasure)
 {
-    uint32_t start = SYS_mSec, occurrenceTime = RTC_now;
+    uint32_t start = SYS_mSec, occurrenceTime = RTC_now, battery_readtime;
     int stat = 0;
+	uint32_t start_tick = SYS_tick;
+	bool kind_1_3v = false;
 
     RTC_DATETIME dt;
     RTC_getDatetime(&dt);
@@ -46,7 +48,7 @@ void WPFM_measureRegularly(bool justMeasure)
     // Start measument of temperature here baecause of too slow
     S5851A_startMeasurement();
 
-    // Reading a sensor(s)
+    // Turn on a sensor(s)
     for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
     {
         uint8_t sensorKind = WPFM_settingParameter.sensorKinds[sensorIndex];
@@ -61,7 +63,7 @@ void WPFM_measureRegularly(bool justMeasure)
             if  (sensorKind == SENSOR_KIND_1_3V)
             {
                 SENSOR_turnOnSensorCircuit(sensorIndex + 1, true);
-                SYSTICK_DelayMs(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);    // APP_delay(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);
+                kind_1_3v = true;
             }
             else
             {
@@ -69,31 +71,10 @@ void WPFM_measureRegularly(bool justMeasure)
                 SYSTICK_DelayMs(10);        // wait a little
             }
         }
-
-        float value = WPFM_MISSING_VALUE_FLOAT;
-        if ((stat = SENSOR_readSensorOutput(sensorIndex + 1, &value)) == SENSOR_ERR_NONE)
-        {
-            DEBUG_UART_printlnFormat("SENSOR_readSensorOutput(%d) OK: %.3f", sensorIndex + 1, value);
-        }
-        else
-        {
-            DEBUG_UART_printlnFormat("SENSOR_readSensorOutput(%d) NG: %d", sensorIndex + 1, stat);
-        }
-		if (value > WPFM_settingParameter.upperLimits[sensorIndex]) {	// è„å¿Å^â∫å¿Ç≈ä€ÇﬂçûÇ›
-			value = WPFM_settingParameter.upperLimits[sensorIndex];
-		} else if (value < WPFM_settingParameter.lowerLimits[sensorIndex]) {
-			value = WPFM_settingParameter.lowerLimits[sensorIndex];
-		}
-        WPFM_lastMeasuredValues[sensorIndex] = value;
-
-        // Power off sensor power if necessary
-        if (! SENSOR_alwaysOnSensorPowers[sensorIndex])
-        {
-            SENSOR_turnOffSensorCircuit(sensorIndex + 1);
-        }
     }
 
     // Read two external battery voltages
+	start_tick = SYS_tick;
     WPFM_lastBatteryVoltages[0] = WPFM_lastBatteryVoltages[1] = WPFM_MISSING_VALUE_UINT16;
     SENSOR_readExternalBatteryVoltage(1, &WPFM_lastBatteryVoltages[0]);
     SENSOR_readExternalBatteryVoltage(2, &WPFM_lastBatteryVoltages[1]);
@@ -119,6 +100,42 @@ void WPFM_measureRegularly(bool justMeasure)
     DEBUG_UART_printlnFormat("BATTERY: Status %02Xh, USE #%d/RPL #%d",
             WPFM_batteryStatus, WPFM_externalBatteryNumberInUse, WPFM_externalBatteryNumberToReplace);
     APP_delay(20);
+	battery_readtime = SYS_tick - start_tick;
+
+	// Turn on wait
+	if (kind_1_3v == true) {
+		if (battery_readtime < SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR) {
+			SYSTICK_DelayMs(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR - battery_readtime);    // APP_delay(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);
+		} else {
+			SYSTICK_DelayMs(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);    // APP_delay(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);
+		}
+	}
+
+    // Reading a sensor(s)
+    for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
+    {
+        float value = WPFM_MISSING_VALUE_FLOAT;
+        if ((stat = SENSOR_readSensorOutput(sensorIndex + 1, &value)) == SENSOR_ERR_NONE)
+        {
+            DEBUG_UART_printlnFormat("SENSOR_readSensorOutput(%d) OK: %.3f", sensorIndex + 1, value);
+        }
+        else
+        {
+            DEBUG_UART_printlnFormat("SENSOR_readSensorOutput(%d) NG: %d", sensorIndex + 1, stat);
+        }
+		if (value > WPFM_settingParameter.upperLimits[sensorIndex]) {	// è„å¿Å^â∫å¿Ç≈ä€ÇﬂçûÇ›
+			value = WPFM_settingParameter.upperLimits[sensorIndex];
+		} else if (value < WPFM_settingParameter.lowerLimits[sensorIndex]) {
+			value = WPFM_settingParameter.lowerLimits[sensorIndex];
+		}
+        WPFM_lastMeasuredValues[sensorIndex] = value;
+
+        // Power off sensor power if necessary
+        if (! SENSOR_alwaysOnSensorPowers[sensorIndex])
+        {
+            SENSOR_turnOffSensorCircuit(sensorIndex + 1);
+        }
+    }
 
     // Read temperature sensor on board
     WPFM_getTemperature();
