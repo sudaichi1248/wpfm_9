@@ -153,8 +153,12 @@ void DLCMatGetClock(const char *param, char *resp)
 	APP_printUSB(resp);
 	DLCMatParaRes( resp );
 }
-void DLCMatReportLmt(const char *param, char *resp)
+void DLCMatReportLmt(const char *p, char *resp)
 {
+	DLC_Para.Http_Report_max = ((p[0]-'0')*10000)+((p[1]-'0')*1000)+((p[2]-'0')*100)+((p[3]-'0')*10)+p[4]-'0';
+	putst("ReportLmt=");putdech( DLC_Para.Http_Report_max );putcrlf();
+	DLCParaSave();
+	DLCMatParaRes( resp );
 }
 void DLCMatReportFlg(const char *param, char *resp)
 {

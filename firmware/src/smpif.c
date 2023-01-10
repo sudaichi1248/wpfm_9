@@ -68,6 +68,8 @@ static SMPIF_COMMAND_TABLE _SMPIF_commandTables[] =
         { "M5", DLCMatRepotLogChange },
         { "M6", DLCMatBatCarivChange },
         { "M7", DLCMatSettingClear },
+        { "M9", DLCMatReportLmt },
+        { "MA", DLCMatReportFlg },
         { NULL, NULL }
     };
 
