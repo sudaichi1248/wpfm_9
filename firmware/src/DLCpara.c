@@ -170,9 +170,8 @@ void DLCMatReportFlg(const char *param, char *resp)
 	DLCParaSave();
 	DLCMatParaRes( resp );
 }
-void DLCMatEventLogClr(char *resp)
+void DLCMatEventLogClr(const char *param, char *resp)
 {
 	DLCEventLogClr(0);
 	DLCMatParaRes( resp );
-
 }
