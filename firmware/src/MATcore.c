@@ -1366,7 +1366,7 @@ int DLCMatPostReport()
 	char	tmp[48],*p;
 	int		i,Len;
 	MLOG_T 	log_p;
-	for( i=0; DLC_MatReportMax < DLC_REPORT_ALL_MAX; DLC_MatReportMax++,i++ ){			/* Lengthを求めるためにmlogを仮走査 */
+	for( i=0; DLC_MatReportMax < DLC_MatReportLmt; DLC_MatReportMax++,i++ ){			/* Lengthを求めるためにmlogを仮走査 */
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
 		sprintf( tmp,"%.3f"	,log_p.measuredValues[0] );												/* #.### 以外のレングス増え分を求める */
@@ -1391,7 +1391,7 @@ int DLCMatPostReport()
 	strcat( http_tmp,"\"Reportlist\":[" );
 	if( DLC_MatReportMax ){
 		putst("Report=");putdecw( DLC_MatReportMax );putch(' ');
-		if( DLC_MatReportMax == DLC_REPORT_ALL_MAX ){										/* Maxまで溜まっていたら、more=1 */
+		if( DLC_MatReportMax == DLC_MatReportLmt ){										/* Maxまで溜まっていたら、more=1 */
 			putst("More!" );
 			DLC_MatRptMore++;
 		}
@@ -2504,7 +2504,7 @@ void DLCMatMain()
 				logtime = RTC_now;
 				break;
 			case '2':
-				for(int i=0;i<DLC_REPORT_ALL_MAX;i++){
+				for(int i=0;i<DLC_MatReportLmt;i++){
 					ret = mlogdumywrite(logtime);
 					if (ret == 0)
 						break;
