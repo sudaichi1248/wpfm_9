@@ -106,14 +106,18 @@ void WPFM_measureRegularly(bool justMeasure)
 	if (kind_1_3v == true) {
 		if (battery_readtime < SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR) {
 			SYSTICK_DelayMs(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR - battery_readtime);    // APP_delay(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);
-		} else {
-			SYSTICK_DelayMs(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);    // APP_delay(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);
 		}
 	}
 
     // Reading a sensor(s)
     for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
     {
+        uint8_t sensorKind = WPFM_settingParameter.sensorKinds[sensorIndex];
+        if (sensorKind == SENSOR_KIND_NOT_PRESENT)
+        {
+            continue;   // Skip measurement if the sensor is not present
+        }
+
         float value = WPFM_MISSING_VALUE_FLOAT;
         if ((stat = SENSOR_readSensorOutput(sensorIndex + 1, &value)) == SENSOR_ERR_NONE)
         {
