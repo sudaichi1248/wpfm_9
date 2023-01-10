@@ -134,7 +134,7 @@ void WDT_ClearWithSync( void )
 }
 
 // Set 8192 clock cycle
-void WDT_SetClkCycle( void )
+void WDT_SetClkCycle( int cycle )
 {
     /* Wait for synchronization */
     while(WDT_REGS->WDT_STATUS != 0U)
@@ -143,7 +143,19 @@ void WDT_SetClkCycle( void )
     }
 
     WDT_REGS->WDT_CONFIG = (WDT_REGS->WDT_CONFIG) & (~WDT_CONFIG_PER_Msk);
-    WDT_REGS->WDT_CONFIG |= WDT_CONFIG_PER_8K_Val;
+    switch (cycle) {
+		case 16:
+			WDT_REGS->WDT_CONFIG |= WDT_CONFIG_PER_16K_Val;	// 5•b
+			break;
+		case 8:
+			WDT_REGS->WDT_CONFIG |= WDT_CONFIG_PER_8K_Val;	// 2.5•b
+			break;
+		case 4:
+			WDT_REGS->WDT_CONFIG |= WDT_CONFIG_PER_4K_Val;	// 1.25•b
+			break;
+		default:
+			break;
+	}
 
     /* Wait for synchronization */
     while(WDT_REGS->WDT_STATUS != 0U)

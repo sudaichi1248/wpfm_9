@@ -345,10 +345,6 @@ void DLCEventLogDisplay()
 void DLCMatEventLog(const char *param, char *resp)
 {
 	int				i;
-	if( param[0] == 'D' ){							/* LogClear */
-		DLCEventLogClr(0);
-		return;
-	}
 #ifdef EVENTLOG_SPI
 	_EventLog	log;
 	uint32_t	printAddress;

@@ -28,3 +28,4 @@ void DLCMatSetClock();
 void DLCMatGetClock();
 void DLCMatReportLmt(const char *param, char *resp);
 void DLCMatReportFlg();
+void DLCMatEventLogClr();

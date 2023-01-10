@@ -2331,7 +2331,7 @@ void DLCMatMain()
 	if( DLC_BigState == 0 ){
 		putst( VerPrint() );
 		putst( "\r\nMATcore Task Started.\r\n" );
-		WDT_SetClkCycle();	// WDT 1.25ïbÇ…ê›íË
+		WDT_SetClkCycle(8);	// WDTê›íË
 		WDT_Enable();
 		DLCMatReset();
 		DLCMatInit();
