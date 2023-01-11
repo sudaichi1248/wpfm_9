@@ -1,2 +1,2 @@
 ; Reort json LMT
-send #2 "005M900123" #3
+send #2 "005M901000" #3
