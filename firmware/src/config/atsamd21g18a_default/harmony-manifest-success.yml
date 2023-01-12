@@ -4,7 +4,7 @@
 
 
 project: wpfm_9
-creation_date: 2022-11-16T19:55:51.120+09:00[Asia/Tokyo]    # ISO 8601 format: https://www.w3.org/TR/NOTE-datetime
+creation_date: 2023-01-12T15:00:49.903+09:00[GMT+09:00]    # ISO 8601 format: https://www.w3.org/TR/NOTE-datetime
 operating_system: Windows 10
 mhc_mode: IDE            # [IDE|Standalone|Headless]
 mhc_version: v3.8.5

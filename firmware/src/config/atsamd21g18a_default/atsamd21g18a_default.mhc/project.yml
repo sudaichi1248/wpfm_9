@@ -75,7 +75,7 @@ files:
   physicalPath: peripheral/eic
   security: NON_SECURE
   type: SOURCE
-  userChecksum: 4387AB5483216063FA3725E90C56AAE8
+  userChecksum: DA69E99625F46733299E44E7151D9C2B
 - generatedChecksum: C3ECDED3D6301DB0DE622293ED615D21
   logicalPath: config/atsamd21g18a_default/peripheral/evsys
   name: plib_evsys.c
@@ -89,7 +89,7 @@ files:
   physicalPath: peripheral/nvic
   security: NON_SECURE
   type: SOURCE
-  userChecksum: 1E77B0E9528550C359A9C2FEDBA66DED
+  userChecksum: E255B3FDDCE2CE867DE6C84EC04E9560
 - generatedChecksum: CDBE0E5D94C53410F5F34B566B5FF51F
   logicalPath: config/atsamd21g18a_default/peripheral/nvmctrl
   name: plib_nvmctrl.c
@@ -132,13 +132,13 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: 7BB742B85025D8ADCA8EBC28C297169D
-- generatedChecksum: 1EAA97A49587C36568DDB80E728C8944
+- generatedChecksum: 890DFF5C63EC3684BA7A70034B5CD2D0
   logicalPath: config/atsamd21g18a_default/peripheral/sercom/usart
   name: plib_sercom5_usart.c
   physicalPath: peripheral/sercom/usart
   security: NON_SECURE
   type: SOURCE
-  userChecksum: 1EAA97A49587C36568DDB80E728C8944
+  userChecksum: 890DFF5C63EC3684BA7A70034B5CD2D0
 - generatedChecksum: E6DBA5598EFE3B305C237EB3C724E915
   logicalPath: config/atsamd21g18a_default/peripheral/systick
   name: plib_systick.c
@@ -173,7 +173,7 @@ files:
   physicalPath: peripheral/wdt
   security: NON_SECURE
   type: SOURCE
-  userChecksum: E7FD7ADC57B6F6EEE6315C4486C4EF5C
+  userChecksum: 33FD6CA0285E4CA3167F38BFC9E1DF17
 - generatedChecksum: 64C7B09EBF0E16AC27EFD31B52FDDDF8
   logicalPath: config/atsamd21g18a_default
   name: startup_xc32.c
@@ -775,7 +775,7 @@ files:
   physicalPath: peripheral/wdt
   security: NON_SECURE
   type: HEADER
-  userChecksum: AD5BC432377D1EFB5B464625F65873B0
+  userChecksum: 3CAC5DFE30BA986C6D11B0E47CFA342C
 - generatedChecksum: 242CE394C762D4EF35E9A0274DCB2308
   logicalPath: packs/ATSAMD21G18A_DFP/component
   name: pm.h
