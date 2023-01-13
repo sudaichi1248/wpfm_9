@@ -127,6 +127,7 @@ void IDLEputch( )
 #define		TIMER_15s		15000
 #define		TIMER_30s		30000
 #define		TIMER_90s		90000
+#define		TIMER_120s		120000
 #define		TIMER_NUM		8	// 0:all over timer,1:,2:push sw timer,3:retry timer,4:FOTA timer
 struct {
 	int		cnt;
@@ -438,7 +439,7 @@ void MTconn()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT?\r" );
-	DLCMatTimerset( 0,TIMER_90s );
+	DLCMatTimerset( 0,TIMER_120s );
 	if (DLC_Para.FOTAact != 0) {	// fota â^ópéû
 		DLC_MatState = MATC_STATE_COND;
 	} else {	//  FOTAé¿çséû
@@ -627,11 +628,13 @@ void MTdisc()
 		DLC_Matknd = 0;
 		DLCMatSend( "AT$CONNECT\r" );
 		DLCEventLogWrite( _ID1_CONNECT,0,0 );
-		DLCMatTimerset( 0,TIMER_90s );
+		DLCMatTimerset( 0,TIMER_120s );
 		DLC_MatState = MATC_STATE_CONN;
 	}
 	else {
 		if (DLC_Para.FOTAact != 0) {									/* â^ópéû */
+			if( DLC_MatState < MATC_STATE_RPT )
+				DLCEventLogWrite( _ID1_CONN_NG,0,DLC_MatState );
 			DLCMatTimerset( 0,TIMER_7000ms );
 			putst("Go Sleep\r\n");
 			PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );					/* Sleep! */
@@ -730,7 +733,7 @@ void MTwake()
 	DLC_Matknd = 0;
 	DLCMatSend( "AT$CONNECT\r" );
 	DLCEventLogWrite( _ID1_CONNECT,0,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
-	DLCMatTimerset( 0,TIMER_90s );
+	DLCMatTimerset( 0,TIMER_120s );
 	TC5_TimerStart();
 	DLC_MatState = MATC_STATE_CONN;
 }
@@ -751,7 +754,7 @@ void MTconW()
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT\r" );
 	DLCEventLogWrite( _ID1_CONNECT,0,0 );
-	DLCMatTimerset( 0,TIMER_90s );
+	DLCMatTimerset( 0,TIMER_120s );
 	DLC_MatState = MATC_STATE_CONN;
 }
 void MTtoF()	// fota T/O
