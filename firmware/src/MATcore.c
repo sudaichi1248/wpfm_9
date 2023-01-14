@@ -37,6 +37,7 @@ void Moni();
 void DLCMatConfigDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatReportSnd(),DLCMatPostReptInit();
 int	DLCMatPostReport();
+void MATReportLmtUpDw( int );
 void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatReset();
 void DLCMatServerChange();
 extern	char _Main_version[];
@@ -661,6 +662,7 @@ void MTcls3()
 	if( DLC_MatState == MATC_STATE_RPT ){	// Report送信で
 		if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
 			MLOG_tailAddressRestore();	// tailAddress戻す
+			MATReportLmtUpDw(0);								/* Report Limit 下げる */
 		}
 	}
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
@@ -674,6 +676,7 @@ void MTcls4()
 	if( DLC_MatState == MATC_STATE_RPT ){	// Report送信で
 		if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
 			MLOG_tailAddressRestore();	// tailAddress戻す
+			MATReportLmtUpDw(0);								/* Report Limit 下げる */
 		}
 		else {
 			if( DLC_MatRptMore ){
@@ -1281,6 +1284,25 @@ void DLCMatPostStatus()
 int		DLC_MatReportMax,DLC_MatReportCnt,DLC_MatReportFin,DLC_MatExtbyte,DLC_MatReportLmt;
 #define			DLC_REPORT_ALL_MAX		3000				/* HTTP ReportのMaxList数 */
 #define			DLC_REPORT_SND_LMT		12					/* MATcoreに一度にSendするReport数 */
+void MATReportLmtUpDw( int updw )
+{
+	if( updw ){								/* Up */
+		if( DLC_MatReportLmt == 1000 )
+			DLC_MatReportLmt = DLC_REPORT_ALL_MAX;
+		else if( DLC_MatReportLmt == 300 )
+			DLC_MatReportLmt = 1000;
+		else if( DLC_MatReportLmt == 100 )
+			DLC_MatReportLmt = 300;
+	}
+	else {
+		if( DLC_MatReportLmt == DLC_REPORT_ALL_MAX )
+			DLC_MatReportLmt = 1000;
+		else if( DLC_MatReportLmt == 1000 )
+			DLC_MatReportLmt = 300;
+		else if( DLC_MatReportLmt == 300 )
+			DLC_MatReportLmt = 100;
+	}
+}
 void DLCMatReportSndSub()
 {
 	char	tmp[3],v;
@@ -1359,9 +1381,6 @@ void DLCMatPostReptInit()
 	DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
 	MLOG_tailAddressBuckUp();
 	DLC_MatExtbyte = 0;
-	DLC_MatReportLmt = DLC_Para.Http_Report_max;
-	if(( DLC_MatReportLmt >= 10000 )||( DLC_MatReportLmt < 0 ))
-		DLC_MatReportLmt = DLC_REPORT_ALL_MAX;
 	putst("ReportLmt=");putdech(DLC_MatReportLmt);putcrlf();
 }
 int DLCMatPostReport()
@@ -2004,6 +2023,7 @@ putst("@@@@@ wktk1\r\n");
 							DLCEventLogWrite( _ID1_HTTP_OK,0,0 );
 							DLC_MatsendRepOK = true;
 						}
+						MATReportLmtUpDw(1);								/* Report Limit数Up */
 					}
 				}
 			}
@@ -2340,6 +2360,9 @@ void DLCMatMain()
 		DLCMatInit();
 		DLC_BigState = 1;
 		DLCEventLogWrite( _ID1_SYS_START,0,(_Main_version[4]-'0')<<12|(_Main_version[5]-'0')<<8|(_Main_version[7]-'0')<<4|(_Main_version[8]-'0' ));
+		DLC_MatReportLmt = DLC_Para.Http_Report_max;
+		if(( DLC_MatReportLmt >= 10000 )||( DLC_MatReportLmt < 0 ))
+			DLC_MatReportLmt = DLC_REPORT_ALL_MAX;
 	}
 	key = getkey();
 	if( key ){
