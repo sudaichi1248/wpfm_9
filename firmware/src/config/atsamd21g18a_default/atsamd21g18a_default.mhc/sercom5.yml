@@ -116,7 +116,7 @@ children:
     - type: Values
       children:
       - type: User
-        attributes: {value: '256'}
+        attributes: {value: '2048'}
   - type: Integer
     attributes: {id: USART_SAMPLE_COUNT}
     children:
