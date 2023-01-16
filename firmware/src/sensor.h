@@ -42,7 +42,8 @@ typedef enum {
 #define SENSOR_EXTERNAL_BATTERY2    ADC_POSINPUT_PIN2       // AIN[2]/PB08
 
 // Misc.
-#define SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR     1000     // Time to energize before reading a value from the sensor[mS]
+//#define SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR     1000     // Time to energize before reading a value from the sensor[mS]
+#define SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR     135     // Time to energize before reading a value from the sensor[mS] íZèk
 
 /*
 *   Global functions

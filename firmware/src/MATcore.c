@@ -1043,7 +1043,11 @@ void DLCMatState()
 	}
 	if( DLC_MatLineIdx >= 7 ){
 		if( strstr( (char*)DLC_MatLineBuf,"$CLOSE\r" )){
-			DLC_Matfact = MATC_FACT_CLS;
+			if (DLC_Matfact == MATC_FACT_DATA) {	// $RECVDATA:..."<CR>後に$CLOSEが入っている場合
+				;	// 一旦データ受信処理を実行しそこで$RECVDATA:の$を削除して、次回CLOSE処理する
+			} else {
+				DLC_Matfact = MATC_FACT_CLS;
+			}
 		}
 		if( strstr( (char*)DLC_MatLineBuf,"$SLEEP\r" )){
 			DLC_Matfact = MATC_FACT_SLP;
@@ -1981,6 +1985,7 @@ int DLCMatRecvDisp()
 	char	*p,*q,n;
 	int		i,j=0,k;
 	if(( p = strstr( (char*)DLC_MatLineBuf,"$RECVDATA:" )) > 0 ){
+		*p = 0;	// $RECVDATA:の$削除
 		p = str2int( &p[10],&i );										/* $RECVDATA,i,j,"...."<cr> */
 		if( p < 0 ){													/* p            q  */
 			putst( "format err2\r\n" );

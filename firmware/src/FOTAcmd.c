@@ -123,6 +123,7 @@ int DLCMatRecvWriteFota()	// SPIへ受信データ書込み処理
 	int		i,j=0,k,len,recvlen;
 	int		fotaaddress=DLC_MatSPIFlashAddrFota;	/* FOTAデータ保存番地 */
 	if(( p = strstr( (char*)DLC_MatLineBuf,"$RECVDATA:" )) > 0 ){
+		*p = 0;	// $RECVDATA:の$削除
 		p = str2int( &p[10],&i );										/* $RECVDATA,i,j,"...."<cr> */
 		if( p < 0 ){													/* p            q  */
 			putst( "format err2\r\n" );

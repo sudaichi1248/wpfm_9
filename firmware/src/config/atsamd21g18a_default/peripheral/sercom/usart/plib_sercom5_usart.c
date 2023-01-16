@@ -69,8 +69,8 @@ static SERCOM_USART_RING_BUFFER_OBJECT sercom5USARTObj;
 // *****************************************************************************
 // *****************************************************************************
 
-#define SERCOM5_USART_READ_BUFFER_SIZE      2048U
-#define SERCOM5_USART_READ_BUFFER_9BIT_SIZE     (2048U >> 1U)
+#define SERCOM5_USART_READ_BUFFER_SIZE      2304U
+#define SERCOM5_USART_READ_BUFFER_9BIT_SIZE     (2304U >> 1U)
 #define SERCOM5_USART_RX_INT_DISABLE()      SERCOM5_REGS->USART_INT.SERCOM_INTENCLR = SERCOM_USART_INT_INTENCLR_RXC_Msk
 #define SERCOM5_USART_RX_INT_ENABLE()       SERCOM5_REGS->USART_INT.SERCOM_INTENSET = SERCOM_USART_INT_INTENSET_RXC_Msk
 
