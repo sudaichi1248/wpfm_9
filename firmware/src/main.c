@@ -48,6 +48,9 @@
 #include "Eventlog.h"
 void	DLCMatMain();
 int		DLCMatIsSleep();
+extern int		RTCReadRetry;
+extern int		RTCWriteRetry;
+
 /*
 *   Local functions
 */
@@ -345,6 +348,8 @@ static void eventLoopOnMeasurementMode(void)
             WPFM_sleep();       // MCUをスタンバイモードにする
             putch('.');
             WPFM_status = WPFM_STATUS_IDLE;
+			if( RTCReadRetry+RTCWriteRetry )
+				DLCEventLogWrite( _ID1_ERROR,0x101,(RTCReadRetry<<16)|RTCWriteRetry);
         }
     } // end-of-while-loop
 }

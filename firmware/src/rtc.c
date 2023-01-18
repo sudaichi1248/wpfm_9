@@ -450,43 +450,51 @@ static void _RTC_handlerA(uintptr_t ptr)
 /*
 *   _RTC_handlerA() - handle interrupt by time-update or Alarm_Wk
 */
+int		RTCReadRetry;
+int		RTCWriteRetry;
 static void _RTC_handlerB(uintptr_t ptr)
 {
     uint8_t value = 0;
 	SlideSwProc();
 	DLCMATrtctimer();
-Repeat:
-    if (_RTC_readRegister(RTC_REGISTER_CONTROL2, &value) == RTC_ERR_NONE)
-    {
-        if (value & REGISTER_CONTROL2_CTFG)
-        {
+	RTCReadRetry = RTCWriteRetry = 0;
+RepeatR:
+    if (_RTC_readRegister(RTC_REGISTER_CONTROL2, &value) == RTC_ERR_NONE){
+        if (value & REGISTER_CONTROL2_CTFG){
             // if CTFG is set, clear CTFG and call user handler
             value &= ~REGISTER_CONTROL2_CTFG;       // cleat CTFG
+RepeatW1:
             UTIL_delayMicros(100);
             _RTC_writeRegister(RTC_REGISTER_CONTROL2, value);
-            if (_RTC_handlerForTimeupdate != NULL)
-            {
+            if (_RTC_handlerForTimeupdate != NULL){
                 RTC_now += _RTC_updateUnit;
                 _RTC_handlerForTimeupdate();
             }
+            else {
+				RTCWriteRetry++;
+            	goto RepeatW1;
+			}
         }
-
-        if (value & REGISTER_CONTROL2_WKAFG)
-        {
+        if (value & REGISTER_CONTROL2_WKAFG){
             // if WkAFG is set, clear WkAFG and call user handler
             value &= ~REGISTER_CONTROL2_WKAFG;      // clear WkAFG
+RepeatW2:
             UTIL_delayMicros(100);
             _RTC_writeRegister(RTC_REGISTER_CONTROL2, value);
-            if (_RTC_handlerForAlarm != NULL)
-            {
+            if (_RTC_handlerForAlarm != NULL){
                 _RTC_handlerForAlarm();
             }
+            else {
+				RTCWriteRetry++;
+            	goto RepeatW2;
+			}
         }
     }
     else {
 	 	putch('%');								/* ƒŠƒgƒ‰ƒC 23.01.09 kasai */
 		UTIL_delayMicros(100);
-		goto Repeat;
+		RTCReadRetry++;
+		goto RepeatR;
 	}
 }
 
