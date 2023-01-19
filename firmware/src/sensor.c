@@ -136,6 +136,53 @@ int SENSOR_readExternalBatteryVoltage(int externalNo, uint16_t *voltage_p)
     return (SENSOR_ERR_NONE);
 }
 
+int SENSOR_readExternalBatteryVoltageShurink(uint16_t *voltage_p1, uint16_t *voltage_p2)
+{
+	float result1, result2;
+	uint32_t sum1 = 0, sum2 = 0;
+	uint16_t rawValue1, rawValue2;
+	DEBUG_UART_printlnFormat("> SENSOR_readExternalBatteryVoltageShurink(1/2,-)");
+	*voltage_p1 = *voltage_p2 = WPFM_MISSING_VALUE_UINT16;
+
+	ADC_Enable();       // -- Start ADC --
+	for (int i = 0; i < NUM_TIMES_ACTUALLY; i++) {
+		// ch1
+		ADC_ChannelSelect(SENSOR_EXTERNAL_BATTERY1, ADC_NEGINPUT_GND);
+		ADC_ConversionStart();
+		while (! ADC_ConversionStatusGet())
+			;
+		sum1 += ADC_ConversionResultGet();
+		// ch2
+		ADC_ChannelSelect(SENSOR_EXTERNAL_BATTERY2, ADC_NEGINPUT_GND);
+		ADC_ConversionStart();
+		while (! ADC_ConversionStatusGet())
+			;
+		sum2 += ADC_ConversionResultGet();
+		// APP_delay(WAIT_TIME_FOR_EACH_MEASUREMENT);     // wait a little (@tune)
+		SYSTICK_DelayMs(WAIT_TIME_FOR_EACH_MEASUREMENT);
+	}
+	ADC_Disable();      // -- STOP ADC --
+
+	rawValue1 = ((float)sum1 / (float)NUM_TIMES_ACTUALLY);
+	rawValue2 = ((float)sum2 / (float)NUM_TIMES_ACTUALLY);
+	DEBUG_UART_printlnFormat("readRawValue1 OK: %u", rawValue1);
+	DEBUG_UART_printlnFormat("readRawValue2 OK: %u", rawValue2);
+
+	if( DLC_Para.BatCarivFlg == 0 ) {
+		result1 = rawValue1 * _SENSOR_dividedRatioOfExternalBattery2 ;
+		result2 = rawValue2 * _SENSOR_dividedRatioOfExternalBattery2 ;
+	}
+	else {
+		result1 = rawValue1 * _SENSOR_dividedRatioOfExternalBattery * _SENSOR_conversionFactor;
+		result2 = rawValue2 * _SENSOR_dividedRatioOfExternalBattery * _SENSOR_conversionFactor;
+	}
+	*voltage_p1 = (uint16_t)(result1 * 1000.0);	// Convert Volt to milli Volt
+	*voltage_p2 = (uint16_t)(result2 * 1000.0);	// Convert Volt to milli Volt
+	DEBUG_UART_printlnFormat("< SENSOR_readExternalBatteryVoltageShurink(1,-) OK: %.3f", result1);
+	DEBUG_UART_printlnFormat("< SENSOR_readExternalBatteryVoltageShurink(2,-) OK: %.3f", result2);
+	return (SENSOR_ERR_NONE);
+}
+
 int SENSOR_turnOnSensorCircuit(int sensorNo, bool sensorPowered)
 {
     DEBUG_UART_printlnFormat("SENSOR_turnOnSensorCircuit(%d,%d)", sensorNo, sensorPowered);

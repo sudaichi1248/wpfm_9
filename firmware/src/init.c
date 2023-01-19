@@ -137,8 +137,12 @@ void WPFM_initializeApplication(void)
     // Control external batteries
 //    uint16_t voltage = 0;
 //    SENSOR_readExternalBatteryVoltage(1, &voltage);
+#if 0
 	SENSOR_readExternalBatteryVoltage(1, &WPFM_lastBatteryVoltages[0]);
 	SENSOR_readExternalBatteryVoltage(2, &WPFM_lastBatteryVoltages[1]);
+#else
+	SENSOR_readExternalBatteryVoltageShurink(&WPFM_lastBatteryVoltages[0], &WPFM_lastBatteryVoltages[1]);
+#endif
 //    if (voltage > WPFM_settingParameter.lowThresholdVoltage)
 	if (WPFM_lastBatteryVoltages[0] > WPFM_settingParameter.lowThresholdVoltage)
     {

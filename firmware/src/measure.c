@@ -76,9 +76,14 @@ void WPFM_measureRegularly(bool justMeasure)
     // Read two external battery voltages
 	start_tick = SYS_tick;
     WPFM_lastBatteryVoltages[0] = WPFM_lastBatteryVoltages[1] = WPFM_MISSING_VALUE_UINT16;
+#if 0
     SENSOR_readExternalBatteryVoltage(1, &WPFM_lastBatteryVoltages[0]);
     SENSOR_readExternalBatteryVoltage(2, &WPFM_lastBatteryVoltages[1]);
     DEBUG_UART_printlnFormat("SENSOR_readExternalBatteryVoltage(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
+#else
+	SENSOR_readExternalBatteryVoltageShurink(&WPFM_lastBatteryVoltages[0], &WPFM_lastBatteryVoltages[1]);
+    DEBUG_UART_printlnFormat("SENSOR_readExternalBatteryVoltageShurink(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
+#endif
     DEBUG_UART_FLUSH(); APP_delay(10);
 #if 0
 	if (DLCMatIsCom()) {	// í êMíÜÇ≈Ç»Ç¢

@@ -53,6 +53,7 @@ extern int SENSOR_readSensorOutput(int sensorNo, float *result_p);
 extern int SENSOR_turnOnSensorCircuit(int sensorNo, bool sensorPower);
 extern int SENSOR_turnOffSensorCircuit(int sensorNo);
 extern int SENSOR_readExternalBatteryVoltage(int externalBatteryNo, uint16_t *voltage_p);
+extern int SENSOR_readExternalBatteryVoltageShurink(uint16_t *voltage_p1, uint16_t *voltage_p2);
 extern void SENSOR_updateMeasurementInterval(uint16_t interval);
 
 /*
