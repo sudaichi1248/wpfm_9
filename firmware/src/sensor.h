@@ -49,7 +49,11 @@ typedef enum {
 *   Global functions
 */
 extern uint16_t SENSOR_readRawValue(void);
+#if 0
 extern int SENSOR_readSensorOutput(int sensorNo, float *result_p);
+#else
+extern int SENSOR_readSensorOutputShurink(float *sensorvalue_p1, float *sensorvalue_p2);
+#endif
 extern int SENSOR_turnOnSensorCircuit(int sensorNo, bool sensorPower);
 extern int SENSOR_turnOffSensorCircuit(int sensorNo);
 extern int SENSOR_readExternalBatteryVoltage(int externalBatteryNo, uint16_t *voltage_p);

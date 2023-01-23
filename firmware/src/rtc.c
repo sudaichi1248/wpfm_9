@@ -465,12 +465,12 @@ RepeatR:
             value &= ~REGISTER_CONTROL2_CTFG;       // cleat CTFG
 RepeatW1:
             UTIL_delayMicros(100);
-            _RTC_writeRegister(RTC_REGISTER_CONTROL2, value);
-            if (_RTC_handlerForTimeupdate != NULL){
-                RTC_now += _RTC_updateUnit;
-                _RTC_handlerForTimeupdate();
-            }
-            else {
+            if (_RTC_writeRegister(RTC_REGISTER_CONTROL2, value) == RTC_ERR_NONE) {
+	            if (_RTC_handlerForTimeupdate != NULL){
+	                RTC_now += _RTC_updateUnit;
+	                _RTC_handlerForTimeupdate();
+	            }
+	        } else {
 				RTCWriteRetry++;
             	goto RepeatW1;
 			}
@@ -480,11 +480,11 @@ RepeatW1:
             value &= ~REGISTER_CONTROL2_WKAFG;      // clear WkAFG
 RepeatW2:
             UTIL_delayMicros(100);
-            _RTC_writeRegister(RTC_REGISTER_CONTROL2, value);
-            if (_RTC_handlerForAlarm != NULL){
-                _RTC_handlerForAlarm();
-            }
-            else {
+            if (_RTC_writeRegister(RTC_REGISTER_CONTROL2, value) == RTC_ERR_NONE) {
+	            if (_RTC_handlerForAlarm != NULL){
+	                _RTC_handlerForAlarm();
+	            }
+            } else {
 				RTCWriteRetry++;
             	goto RepeatW2;
 			}

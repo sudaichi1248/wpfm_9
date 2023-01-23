@@ -82,7 +82,7 @@ void WPFM_measureRegularly(bool justMeasure)
     DEBUG_UART_printlnFormat("SENSOR_readExternalBatteryVoltage(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
 #else
 	SENSOR_readExternalBatteryVoltageShurink(&WPFM_lastBatteryVoltages[0], &WPFM_lastBatteryVoltages[1]);
-    DEBUG_UART_printlnFormat("SENSOR_readExternalBatteryVoltageShurink(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
+	DEBUG_UART_printlnFormat("SENSOR_readExternalBatteryVoltageShurink(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
 #endif
     DEBUG_UART_FLUSH(); APP_delay(10);
 #if 0
@@ -115,6 +115,7 @@ void WPFM_measureRegularly(bool justMeasure)
 	}
 
     // Reading a sensor(s)
+#if 0
     for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
     {
         uint8_t sensorKind = WPFM_settingParameter.sensorKinds[sensorIndex];
@@ -145,6 +146,21 @@ void WPFM_measureRegularly(bool justMeasure)
             SENSOR_turnOffSensorCircuit(sensorIndex + 1);
         }
     }
+#else
+	if ((stat = SENSOR_readSensorOutputShurink(&WPFM_lastMeasuredValues[0], &WPFM_lastMeasuredValues[1])) == SENSOR_ERR_NONE)
+	{
+		if (WPFM_lastMeasuredValues[0] != WPFM_MISSING_VALUE_FLOAT) {
+			DEBUG_UART_printlnFormat("SENSOR_readSensorOutput(1) OK: %.3f", WPFM_lastMeasuredValues[0]);
+		}
+		if (WPFM_lastMeasuredValues[1] != WPFM_MISSING_VALUE_FLOAT) {
+			DEBUG_UART_printlnFormat("SENSOR_readSensorOutput(2) OK: %.3f", WPFM_lastMeasuredValues[1]);
+		}
+	}
+	else
+	{
+		DEBUG_UART_printlnFormat("SENSOR_readSensorOutput(-) NG: %d", stat);
+	}
+#endif
 
     // Read temperature sensor on board
     WPFM_getTemperature();

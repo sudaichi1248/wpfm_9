@@ -1225,6 +1225,7 @@ void DLCMatPostStatus()
 {
 	char	tmp[48],n,*p,ver[6];
 	int		i;
+	WPFM_readSettingParameter( &config );
 	memcpy( ver,&_Main_version[4],5 );
 	ver[5] = 0;
 	strcpy( http_tmp,http_status );
@@ -1392,6 +1393,7 @@ int DLCMatPostReport()
 	char	tmp[48],*p;
 	int		i,Len;
 	MLOG_T 	log_p;
+	WPFM_readSettingParameter( &config );
 	for( i=0; DLC_MatReportMax < DLC_MatReportLmt; DLC_MatReportMax++,i++ ){			/* Length‚ð‹‚ß‚é‚½‚ß‚Émlog‚ð‰¼‘–¸ */
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
