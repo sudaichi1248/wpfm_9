@@ -104,6 +104,26 @@ void DLCMatRepotLogChange(const char *param, char *resp)
 	DLCParaSave();
 	DLCMatParaRes( resp );
 }
+void DLCMatMeasureLogChange(const char *param, char *resp)
+{
+	DLC_Para.MeasureLog ^= 0xff;
+	if( DLC_Para.MeasureLog == 0 )
+		putst( "MeasureLog=On\r" );
+	else
+		putst( "MeasureLog=Off\r" );
+	DLCParaSave();
+	DLCMatParaRes( resp );
+}
+void DLCMatDebugCmdChange(const char *param, char *resp)
+{
+	DLC_Para.DebugCmd ^= 0xff;
+	if( DLC_Para.DebugCmd == 0 )
+		putst( "DebugCmd=On\r" );
+	else
+		putst( "DebugCmd=Off\r" );
+	DLCParaSave();
+	DLCMatParaRes( resp );
+}
 void DLCMatBatCarivChange(const char *param, char *resp)
 {
 	if( param[0] == '0' )

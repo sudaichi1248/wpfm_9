@@ -17,13 +17,14 @@
 #include "sensor.h"
 #include "moni.h"
 #include "Eventlog.h"
+#include "DLCpara.h"
 #ifdef ADD_FUNCTION
 void DLCMatAlertTimeClr();
 #endif
 uint8_t WPFM_suppressAlert(uint8_t chabgealert, bool changefirst, bool sw);
 
 #ifdef DEBUG_DETAIL
-#   define  DBG_PRINT(...)  { char _line[80]; snprintf(_line, sizeof(_line),  __VA_ARGS__); UART_DEBUG_writeBytes(_line, strlen(_line)); UART_DEBUG_writeBytes("\n", 1); APP_delay(3); }
+#   define  DBG_PRINT(...)  { if (DLC_Para.MeasureLog == 0) {char _line[80]; snprintf(_line, sizeof(_line),  __VA_ARGS__); UART_DEBUG_writeBytes(_line, strlen(_line)); UART_DEBUG_writeBytes("\n", 1); APP_delay(3);} }
 #else
 #   define  DBG_PRINT()
 #endif

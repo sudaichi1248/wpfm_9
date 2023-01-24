@@ -2372,228 +2372,234 @@ void DLCMatMain()
 			DLC_MatReportLmt = DLC_REPORT_ALL_MAX;
 	}
 	key = getkey();
-	if( key ){
-		key = toupper(key);
-		switch( key ){
-		case 0x1b:
-			Moni();
-			break;
-		case 'M':
-			if( CheckPasswd() )
-				DLCMatTest();
-			break;
-		case 'I':
-			putst("Read IO(1-7)=>");
-			key = getch()-'1';
-			putcrlf();puthxb(GPIOEXP_get(key));
-			break;
-		case 'L':
-			putst("LED(1-3)=>");
-			key = getch()-'1';
-			putst("1:On 2:Off 3:Blink=>");
-			switch( getch() ){
-			case '1':
-				GPIOEXP_clear(key);
+	if (DLC_Para.DebugCmd == 0) {
+		if( key ){
+			key = toupper(key);
+			switch( key ){
+			case 0x1b:
+				Moni();
 				break;
-			case '2':
-				DLC_MatLedTest &= ~(1<<key);
-				DLC_MatLedTest &= ~(1<<(key+4));
-				GPIOEXP_set(key);
+			case 'M':
+				if( CheckPasswd() )
+					DLCMatTest();
 				break;
-			case '3':
-				DLC_MatLedTest |= (1<<key);
-				DLC_MatLedTest |= (1<<(key+4));
-				DLCMatTimerset( 1,500 );
-				GPIOEXP_set(key);
+			case 'I':
+				putst("Read IO(1-7)=>");
+				key = getch()-'1';
+				putcrlf();puthxb(GPIOEXP_get(key));
 				break;
-			}
-			break;
-		case 'O':															/* PortOut */
-			if( CheckPasswd() ){
-				putst("\r\nGroup0 (Y/N?)=>");
-				if( toupper(getch()) == 'Y' ){
-					putst("\r\nNo.(H)=>");ret = c_get32b();
-					putst("\r\n1 (Y/N?)=>");
-					if( toupper(getch()) == 'Y' )
-						PORT_GroupWrite( PORT_GROUP_0,0x1<<ret,-1 );
-					else
-						PORT_GroupWrite( PORT_GROUP_0,0x1<<ret,0 );
+			case 'L':
+				putst("LED(1-3)=>");
+				key = getch()-'1';
+				putst("1:On 2:Off 3:Blink=>");
+				switch( getch() ){
+				case '1':
+					GPIOEXP_clear(key);
+					break;
+				case '2':
+					DLC_MatLedTest &= ~(1<<key);
+					DLC_MatLedTest &= ~(1<<(key+4));
+					GPIOEXP_set(key);
+					break;
+				case '3':
+					DLC_MatLedTest |= (1<<key);
+					DLC_MatLedTest |= (1<<(key+4));
+					DLCMatTimerset( 1,500 );
+					GPIOEXP_set(key);
+					break;
 				}
-				else {
-					putst("\r\nNo.(H)=>");ret = c_get32b();
-					putst("\r\n1 (Y/N?)=>");
-					if( toupper(getch()) == 'Y' )
-						PORT_GroupWrite( PORT_GROUP_1,0x1<<ret,-1 );
-					else
-						PORT_GroupWrite( PORT_GROUP_1,0x1<<ret,0 );
+				break;
+			case 'O':															/* PortOut */
+				if( CheckPasswd() ){
+					putst("\r\nGroup0 (Y/N?)=>");
+					if( toupper(getch()) == 'Y' ){
+						putst("\r\nNo.(H)=>");ret = c_get32b();
+						putst("\r\n1 (Y/N?)=>");
+						if( toupper(getch()) == 'Y' )
+							PORT_GroupWrite( PORT_GROUP_0,0x1<<ret,-1 );
+						else
+							PORT_GroupWrite( PORT_GROUP_0,0x1<<ret,0 );
+					}
+					else {
+						putst("\r\nNo.(H)=>");ret = c_get32b();
+						putst("\r\n1 (Y/N?)=>");
+						if( toupper(getch()) == 'Y' )
+							PORT_GroupWrite( PORT_GROUP_1,0x1<<ret,-1 );
+						else
+							PORT_GroupWrite( PORT_GROUP_1,0x1<<ret,0 );
+					}
 				}
-			}
-			break;
-//		case ' ':
-//			PORT_GroupWrite( PORT_GROUP_1,0x1<<23,-1 );
-//			PORT_GroupWrite( PORT_GROUP_1,0x1<<23,0 );
-//			break;
-		case 'Z':
-			if( CheckPasswd() )
-//			DLCEventLogWrite( _ID1_CONFIGRET,-1,0 );
-			DLCEventLogClr(0);
-			break;
-//		case 'W':
-//			puthxw( EVENT_LOG_NUMOF_ITEM );
-//			for(int i = 0; i < 100; i++ )
+				break;
+//			case ' ':
+//				PORT_GroupWrite( PORT_GROUP_1,0x1<<23,-1 );
+//				PORT_GroupWrite( PORT_GROUP_1,0x1<<23,0 );
+//				break;
+			case 'Z':
+				if( CheckPasswd() )
+//				DLCEventLogWrite( _ID1_CONFIGRET,-1,0 );
+				DLCEventLogClr(0);
+				break;
+//			case 'W':
+//				puthxw( EVENT_LOG_NUMOF_ITEM );
+//				for(int i = 0; i < 100; i++ )
 //				DLCEventLogWrite( _ID1_CONFIGRET,i,0 );
-			break;
-		case 'Y':
-			putcrlf();putst("inPORT_GROUP0:1=");
-			puthxw( PORT_GroupRead( PORT_GROUP_0 ));putch(':');
-			puthxw( PORT_GroupRead( PORT_GROUP_1 ));
-			break;
-		case 'E':												/* 強制本プロ削除+Reset */
-			if( CheckPasswd() ){
-				putst("本プロ削除してBoot起動します。");putcrlf();
-				DLC_delay(1000);
-				DLCsumBreakAndReset();
-			}
-			break;
-		case 'F':
-			if( CheckPasswd() )
-				DLCSPIFlashTest();
-			break;
-		case 'G':
-			if( CheckPasswd() )
-				DLCMatConfigDefault();
-			break;
-		case 'K':
-			if( CheckPasswd() )
-				DLCMatCall( 2 );
-			break;
-		case 'R':
-			if( CheckPasswd() )
-				DLCRomTest();
-			break;
-		case 'C':
-			WPFM_readSettingParameter( &config );
-			putcrlf();
-			putst("LoggerSerialNo:");puthxw(config.serialNumber);putcrlf();
-			putst("Interval:");puthxw(config.measurementInterval);putcrlf();
-			putst("ReprotInterval:");puthxw(config.communicationInterval);putcrlf();
-			putst("IntervalAlert:");puthxw(config.measurementIntervalOnAlert);putcrlf();
-			putst("ReprotIntervalAlert:");puthxw(config.communicationIntervalOnAlert);putcrlf();
-#ifdef ADD_FUNCTION
-			putst("Measurment:");puthxw(config.Measurment);putcrlf();
-#endif
-			putst("Select_ch1:");puthxb(config.sensorKinds[0]);putcrlf();
-			putst("Select_ch2:");puthxb(config.sensorKinds[1]);putcrlf();
-			putst("Upper0_ch1:");puthxs(config.upperLimits[0]);putcrlf();
-			putst("Upper0_ch2:");puthxs(config.upperLimits[1]);putcrlf();
-			putst("Lower0_ch1:");puthxb(config.lowerLimits[0]);putcrlf();
-			putst("Lower0_ch2:");puthxb(config.lowerLimits[1]);putcrlf();
-			putst("AlertSw_U2_ch1:");puthxb(config.alertEnableKinds[0][0][1]);putcrlf();
-			putst("AlertSw_U1_ch1:");puthxb(config.alertEnableKinds[0][0][0]);putcrlf();
-			putst("AlertSw_L1_ch1:");puthxb(config.alertEnableKinds[0][1][0]);putcrlf();
-			putst("AlertSw_L2_ch1:");puthxb(config.alertEnableKinds[0][1][1]);putcrlf();
-			putst("AlertSw_U2_ch2:");puthxb(config.alertEnableKinds[1][0][1]);putcrlf();
-			putst("AlertSw_U1_ch2:");puthxb(config.alertEnableKinds[1][0][0]);putcrlf();
-			putst("AlertSw_L1_ch2:");puthxb(config.alertEnableKinds[1][1][0]);putcrlf();
-			putst("AlertSw_L2_ch2:");puthxb(config.alertEnableKinds[1][1][1]);putcrlf();
-			putst("Upper2_ch1:");puthxb(config.alertUpperLimits[0][1]);putcrlf();
-			putst("Upper1_ch1:");puthxb(config.alertUpperLimits[0][0]);putcrlf();
-			putst("Lower1_ch1:");puthxb(config.alertLowerLimits[0][0]);putcrlf();
-			putst("Lower2_ch1:");puthxb(config.alertLowerLimits[0][1]);putcrlf();
-			putst("Upper2_ch2:");puthxb(config.alertUpperLimits[1][1]);putcrlf();
-			putst("Upper1_ch2:");puthxb(config.alertUpperLimits[1][0]);putcrlf();
-			putst("Lower1_ch2:");puthxb(config.alertLowerLimits[1][0]);putcrlf();
-			putst("Lower2_ch2:");puthxb(config.alertLowerLimits[1][1]);putcrlf();
-			putst("Measure_ch1:");putst(config.Measure_ch1);putcrlf();
-			putst("MeaKind_ch1:");putst(config.MeaKind_ch1);putcrlf();
-			putst("Chattering_ch1:");puthxb(config.alertChatteringTimes[0]);putcrlf();
-			putst("Measure_ch2:");putst(config.Measure_ch2);putcrlf();
-			putst("MeaKind_ch2:");putst(config.MeaKind_ch2);putcrlf();
-			putst("Chattering_ch2:");puthxb(config.alertChatteringTimes[1]);putcrlf();
-			putst("Chattering_type:");puthxb(config.alertChatteringKind);putcrlf();
-#ifdef ADD_FUNCTION
-			putst("AlertPause:");putst(config.AlertPause);putcrlf();
-			putst("AlertTimeOut:");puthxw(config.alertTimeout);putcrlf();
-#endif
-			break;
-		case 'V':
-//			DLC_MatSPIFOTAerase();	// SPI最終セクタ消去
-			DLCEventLogDisplay();	/*			イベントログ表氏 */
-			break;
-		case 'X':	// FOTA開始
-			if( CheckPasswd() )
-				DLCFotaGoAndReset();
-			break;
-		case 'T':	// FOTA終了
-			if( CheckPasswd() )
-				DLCFotaFinAndReset();
-			break;
-		case 'P':
-			if( !CheckPasswd() )
+//				break;
+			case 'Y':
+				putcrlf();putst("inPORT_GROUP0:1=");
+				puthxw( PORT_GroupRead( PORT_GROUP_0 ));putch(':');
+				puthxw( PORT_GroupRead( PORT_GROUP_1 ));
 				break;
-			putst("1:time set 2:3000件 3:FULL save ==>");
-			switch( getch() ){
-			case '1':
-				logtime = RTC_now;
-				break;
-			case '2':
-				for(int i=0;i<DLC_MatReportLmt;i++){
-					ret = mlogdumywrite(logtime);
-					if (ret == 0)
-						break;
-					logtime += 1;
-					WDT_Clear();
+			case 'E':												/* 強制本プロ削除+Reset */
+				if( CheckPasswd() ){
+					putst("本プロ削除してBoot起動します。");putcrlf();
+					DLC_delay(1000);
+					DLCsumBreakAndReset();
 				}
-				putst("##### write end #####");
 				break;
-			case '3':
-				while(1) {
-					ret = mlogdumywrite(logtime);
-					if (ret == 0)
-						break;
-					logtime += 4;
-					WDT_Clear();
+			case 'F':
+				if( CheckPasswd() )
+					DLCSPIFlashTest();
+				break;
+			case 'G':
+				if( CheckPasswd() )
+					DLCMatConfigDefault();
+				break;
+			case 'K':
+				if( CheckPasswd() )
+					DLCMatCall( 2 );
+				break;
+			case 'R':
+				if( CheckPasswd() )
+					DLCRomTest();
+				break;
+			case 'C':
+				WPFM_readSettingParameter( &config );
+				putcrlf();
+				putst("LoggerSerialNo:");puthxw(config.serialNumber);putcrlf();
+				putst("Interval:");puthxw(config.measurementInterval);putcrlf();
+				putst("ReprotInterval:");puthxw(config.communicationInterval);putcrlf();
+				putst("IntervalAlert:");puthxw(config.measurementIntervalOnAlert);putcrlf();
+				putst("ReprotIntervalAlert:");puthxw(config.communicationIntervalOnAlert);putcrlf();
+#ifdef ADD_FUNCTION
+				putst("Measurment:");puthxw(config.Measurment);putcrlf();
+#endif
+				putst("Select_ch1:");puthxb(config.sensorKinds[0]);putcrlf();
+				putst("Select_ch2:");puthxb(config.sensorKinds[1]);putcrlf();
+				putst("Upper0_ch1:");puthxs(config.upperLimits[0]);putcrlf();
+				putst("Upper0_ch2:");puthxs(config.upperLimits[1]);putcrlf();
+				putst("Lower0_ch1:");puthxb(config.lowerLimits[0]);putcrlf();
+				putst("Lower0_ch2:");puthxb(config.lowerLimits[1]);putcrlf();
+				putst("AlertSw_U2_ch1:");puthxb(config.alertEnableKinds[0][0][1]);putcrlf();
+				putst("AlertSw_U1_ch1:");puthxb(config.alertEnableKinds[0][0][0]);putcrlf();
+				putst("AlertSw_L1_ch1:");puthxb(config.alertEnableKinds[0][1][0]);putcrlf();
+				putst("AlertSw_L2_ch1:");puthxb(config.alertEnableKinds[0][1][1]);putcrlf();
+				putst("AlertSw_U2_ch2:");puthxb(config.alertEnableKinds[1][0][1]);putcrlf();
+				putst("AlertSw_U1_ch2:");puthxb(config.alertEnableKinds[1][0][0]);putcrlf();
+				putst("AlertSw_L1_ch2:");puthxb(config.alertEnableKinds[1][1][0]);putcrlf();
+				putst("AlertSw_L2_ch2:");puthxb(config.alertEnableKinds[1][1][1]);putcrlf();
+				putst("Upper2_ch1:");puthxb(config.alertUpperLimits[0][1]);putcrlf();
+				putst("Upper1_ch1:");puthxb(config.alertUpperLimits[0][0]);putcrlf();
+				putst("Lower1_ch1:");puthxb(config.alertLowerLimits[0][0]);putcrlf();
+				putst("Lower2_ch1:");puthxb(config.alertLowerLimits[0][1]);putcrlf();
+				putst("Upper2_ch2:");puthxb(config.alertUpperLimits[1][1]);putcrlf();
+				putst("Upper1_ch2:");puthxb(config.alertUpperLimits[1][0]);putcrlf();
+				putst("Lower1_ch2:");puthxb(config.alertLowerLimits[1][0]);putcrlf();
+				putst("Lower2_ch2:");puthxb(config.alertLowerLimits[1][1]);putcrlf();
+				putst("Measure_ch1:");putst(config.Measure_ch1);putcrlf();
+				putst("MeaKind_ch1:");putst(config.MeaKind_ch1);putcrlf();
+				putst("Chattering_ch1:");puthxb(config.alertChatteringTimes[0]);putcrlf();
+				putst("Measure_ch2:");putst(config.Measure_ch2);putcrlf();
+				putst("MeaKind_ch2:");putst(config.MeaKind_ch2);putcrlf();
+				putst("Chattering_ch2:");puthxb(config.alertChatteringTimes[1]);putcrlf();
+				putst("Chattering_type:");puthxb(config.alertChatteringKind);putcrlf();
+#ifdef ADD_FUNCTION
+				putst("AlertPause:");putst(config.AlertPause);putcrlf();
+				putst("AlertTimeOut:");puthxw(config.alertTimeout);putcrlf();
+#endif
+				break;
+			case 'V':
+//				DLC_MatSPIFOTAerase();	// SPI最終セクタ消去
+				DLCEventLogDisplay();	/*			イベントログ表氏 */
+				break;
+			case 'X':	// FOTA開始
+				if( CheckPasswd() )
+					DLCFotaGoAndReset();
+				break;
+			case 'T':	// FOTA終了
+				if( CheckPasswd() )
+					DLCFotaFinAndReset();
+				break;
+			case 'P':
+				if( !CheckPasswd() )
+					break;
+				putst("1:time set 2:3000件 3:FULL save ==>");
+				switch( getch() ){
+				case '1':
+					logtime = RTC_now;
+					break;
+				case '2':
+					for(int i=0;i<DLC_MatReportLmt;i++){
+						ret = mlogdumywrite(logtime);
+						if (ret == 0)
+							break;
+						logtime += 1;
+						WDT_Clear();
+					}
+					putst("##### write end #####");
+					break;
+				case '3':
+					while(1) {
+						ret = mlogdumywrite(logtime);
+						if (ret == 0)
+							break;
+						logtime += 4;
+						WDT_Clear();
+					}
+					putst("##### write end #####");
+					break;
 				}
-				putst("##### write end #####");
+				break;
+			case 'N':
+				MLOG_getNumberofLog();
+				putst("\r\nnum:");putdecw(_MLOG_NumberofLog);putcrlf();
+				putst("headtime:");puthxw(_MLOG_headTime);putcrlf();
+				RTC_convertToDateTime(_MLOG_headTime,&dt);
+				sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+				putst(s);putcrlf();
+				putst("tailtime:");puthxw(_MLOG_tailTime);putcrlf();
+				RTC_convertToDateTime(_MLOG_tailTime,&dt);
+				sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+				putst(s);putcrlf();
+				break;
+			case 0x03:												/* CTRL+A */
+				if( CheckPasswd() ){
+					__NVIC_SystemReset();
+				}
+				break;
+			case 'Q':												/* 強制STBY */
+				if( CheckPasswd() ){
+					DLC_MatState = MATC_STATE_SLP;
+	           		 WPFM_sleep();     							  // MCUをスタンバイモードにする
+	           	}
+				break;
+			case 'S':												/* Flash Powerdown */
+				if( !CheckPasswd() )
+					break;
+				W25Q128JV_powerDown();
+				break;
+			case 'H':
+				if( CheckPasswd() )
+					_RTC_handlerBClr();
+				break;
+			default:
 				break;
 			}
-			break;
-		case 'N':
-			MLOG_getNumberofLog();
-			putst("\r\nnum:");putdecw(_MLOG_NumberofLog);putcrlf();
-			putst("headtime:");puthxw(_MLOG_headTime);putcrlf();
-			RTC_convertToDateTime(_MLOG_headTime,&dt);
-			sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
-			putst(s);putcrlf();
-			putst("tailtime:");puthxw(_MLOG_tailTime);putcrlf();
-			RTC_convertToDateTime(_MLOG_tailTime,&dt);
-			sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
-			putst(s);putcrlf();
-			break;
-		case 0x03:												/* CTRL+A */
-			if( CheckPasswd() ){
-				__NVIC_SystemReset();
-			}
-			break;
-		case 'Q':												/* 強制STBY */
-			if( CheckPasswd() ){
-				DLC_MatState = MATC_STATE_SLP;
-           		 WPFM_sleep();     							  // MCUをスタンバイモードにする
-           	}
-			break;
-		case 'S':												/* Flash Powerdown */
-			if( !CheckPasswd() )
-				break;
-			W25Q128JV_powerDown();
-			break;
-		case 'H':
-			if( CheckPasswd() )
-				_RTC_handlerBClr();
-			break;
-		default:
-			break;
+			putst("\r\nDLC>");
 		}
-		putst("\r\nDLC>");
+	} else {
+		if( key ){
+			putst("\r\nCMD NG>");
+		}
 	}
 	_GO_IDLE();
 }

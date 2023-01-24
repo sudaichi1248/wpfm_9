@@ -26,6 +26,13 @@
 #include "wpfm.h"
 #include "Eventlog.h"
 #include "Moni.h"
+#include "DLCpara.h"
+
+#ifdef DEBUG_UART
+#   define  DBG_PRINT(...)  { if (DLC_Para.MeasureLog == 0) {char _line[80]; snprintf(_line, sizeof(_line),  __VA_ARGS__); UART_DEBUG_writeBytes(_line, strlen(_line)); UART_DEBUG_writeBytes("\n", 1);} }
+#else
+#   define  DBG_PRINT()
+#endif
 
 /*
 *   Macros
@@ -92,7 +99,7 @@ int MLOG_putLog(MLOG_T *log_p, bool specifySN)
 {
 	RTC_DATETIME dt;
 	RTC_convertToDateTime(log_p->timestamp.second,&dt);
-    DEBUG_UART_printlnFormat("_MLOG_headAddress=%06x,%d", (unsigned int)_MLOG_headAddress, specifySN); APP_delay(2);
+    DBG_PRINT("_MLOG_headAddress=%06x,%d", (unsigned int)_MLOG_headAddress, specifySN); APP_delay(2);
     if( dt.second%WPFM_measurementInterval ){
 		DLCEventLogWrite( _ID1_ERROR,0x0100,(dt.day<<24)|(dt.hour<<16)|(dt.minute<<8)|dt.second );
 		putst("ššš");putcrlf();
@@ -100,14 +107,14 @@ int MLOG_putLog(MLOG_T *log_p, bool specifySN)
     if ((_MLOG_headAddress & 0xfff) == 0)
     {
         // if page number and offset are zero - first log in current sector
-        DEBUG_UART_printlnFormat("head=%06Xh", (unsigned int)_MLOG_headAddress);
+        DBG_PRINT("head=%06Xh", (unsigned int)_MLOG_headAddress);
         uint16_t sectorNo = (_MLOG_headAddress >> 12) & 0x0fff;
-        DEBUG_UART_printlnFormat("eraseSector(%04Xh)", (unsigned int)sectorNo);
+        DBG_PRINT("eraseSector(%04Xh)", (unsigned int)sectorNo);
         if (W25Q128JV_eraseSctor(sectorNo, true) != W25Q128JV_ERR_NONE)
         {
             return (MLOG_ERR_ERASE);
         }
-        DEBUG_UART_printlnFormat("eraseSector(%04Xh): done", (unsigned int)sectorNo);
+        DBG_PRINT("eraseSector(%04Xh): done", (unsigned int)sectorNo);
     }
     uint16_t pageNo = _MLOG_headAddress >> 8;
     uint8_t offset = _MLOG_headAddress & 0xff;
@@ -121,13 +128,15 @@ int MLOG_putLog(MLOG_T *log_p, bool specifySN)
         }
         log_p->sequentialNumber = _MLOG_lastSequentialNumber;
     }
-    DEBUG_UART_printlnFormat("programPage(%04Xh,%02Xh):", (unsigned int)pageNo, (unsigned int)offset);
+    DBG_PRINT("programPage(%04Xh,%02Xh):", (unsigned int)pageNo, (unsigned int)offset);
     if (W25Q128JV_programPage(pageNo, offset, (uint8_t *)log_p, MLOG_RECORD_SIZE, true) != W25Q128JV_ERR_NONE)
     {
         return (MLOG_ERR_PROGRAM_PAGE);
     }
     MLOG_ID_T mlogID = (pageNo << 8) + offset;
-    dumpLog(">", mlogID, log_p);
+	if (DLC_Para.MeasureLog == 0) {
+	    dumpLog(">", mlogID, log_p);
+	}
 
     // update _MLOG_headAddress for next use
     if (offset < MLOG_RECORD_SIZE * (MLOG_LOGS_PER_PAGE - 1))
@@ -143,7 +152,7 @@ int MLOG_putLog(MLOG_T *log_p, bool specifySN)
         }
     }
     _MLOG_headAddress = ((uint32_t)pageNo << 8) + offset;
-    //DEBUG_UART_printlnFormat("_MLOG_headAddress=%06x", (unsigned int)_MLOG_headAddress);
+    //DBG_PRINT("_MLOG_headAddress=%06x", (unsigned int)_MLOG_headAddress);
 
     return ((int)mlogID);       // return mlog ID when succeed
 }
@@ -603,7 +612,7 @@ bool MLOG_IsSwitchedSRAM(void)
 
 int MLOG_putLogOnSRAM(MLOG_T *log_p)
 {
-    DEBUG_UART_printlnFormat("_MLOG_headAddressOnSRAM=%06lx", _MLOG_headAddressOnSRAM);
+    DBG_PRINT("_MLOG_headAddressOnSRAM=%06lx", _MLOG_headAddressOnSRAM);
 
     _MLOG_lastSequentialNumber++;       // Increment sequential number
     if (_MLOG_lastSequentialNumber == 0)
@@ -615,7 +624,9 @@ int MLOG_putLogOnSRAM(MLOG_T *log_p)
 
     *((MLOG_T *)_MLOG_headAddressOnSRAM) = *log_p;
     MLOG_ID_T mlogID = _MLOG_headAddressOnSRAM;
-    dumpLog(">", mlogID, log_p);
+	if (DLC_Para.MeasureLog == 0) {
+	    dumpLog(">", mlogID, log_p);
+	}
 
     // update _MLOG_headAddressOnSRAM for next use
     if ((uint8_t *)_MLOG_headAddressOnSRAM < _MLOG_storages + (MLOG_SRAM_SIZE - 1))
@@ -626,7 +637,7 @@ int MLOG_putLogOnSRAM(MLOG_T *log_p)
     {
         _MLOG_headAddress = (uint32_t)_MLOG_storages;
     }
-    DEBUG_UART_printlnFormat("_MLOG_headAddressOnSRAM=%06lx", _MLOG_headAddressOnSRAM);
+    DBG_PRINT("_MLOG_headAddressOnSRAM=%06lx", _MLOG_headAddressOnSRAM);
 
     return ((int)mlogID);       // return mlog ID when succeed
 }

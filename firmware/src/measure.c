@@ -17,8 +17,15 @@
 #include "battery.h"
 #include "s5851a.h"
 #include "rtc.h"
+#include "moni.h"
 #include "Eventlog.h"
+#include "DLCpara.h"
 
+#ifdef DEBUG_UART
+#   define  DBG_PRINT(...)  { if (DLC_Para.MeasureLog == 0) {char _line[80]; snprintf(_line, sizeof(_line),  __VA_ARGS__); UART_DEBUG_writeBytes(_line, strlen(_line)); UART_DEBUG_writeBytes("\n", 1);} }
+#else
+#   define  DBG_PRINT()
+#endif
 /*
 *   Symbols
 */
@@ -42,7 +49,7 @@ void WPFM_measureRegularly(bool justMeasure)
 
     RTC_DATETIME dt;
     RTC_getDatetime(&dt);
-    DEBUG_UART_printlnFormat("\n-- START MEASUREMENT(20%02d/%02d/%02d %02d:%02d:%02d.%03lu) --",
+    DBG_PRINT("\n-- START MEASUREMENT(20%02d/%02d/%02d %02d:%02d:%02d.%03lu) --",
             dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, SYS_mSec);
 
     // Start measument of temperature here baecause of too slow
@@ -80,11 +87,14 @@ void WPFM_measureRegularly(bool justMeasure)
     SENSOR_readExternalBatteryVoltage(1, &WPFM_lastBatteryVoltages[0]);
     SENSOR_readExternalBatteryVoltage(2, &WPFM_lastBatteryVoltages[1]);
     DEBUG_UART_printlnFormat("SENSOR_readExternalBatteryVoltage(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
+    DEBUG_UART_FLUSH(); APP_delay(10);
 #else
 	SENSOR_readExternalBatteryVoltageShurink(&WPFM_lastBatteryVoltages[0], &WPFM_lastBatteryVoltages[1]);
-	DEBUG_UART_printlnFormat("SENSOR_readExternalBatteryVoltageShurink(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
+	DBG_PRINT("SENSOR_readExternalBatteryVoltageShurink(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
+	if (DLC_Para.MeasureLog == 0) {
+	    DEBUG_UART_FLUSH(); APP_delay(10);
+	}
 #endif
-    DEBUG_UART_FLUSH(); APP_delay(10);
 #if 0
 	if (DLCMatIsCom()) {	// ’ÊM’†‚Å‚È‚¢
 #endif
@@ -102,9 +112,11 @@ void WPFM_measureRegularly(bool justMeasure)
 		DEBUG_UART_printlnFormat("SKIP because communication now.");
 	}
 #endif
-    DEBUG_UART_printlnFormat("BATTERY: Status %02Xh, USE #%d/RPL #%d",
+    DBG_PRINT("BATTERY: Status %02Xh, USE #%d/RPL #%d",
             WPFM_batteryStatus, WPFM_externalBatteryNumberInUse, WPFM_externalBatteryNumberToReplace);
-    APP_delay(20);
+	if (DLC_Para.MeasureLog == 0) {
+	    APP_delay(20);
+	}
 	battery_readtime = SYS_tick - start_tick;
 
 	// Turn on wait
@@ -150,15 +162,15 @@ void WPFM_measureRegularly(bool justMeasure)
 	if ((stat = SENSOR_readSensorOutputShurink(&WPFM_lastMeasuredValues[0], &WPFM_lastMeasuredValues[1])) == SENSOR_ERR_NONE)
 	{
 		if (WPFM_lastMeasuredValues[0] != WPFM_MISSING_VALUE_FLOAT) {
-			DEBUG_UART_printlnFormat("SENSOR_readSensorOutput(1) OK: %.3f", WPFM_lastMeasuredValues[0]);
+			DBG_PRINT("SENSOR_readSensorOutput(1) OK: %.3f", WPFM_lastMeasuredValues[0]);
 		}
 		if (WPFM_lastMeasuredValues[1] != WPFM_MISSING_VALUE_FLOAT) {
-			DEBUG_UART_printlnFormat("SENSOR_readSensorOutput(2) OK: %.3f", WPFM_lastMeasuredValues[1]);
+			DBG_PRINT("SENSOR_readSensorOutput(2) OK: %.3f", WPFM_lastMeasuredValues[1]);
 		}
 	}
 	else
 	{
-		DEBUG_UART_printlnFormat("SENSOR_readSensorOutput(-) NG: %d", stat);
+		DBG_PRINT("SENSOR_readSensorOutput(-) NG: %d", stat);
 	}
 #endif
 
@@ -175,7 +187,7 @@ void WPFM_measureRegularly(bool justMeasure)
     }
 
     RTC_getDatetime(&dt);
-    DEBUG_UART_printlnFormat("-- END MEASUREMENT(%02d:%02d:%02d.%03lu) --\n", dt.hour, dt.minute, dt.second, SYS_mSec);
+    DBG_PRINT("-- END MEASUREMENT(%02d:%02d:%02d.%03lu) --\n", dt.hour, dt.minute, dt.second, SYS_mSec);
 
 #ifdef DEBUG_DETAIL
     DEBUG_UART_printlnFormat("measureRegularly() execution time: %umS", (unsigned int)(SYS_mSec - start));
@@ -195,7 +207,7 @@ static void _SENSOR_storeLog(uint32_t occurrenceTime, uint32_t mSec)
     mlog.alertStatus = WPFM_lastAlertStatusSuppressed;
     mlog.batteryStatus = WPFM_batteryStatus;
 
-    DEBUG_UART_printlnFormat("[ALERT STATUS] Raw: %02Xh, Sup: %02Xh", WPFM_lastAlertStatus, WPFM_lastAlertStatusSuppressed);
+    DBG_PRINT("[ALERT STATUS] Raw: %02Xh, Sup: %02Xh", WPFM_lastAlertStatus, WPFM_lastAlertStatusSuppressed);
 
     // Store in flash memory as mlog
     int stat;
@@ -212,7 +224,7 @@ static void _SENSOR_storeLog(uint32_t occurrenceTime, uint32_t mSec)
 
     if (stat >= 0)
     {
-        DEBUG_UART_printlnFormat("MLOG_putLog() OK: %06Xh", stat);
+        DBG_PRINT("MLOG_putLog() OK: %06Xh", stat);
     }
     else
     {
@@ -234,7 +246,7 @@ void WPFM_getTemperature()
     if (stat == S5851A_ERR_NONE)
     {
         WPFM_lastTemperatureOnBoard = temp * 10.0;
-        DEBUG_UART_printlnFormat("temp: %.1f", temp);
+        DBG_PRINT("temp: %.1f", temp);
     }
     else
     {

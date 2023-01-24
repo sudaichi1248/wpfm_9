@@ -15,7 +15,15 @@
 #include "debug.h"
 #include "mlog.h"
 #include "battery.h"
+#include "moni.h"
 #include "Eventlog.h"
+#include "DLCpara.h"
+
+#ifdef DEBUG_UART
+#   define  DBG_PRINT(...)  { if (DLC_Para.MeasureLog == 0) {char _line[80]; snprintf(_line, sizeof(_line),  __VA_ARGS__); UART_DEBUG_writeBytes(_line, strlen(_line)); UART_DEBUG_writeBytes("\n", 1);} }
+#else
+#   define  DBG_PRINT()
+#endif
 
 /*
 *   外部電池の電圧をチェックし、条件がそろえば、使用する電池を交換する
@@ -28,7 +36,7 @@ int BATTERY_checkAndSwitchBattery(void)
     {
         if (WPFM_lastBatteryVoltages[batteryIndex] < WPFM_settingParameter.lowThresholdVoltage)
         {
-            DEBUG_UART_printlnFormat("Battery #%d low.", batteryIndex + 1);
+            DBG_PRINT("Battery #%d low.", batteryIndex + 1);
             if (WPFM_timesBelowTheThresholds[batteryIndex] > 0)
             {
                 WPFM_timesBelowTheThresholds[batteryIndex] += 1;   // count up if continuously
@@ -90,7 +98,9 @@ int BATTERY_checkAndSwitchBattery(void)
             EXT1_OFF_Set();
             // Current uising battery # is 2
             WPFM_externalBatteryNumberInUse = 2;
-            DEBUG_UART_printlnString("Exchange Battery #1 -> #2");
+			if (DLC_Para.MeasureLog == 0) {
+	            DEBUG_UART_printlnString("Exchange Battery #1 -> #2");
+			}
 			DLCEventLogWrite( _ID1_CELLACT,batteryStatus,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
         }
 
@@ -123,7 +133,9 @@ int BATTERY_checkAndSwitchBattery(void)
             EXT2_OFF_Set();
             // Current uising battery # is 1
             WPFM_externalBatteryNumberInUse = 1;
-            DEBUG_UART_printlnString("Exchange Battery #2 -> #1");
+			if (DLC_Para.MeasureLog == 0) {
+	            DEBUG_UART_printlnString("Exchange Battery #2 -> #1");
+			}
 			DLCEventLogWrite( _ID1_CELLACT,batteryStatus,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
         }
 
