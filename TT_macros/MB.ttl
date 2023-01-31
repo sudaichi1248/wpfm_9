@@ -1,2 +1,2 @@
-; ReportLog   
+; ‘ª’èƒƒO On/Off
 send #2 "000MB" #3

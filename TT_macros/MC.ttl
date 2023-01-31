@@ -1,2 +1,2 @@
-; ReportLog   
+; UART diseable/enable
 send #2 "000MC" #3
