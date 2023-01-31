@@ -73,6 +73,7 @@ static SMPIF_COMMAND_TABLE _SMPIF_commandTables[] =
         { "MA", DLCMatReportFlg },
         { "MB", DLCMatMeasureLogChange },
         { "MC", DLCMatDebugCmdChange },
+        { "MD", DLCMatCPower },
         { NULL, NULL }
     };
 

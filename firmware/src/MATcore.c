@@ -363,6 +363,7 @@ void ______(){	DLC_MatLineIdx = 0;};
 void MTRdy()
 {
 	DLC_MatLineIdx = 0;
+	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );					/* WAKE! */
 	DLCMatSend( "AT$VER\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
 	DLC_MatState = MATC_STATE_IDLE;
@@ -2679,9 +2680,9 @@ void DLC_delay( int msec )
 void DLCMatReset( )
 {
 	putst("MATcore RST!\r\n");
-	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,-1 );		/* OFF */
-	APP_delay(200);
-	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );		/* ON */
+	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );		/* OFF */
+	APP_delay(1000);
+	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,-1 );		/* ON */
 	DLCMatTimerset( 0,15000 );
 	DLC_MatState = MATC_STATE_INIT;
 }

@@ -195,3 +195,11 @@ void DLCMatEventLogClr(const char *param, char *resp)
 	DLCEventLogClr(0);
 	DLCMatParaRes( resp );
 }
+void DLCMatCPower(const char *param, char *resp)
+{
+	if( param[0] == '1' )
+		PORT_GroupWrite( PORT_GROUP_0,0x1<<12,-1 );		/* ON */
+	else
+		PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );		/* OFF */
+	DLCMatParaRes( resp );
+}
