@@ -26,7 +26,7 @@ int		DLC_MatWriteFotaDataLen=0;	// 書込みFOTAデータレングス
 char	DLC_MatFotaCRC[4];	// FOTAデータチェックサム
 char	DLC_MatSPIRemainbufFota[256];	// 1ページ未満の半端byte保持バッファ
 char	DLC_MatSPICheckbufFota[256];	// ベリファイ用バッファ
-static	char wget_Head[] = "GET /DLC00/wpfm.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// FOTAデータ指定
+static	char wget_Head[] = "GET /DLC00/DLC00.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";	// FOTAデータ指定
 //static	char wget_Head[] = "PUT HTTP/1.1\r\nHost: harvest-files.soracom.io\r\ncontent-type:text/plain\r\nContent-Length: \r\n\r\n";
 // static char wget_Head[] = "GET /2048.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";
 // static char wget_Head[] = "GET /1792.bin HTTP/1.1\r\nHost:harvest-files.soracom.io\r\nUser-Agent: Wget\r\nConnection: close\r\n\r\n";
