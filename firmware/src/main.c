@@ -445,12 +445,8 @@ static void eventLoopOnNonMeasurementMode(void)
             WPFM_isInSendingRegularly = false;  // USBケーブルがVEなしで抜かれた時のために
             // Fall asleep if there is no work to do
             WPFM_status = WPFM_STATUS_SLEEP;
-PORT_GroupWrite( PORT_GROUP_1,0x1<<23,-1 );
-ADC_Disable(  );
             APP_delay(1);
             WPFM_sleep();       // MCUをスタンバイモードにする
-PORT_GroupWrite( PORT_GROUP_1,0x1<<23,0 );
-ADC_Enable(  );
             APP_delay(1);
             putch(',');
             WPFM_status = WPFM_STATUS_IDLE;
