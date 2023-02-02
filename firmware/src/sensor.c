@@ -114,7 +114,6 @@ int SENSOR_readSensorOutputShurink(float *sensorvalue_p1, float *sensorvalue_p2)
 {
 	uint16_t rawValue1 = WPFM_MISSING_VALUE_UINT16, rawValue2 = WPFM_MISSING_VALUE_UINT16;
 	DEBUG_UART_printlnFormat("> SENSOR_readSensorOutputShurink(%d,-)", sensorNo);
-	*sensorvalue_p1 = *sensorvalue_p2 = WPFM_MISSING_VALUE_FLOAT;
 	uint32_t sum1 = 0, sum2 = 0;
 
 	ADC_Enable();       // -- Start ADC --
@@ -159,8 +158,13 @@ int SENSOR_readSensorOutputShurink(float *sensorvalue_p1, float *sensorvalue_p2)
 		int sensorKindIndex = sensorKind - 1;
 		float slope = 0.0, result = 0.0;
 		WPFM_SETTING_PARAMETER *p = &WPFM_settingParameter;
+		bool not_present = false;
 		switch (sensorKind)
 		{
+			case SENSOR_KIND_NOT_PRESENT:
+				not_present = true;
+				break;
+
 			case SENSOR_KIND_1_3V:
 			case SENSOR_KIND_1_5V:
 				// (1) calculate slope
@@ -207,7 +211,13 @@ int SENSOR_readSensorOutputShurink(float *sensorvalue_p1, float *sensorvalue_p2)
 		} else if (result < WPFM_settingParameter.lowerLimits[i]) {
 			result = WPFM_settingParameter.lowerLimits[i];
 		}
-		WPFM_lastMeasuredValues[i] = result;
+		if (not_present == false) {	// –¢Žg—p‚Å‚È‚¢ê‡
+			if (i == 0) {	// ch1
+				*sensorvalue_p1 = result;
+			} else {		// ch2
+				*sensorvalue_p2 = result;
+			}
+		}
 
 		// Power off sensor power if necessary
 		if (! SENSOR_alwaysOnSensorPowers[i])

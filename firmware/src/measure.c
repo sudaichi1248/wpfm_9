@@ -161,10 +161,10 @@ void WPFM_measureRegularly(bool justMeasure)
 #else
 	if ((stat = SENSOR_readSensorOutputShurink(&WPFM_lastMeasuredValues[0], &WPFM_lastMeasuredValues[1])) == SENSOR_ERR_NONE)
 	{
-		if (WPFM_lastMeasuredValues[0] != WPFM_MISSING_VALUE_FLOAT) {
+		if (WPFM_settingParameter.sensorKinds[0] != SENSOR_KIND_NOT_PRESENT) {
 			DBG_PRINT("SENSOR_readSensorOutput(1) OK: %.3f", WPFM_lastMeasuredValues[0]);
 		}
-		if (WPFM_lastMeasuredValues[1] != WPFM_MISSING_VALUE_FLOAT) {
+		if (WPFM_settingParameter.sensorKinds[1] != SENSOR_KIND_NOT_PRESENT) {
 			DBG_PRINT("SENSOR_readSensorOutput(2) OK: %.3f", WPFM_lastMeasuredValues[1]);
 		}
 	}
