@@ -75,7 +75,7 @@ void WPFM_measureRegularly(bool justMeasure)
             else
             {
                 SENSOR_turnOnSensorCircuit(sensorIndex + 1, false);
-                SYSTICK_DelayMs(10);        // wait a little
+//                SYSTICK_DelayMs(10);        // wait a little «‚Åˆ—
             }
         }
     }
@@ -123,6 +123,10 @@ void WPFM_measureRegularly(bool justMeasure)
 	if (kind_1_3v == true) {
 		if (battery_readtime < SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR) {
 			SYSTICK_DelayMs(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR - battery_readtime);    // APP_delay(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);
+		}
+	} else {
+		if (battery_readtime < 10) {
+			SYSTICK_DelayMs(10 - battery_readtime);	// wait a little
 		}
 	}
 

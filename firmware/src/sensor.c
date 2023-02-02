@@ -358,6 +358,7 @@ void SENSOR_updateMeasurementInterval(uint16_t interval)
 
     for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
     {
+#if 0	// íŽžON‚Í–³‚µ
         uint8_t sensorKind = WPFM_settingParameter.sensorKinds[sensorIndex];
         switch (sensorKind)
         {
@@ -389,6 +390,9 @@ void SENSOR_updateMeasurementInterval(uint16_t interval)
             default:
                 break;
         }
+#else
+		SENSOR_turnOffSensorCircuit(sensorIndex + 1);
+#endif
     }
 }
 
