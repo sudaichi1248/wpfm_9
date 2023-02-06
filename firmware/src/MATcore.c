@@ -64,6 +64,7 @@ short	DLC_MatRSRP;
 short	DLC_MatRSRQ;
 uchar	DLC_MatRptMore;						/* Reportが連続している */
 
+bool	DLC_MatFotaAlloverTO=false;	// fota  オールオーバータイマT/Oフラグ
 int		DLC_MatFotaTOcnt=0;	// fota  タイムアウトカウンタ
 int		DLC_MatFotaExe=0;	// fota  実行フラグ
 // 測定logリングバッファ試験用
@@ -129,7 +130,8 @@ void IDLEputch( )
 #define		TIMER_30s		30000
 #define		TIMER_90s		90000
 #define		TIMER_120s		120000
-#define		TIMER_NUM		8	// 0:all over timer,1:,2:push sw timer,3:retry timer,4:FOTA timer
+#define		TIMER_300s		300000
+#define		TIMER_NUM		8	// 0:all over timer,1:,2:push sw timer,3:retry timer,4:FOTA timer,5:FOTA allover timer
 struct {
 	int		cnt;
 	uchar	TO;
@@ -501,6 +503,8 @@ void MTwget()	// fota
 	DLC_MatLineIdx = 0;
 	DLCMatWgetFile();
 	DLCMatTimerset( 4,TIMER_15s );
+	DLCMatTimerset( 5,TIMER_300s );
+	DLC_MatFotaAlloverTO = false;
 }
 /*
 	PostConfig送信でOKを受けた,$RECV待ち
@@ -763,16 +767,22 @@ void MTconW()
 }
 void MTtoF()	// fota T/O
 {
-	if (DLC_MatFotaTOcnt < 3) {
-		DLC_MatFotaTOcnt++;
-		DLCMatTimerset( 4,TIMER_5000ms);
-		DLCMatSend( "AT$RECV,1024\r" );
-		putst("リトライ(*o*)\r\n");
+	if (DLC_MatFotaAlloverTO == true) {	// オールオーバータイマT/O?
+		putst("FOTA ALLOVERTIMER T/O.\r\n");
+		DLC_delay(1000);
+		DLCFotaNGAndReset();
 	} else {
-		// FOTA失敗 再実行
-		putst("FOTA FAILED(T/O).\r\n");
-		DLC_MatSPIFOTAerase();	// SPI最終セクタ消去
-		DLCFotaGoAndReset();
+		if (DLC_MatFotaTOcnt < 3) {
+			DLC_MatFotaTOcnt++;
+			DLCMatTimerset( 4,TIMER_5000ms);
+			DLCMatSend( "AT$RECV,1024\r" );
+			putst("リトライ(*o*)\r\n");
+		} else {
+			// FOTA失敗 再実行
+			putst("FOTA FAILED(T/O).\r\n");
+			DLC_MatSPIFOTAerase();	// SPI最終セクタ消去
+			DLCFotaGoAndReset();
+		}
 	}
 }
 struct {
@@ -1074,6 +1084,10 @@ void DLCMatState()
 //		}
 		else if( DLCMatTmChk( 4 ) )
 			DLC_Matfact = MATC_FACT_TO1;
+		else if( DLCMatTmChk( 5 ) ) {
+			DLC_MatFotaAlloverTO = true;
+			DLC_Matfact = MATC_FACT_TO1;
+		}
 		else {
 			switch( MatGetMsgStack() ){
 			case MSGID_TIMER:

@@ -103,6 +103,7 @@ putst("length(page):");puthxw(DLC_MatFotaDataLen / DLC_MatSPIFlashPage);putcrlf(
 			putst("CheckData:\r\n");Dump(DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage);putcrlf();
 			if (W25Q128JV_programPage(fotaaddress + 0x35F, 0, (uint8_t*)DLC_MatSPICheckbufFota, DLC_MatSPIFlashPage, true) == W25Q128JV_ERR_NONE ){	/* チェック用256byte書込む */
 				DLCMatTimerClr( 4 );	/* タイマークリア */
+				DLCMatTimerClr( 5 );	/* タイマークリア */
 				putst("FOTA SUCCESS. timer CLR\r\n");
 putst("crc page:");puthxw(fotaaddress + 0x35F);putcrlf();
 putst("write:");puthxw(DLC_MatSPIWritePageFota);putcrlf();
