@@ -64,7 +64,7 @@ bool	DLC_MatsendRepOK=false;
 short	DLC_MatRSRP;
 short	DLC_MatRSRQ;
 uchar	DLC_MatRptMore;						/* Reportが連続している */
-
+uchar	DLC_MatBatCnt;						/* 電池電圧SCAN回数 */
 bool	DLC_MatFotaAlloverTO=false;	// fota  オールオーバータイマT/Oフラグ
 int		DLC_MatFotaTOcnt=0;	// fota  タイムアウトカウンタ
 int		DLC_MatFotaExe=0;	// fota  実行フラグ
@@ -635,7 +635,8 @@ void MTdisc()
 		DLC_Matknd = 0;
 		DLCMatSend( "AT$CONNECT\r" );
 		DLCEventLogWrite( _ID1_CONNECT,0,0 );
-		DLCMatTimerset( 0,TIMER_120s );
+		DLCMatTimerset( 0,TIMER_1000ms );
+		DLC_MatBatCnt = 0;
 		DLC_MatState = MATC_STATE_CONN;
 	}
 	else {
@@ -742,8 +743,9 @@ void MTwake()
 	DLC_Matknd = 0;
 	DLCMatSend( "AT$CONNECT\r" );
 	DLCEventLogWrite( _ID1_CONNECT,0,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
-	DLCMatTimerset( 0,TIMER_120s );
 	TC5_TimerStart();
+	DLCMatTimerset( 0,TIMER_1000ms );
+	DLC_MatBatCnt = 0;
 	DLC_MatState = MATC_STATE_CONN;
 }
 void MTFwak()
@@ -763,7 +765,8 @@ void MTconW()
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT\r" );
 	DLCEventLogWrite( _ID1_CONNECT,0,0 );
-	DLCMatTimerset( 0,TIMER_120s );
+	DLCMatTimerset( 0,TIMER_1000ms );
+	DLC_MatBatCnt = 0;
 	DLC_MatState = MATC_STATE_CONN;
 }
 void MTtoF()	// fota T/O
@@ -888,6 +891,25 @@ void MTtim2()
 		}
 	}
 }
+/*
+	CONNECT中のTO 
+	1回目２回目は電池電圧Readと1秒タイマ
+	3回目は電池電圧Read120秒タイマ
+	4回目は切断
+*/
+void MTBatt()
+{
+	DLC_MatBatCnt++;
+	if( DLC_MatBatCnt > 3 )
+		MTdisc();
+	else {
+		WPFM_getBatteryValue();
+		if( DLC_MatBatCnt == 3 )
+			DLCMatTimerset( 0,TIMER_120s-TIMER_1000ms*3 );
+		else
+			DLCMatTimerset( 0,TIMER_1000ms );
+	}
+}
 void MTledQ()
 {
 	GPIOEXP_set(0);												/* LED全消灯 */
@@ -910,7 +932,7 @@ void	 (*MTjmp[18][19])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, MTcls0, MTclsF, ______, ______, ______, ______ },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______ },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, MTdisc, ______ },
-/* TimOut1    12 */{ MTwVer, MTVrT,  MTVer,  MTRapn, MTdisc, MTdisc, MTdisc, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTdisc, MTledQ },
+/* TimOut1    12 */{ MTwVer, MTVrT,  MTVer,  MTRapn, MTdisc, MTBatt, MTdisc, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTdisc, MTledQ },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTrprt, ______, MTwake, ______, ______, ______, MTwake, ______ },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
