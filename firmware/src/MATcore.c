@@ -900,12 +900,12 @@ void MTtim2()
 void MTBatt()
 {
 	DLC_MatBatCnt++;
-	if( DLC_MatBatCnt > 3 )
+	if( DLC_MatBatCnt > NUM_TIMES_ACTUALLY_BATT )
 		MTdisc();
 	else {
 		WPFM_getBatteryValue();
-		if( DLC_MatBatCnt == 3 )
-			DLCMatTimerset( 0,TIMER_120s-TIMER_1000ms*3 );
+		if( DLC_MatBatCnt == NUM_TIMES_ACTUALLY_BATT )
+			DLCMatTimerset( 0,TIMER_120s-TIMER_1000ms*NUM_TIMES_ACTUALLY_BATT );
 		else
 			DLCMatTimerset( 0,TIMER_1000ms );
 	}
