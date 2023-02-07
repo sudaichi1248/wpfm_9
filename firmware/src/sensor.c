@@ -126,6 +126,8 @@ int SENSOR_readSensorOutputShurink(float *sensorvalue_p1, float *sensorvalue_p2)
 			while (! ADC_ConversionStatusGet())
 				;
 			sum1 += ADC_ConversionResultGet();
+			// APP_delay(WAIT_TIME_FOR_EACH_MEASUREMENT);     // wait a little (@tune)
+			SYSTICK_DelayMs(WAIT_TIME_FOR_EACH_MEASUREMENT);
 		}
 		// Sens2
 		if (WPFM_settingParameter.sensorKinds[1] != SENSOR_KIND_NOT_PRESENT) {
@@ -134,9 +136,8 @@ int SENSOR_readSensorOutputShurink(float *sensorvalue_p1, float *sensorvalue_p2)
 			while (! ADC_ConversionStatusGet())
 				;
 			sum2 += ADC_ConversionResultGet();
+			SYSTICK_DelayMs(WAIT_TIME_FOR_EACH_MEASUREMENT);
 		}
-		// APP_delay(WAIT_TIME_FOR_EACH_MEASUREMENT);     // wait a little (@tune)
-		SYSTICK_DelayMs(WAIT_TIME_FOR_EACH_MEASUREMENT);
 	}
 	ADC_Disable();      // -- STOP ADC --
 
