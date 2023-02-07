@@ -203,6 +203,7 @@ extern bool WPFM_isInSendingRegularly;              //
 */
   // defined in measure.c
 extern void WPFM_measureRegularly(bool justMeasure);
+extern void WPFM_getBatteryValue();
   // defined in alert.c
 extern uint8_t WPFM_judegAlert(uint32_t ot);
 #ifdef ADD_FUNCTION

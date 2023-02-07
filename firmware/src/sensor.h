@@ -45,6 +45,9 @@ typedef enum {
 //#define SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR     1000     // Time to energize before reading a value from the sensor[mS]
 #define SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR     135     // Time to energize before reading a value from the sensor[mS] íZèk
 
+#define NUM_TIMES_ACTUALLY              10              // The number of times the value is actually read in one measurement (@specify by customer)
+#define NUM_TIMES_ACTUALLY_BATT			3				// The number of times the value is actually read battery measurement (@specify by customer)
+
 /*
 *   Global functions
 */
@@ -64,6 +67,7 @@ extern void SENSOR_updateMeasurementInterval(uint16_t interval);
 *   Global variables
 */
 extern bool SENSOR_alwaysOnSensorPowers[2];         // Keep the each sensor power always on(true) or not(false)
+extern uint8_t	BatteryMeasureTimes;
 
 #ifdef	__cplusplus
 }

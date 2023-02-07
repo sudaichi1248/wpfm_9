@@ -15,6 +15,7 @@
 #include "mlog.h"
 #include "util.h"
 #include "wpfm.h"
+#include "sensor.h"
 #include "DLCpara.h"
 #include "Eventlog.h"
 #include "version.h"
@@ -2369,6 +2370,7 @@ void MATRts()
 void DLCMatMain()
 {
 	char key;
+int i;
 	int ret=0;
 	RTC_DATETIME dt;
 	char s[32];
@@ -2535,6 +2537,12 @@ void DLCMatMain()
 			case 'V':
 //				DLC_MatSPIFOTAerase();	// SPI最終セクタ消去
 				DLCEventLogDisplay();	/*			イベントログ表氏 */
+				break;
+			case 'A':
+				for (i=0; i<NUM_TIMES_ACTUALLY_BATT; i++) {
+					WPFM_getBatteryValue();
+					APP_delay(1000);
+				}
 				break;
 			case 'X':	// FOTA開始
 				if( CheckPasswd() )

@@ -42,9 +42,8 @@ int DLCMatIsCom();
  */
 void WPFM_measureRegularly(bool justMeasure)
 {
-    uint32_t start = SYS_mSec, occurrenceTime = RTC_now, battery_readtime;
+    uint32_t start = SYS_mSec, occurrenceTime = RTC_now;
     int stat = 0;
-	uint32_t start_tick = SYS_tick;
 	bool kind_1_3v = false;
 
     RTC_DATETIME dt;
@@ -75,59 +74,14 @@ void WPFM_measureRegularly(bool justMeasure)
             else
             {
                 SENSOR_turnOnSensorCircuit(sensorIndex + 1, false);
-//                SYSTICK_DelayMs(10);        // wait a little Å´Ç≈èàóù
+                SYSTICK_DelayMs(10);        // wait a little
             }
         }
     }
 
-    // Read two external battery voltages
-	start_tick = SYS_tick;
-    WPFM_lastBatteryVoltages[0] = WPFM_lastBatteryVoltages[1] = WPFM_MISSING_VALUE_UINT16;
-#if 0
-    SENSOR_readExternalBatteryVoltage(1, &WPFM_lastBatteryVoltages[0]);
-    SENSOR_readExternalBatteryVoltage(2, &WPFM_lastBatteryVoltages[1]);
-    DEBUG_UART_printlnFormat("SENSOR_readExternalBatteryVoltage(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
-    DEBUG_UART_FLUSH(); APP_delay(10);
-#else
-	SENSOR_readExternalBatteryVoltageShurink(&WPFM_lastBatteryVoltages[0], &WPFM_lastBatteryVoltages[1]);
-	DBG_PRINT("SENSOR_readExternalBatteryVoltageShurink(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
-	if (DLC_Para.MeasureLog == 0) {
-	    DEBUG_UART_FLUSH(); APP_delay(10);
-	}
-#endif
-#if 0
-	if (DLCMatIsCom()) {	// í êMíÜÇ≈Ç»Ç¢
-#endif
-	    // Check two batteries and auto switch if nessesary
-	    if ((stat = BATTERY_checkAndSwitchBattery()) != BATTERY_ERR_NONE)
-	    {
-	        if (stat == BATTERY_ERR_HALT)
-	        {
-	            // Halt due to low voltage in both batteries
-	            WPFM_halt("Low voltage in both batteries");
-	        }
-	    }
-#if 0
-	} else {
-		DEBUG_UART_printlnFormat("SKIP because communication now.");
-	}
-#endif
-    DBG_PRINT("BATTERY: Status %02Xh, USE #%d/RPL #%d",
-            WPFM_batteryStatus, WPFM_externalBatteryNumberInUse, WPFM_externalBatteryNumberToReplace);
-	if (DLC_Para.MeasureLog == 0) {
-	    APP_delay(20);
-	}
-	battery_readtime = SYS_tick - start_tick;
-
 	// Turn on wait
 	if (kind_1_3v == true) {
-		if (battery_readtime < SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR) {
-			SYSTICK_DelayMs(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR - battery_readtime);    // APP_delay(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);
-		}
-	} else {
-		if (battery_readtime < 10) {
-			SYSTICK_DelayMs(10 - battery_readtime);	// wait a little
-		}
+		SYSTICK_DelayMs(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);    // APP_delay(SENSOR_PRE_ENERGIZATION_TIME_OF_SENSOR);
 	}
 
     // Reading a sensor(s)
@@ -256,4 +210,33 @@ void WPFM_getTemperature()
     {
         DEBUG_UART_printlnFormat("S5851A_getTemperature() error: %d", stat);
     }
+}
+
+void WPFM_getBatteryValue()
+{
+	int stat = 0;
+	// Read two external battery voltages
+	WPFM_lastBatteryVoltages[0] = WPFM_lastBatteryVoltages[1] = WPFM_MISSING_VALUE_UINT16;
+	SENSOR_readExternalBatteryVoltageShurink(&WPFM_lastBatteryVoltages[0], &WPFM_lastBatteryVoltages[1]);
+	DBG_PRINT("SENSOR_readExternalBatteryVoltageShurink(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
+	if (DLC_Para.MeasureLog == 0) {
+		DEBUG_UART_FLUSH(); APP_delay(10);
+	}
+	if (BatteryMeasureTimes >= NUM_TIMES_ACTUALLY_BATT) {
+		// Check two batteries and auto switch if nessesary
+		if ((stat = BATTERY_checkAndSwitchBattery()) != BATTERY_ERR_NONE)
+		{
+			if (stat == BATTERY_ERR_HALT)
+			{
+				// Halt due to low voltage in both batteries
+				WPFM_halt("Low voltage in both batteries");
+			}
+		}
+		DBG_PRINT("BATTERY: Status %02Xh, USE #%d/RPL #%d",
+				WPFM_batteryStatus, WPFM_externalBatteryNumberInUse, WPFM_externalBatteryNumberToReplace);
+		if (DLC_Para.MeasureLog == 0) {
+			APP_delay(20);
+		}
+		BatteryMeasureTimes = 0;
+	}
 }

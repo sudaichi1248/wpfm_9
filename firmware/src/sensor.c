@@ -21,7 +21,6 @@
 /*
 *   Symbols and Constants
 */
-#define NUM_TIMES_ACTUALLY              10              // The number of times the value is actually read in one measurement (@specify by customer)
 #define WAIT_TIME_FOR_EACH_MEASUREMENT  10              // Free time for continuous measurements[mS] (@tune)
 #define SHUNT_REGISTANCE                150             // for current output sensor [ohm]
 
@@ -29,6 +28,8 @@
 *   Global variables
 */
 bool SENSOR_alwaysOnSensorPowers[2] = { false, false };
+uint32_t	BatteryValueSum1 = 0, BatteryValueSum2 = 0;
+uint8_t		BatteryMeasureTimes = 0;
 
 const static float _SENSOR_conversionFactor                = 0.000990000;      // Conversion to voltage factor [V/LSB]
 const static float _SENSOR_dividedRatioOfExternalBattery   = 880.0 / 200.0;    // Voltage division ratio: (R1) Corresponded to battery voltage change to 12V
@@ -259,47 +260,46 @@ int SENSOR_readExternalBatteryVoltage(int externalNo, uint16_t *voltage_p)
 int SENSOR_readExternalBatteryVoltageShurink(uint16_t *voltage_p1, uint16_t *voltage_p2)
 {
 	float result1, result2;
-	uint32_t sum1 = 0, sum2 = 0;
 	uint16_t rawValue1, rawValue2;
 	DEBUG_UART_printlnFormat("> SENSOR_readExternalBatteryVoltageShurink(1/2,-)");
 	*voltage_p1 = *voltage_p2 = WPFM_MISSING_VALUE_UINT16;
 
 	ADC_Enable();       // -- Start ADC --
-	for (int i = 0; i < NUM_TIMES_ACTUALLY; i++) {
-		// ch1
-		ADC_ChannelSelect(SENSOR_EXTERNAL_BATTERY1, ADC_NEGINPUT_GND);
-		ADC_ConversionStart();
-		while (! ADC_ConversionStatusGet())
-			;
-		sum1 += ADC_ConversionResultGet();
-		// ch2
-		ADC_ChannelSelect(SENSOR_EXTERNAL_BATTERY2, ADC_NEGINPUT_GND);
-		ADC_ConversionStart();
-		while (! ADC_ConversionStatusGet())
-			;
-		sum2 += ADC_ConversionResultGet();
-		// APP_delay(WAIT_TIME_FOR_EACH_MEASUREMENT);     // wait a little (@tune)
-		SYSTICK_DelayMs(WAIT_TIME_FOR_EACH_MEASUREMENT);
-	}
+	// ch1
+	ADC_ChannelSelect(SENSOR_EXTERNAL_BATTERY1, ADC_NEGINPUT_GND);
+	ADC_ConversionStart();
+	while (! ADC_ConversionStatusGet())
+		;
+	BatteryValueSum1 += ADC_ConversionResultGet();
+	// ch2
+	ADC_ChannelSelect(SENSOR_EXTERNAL_BATTERY2, ADC_NEGINPUT_GND);
+	ADC_ConversionStart();
+	while (! ADC_ConversionStatusGet())
+		;
+	BatteryValueSum2 += ADC_ConversionResultGet();
 	ADC_Disable();      // -- STOP ADC --
+	BatteryMeasureTimes++;
 
-	rawValue1 = ((float)sum1 / (float)NUM_TIMES_ACTUALLY);
-	rawValue2 = ((float)sum2 / (float)NUM_TIMES_ACTUALLY);
-	DEBUG_UART_printlnFormat("readRawValue1 OK: %u", rawValue1);
-	DEBUG_UART_printlnFormat("readRawValue2 OK: %u", rawValue2);
+	if (BatteryMeasureTimes >= NUM_TIMES_ACTUALLY_BATT) {
+		rawValue1 = ((float)BatteryValueSum1 / (float)NUM_TIMES_ACTUALLY_BATT);
+		rawValue2 = ((float)BatteryValueSum2 / (float)NUM_TIMES_ACTUALLY_BATT);
+		DEBUG_UART_printlnFormat("readRawValue1 OK: %u", rawValue1);
+		DEBUG_UART_printlnFormat("readRawValue2 OK: %u", rawValue2);
 
-	if( DLC_Para.BatCarivFlg == 0 ) {
-		result1 = rawValue1 * _SENSOR_dividedRatioOfExternalBattery2 ;
-		result2 = rawValue2 * _SENSOR_dividedRatioOfExternalBattery2 ;
+		if( DLC_Para.BatCarivFlg == 0 ) {
+			result1 = rawValue1 * _SENSOR_dividedRatioOfExternalBattery2 ;
+			result2 = rawValue2 * _SENSOR_dividedRatioOfExternalBattery2 ;
+		}
+		else {
+			result1 = rawValue1 * _SENSOR_dividedRatioOfExternalBattery * _SENSOR_conversionFactor;
+			result2 = rawValue2 * _SENSOR_dividedRatioOfExternalBattery * _SENSOR_conversionFactor;
+		}
+		*voltage_p1 = (uint16_t)(result1 * 1000.0);	// Convert Volt to milli Volt
+		*voltage_p2 = (uint16_t)(result2 * 1000.0);	// Convert Volt to milli Volt
+		DEBUG_UART_printlnFormat("< SENSOR_readExternalBatteryVoltageShurink(1,-) OK: %.3f", result1);
+		DEBUG_UART_printlnFormat("< SENSOR_readExternalBatteryVoltageShurink(2,-) OK: %.3f", result2);
+		BatteryValueSum1 = BatteryValueSum2 = 0;
 	}
-	else {
-		result1 = rawValue1 * _SENSOR_dividedRatioOfExternalBattery * _SENSOR_conversionFactor;
-		result2 = rawValue2 * _SENSOR_dividedRatioOfExternalBattery * _SENSOR_conversionFactor;
-	}
-	*voltage_p1 = (uint16_t)(result1 * 1000.0);	// Convert Volt to milli Volt
-	*voltage_p2 = (uint16_t)(result2 * 1000.0);	// Convert Volt to milli Volt
-	DEBUG_UART_printlnFormat("< SENSOR_readExternalBatteryVoltageShurink(1,-) OK: %.3f", result1);
-	DEBUG_UART_printlnFormat("< SENSOR_readExternalBatteryVoltageShurink(2,-) OK: %.3f", result2);
 	return (SENSOR_ERR_NONE);
 }
 
