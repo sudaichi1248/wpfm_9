@@ -22,6 +22,7 @@
 #include "DLCpara.h"
 #include "Eventlog.h"
 void DLCMatTimerset();
+void DLCMatErrorSleep();
 #ifdef ADD_FUNCTION
 bool DLCMatWatchAlertPause();
 #endif
@@ -459,6 +460,8 @@ void WPFM_halt(const char *lastMessage)
     RTC_setTimeUpdateInterrupt(RTC_TIMEUPDATE_SECOND, NULL);
     RTC_setAlarm((WPFM_communicationInterval / 60), NULL);
     EIC_InterruptDisable(WPFM_TACTSW_INTERRUPT_PIN);
+	WDT_Disable();
+	DLCMatErrorSleep();
 
     // Fall asleep..
     WPFM_sleep();

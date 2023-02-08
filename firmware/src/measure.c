@@ -218,11 +218,11 @@ void WPFM_getBatteryValue()
 	// Read two external battery voltages
 	WPFM_lastBatteryVoltages[0] = WPFM_lastBatteryVoltages[1] = WPFM_MISSING_VALUE_UINT16;
 	SENSOR_readExternalBatteryVoltageShurink(&WPFM_lastBatteryVoltages[0], &WPFM_lastBatteryVoltages[1]);
-	DBG_PRINT("SENSOR_readExternalBatteryVoltageShurink(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
-	if (DLC_Para.MeasureLog == 0) {
-		DEBUG_UART_FLUSH(); APP_delay(10);
-	}
 	if (BatteryMeasureTimes >= NUM_TIMES_ACTUALLY_BATT) {
+		DBG_PRINT("SENSOR_readExternalBatteryVoltageShurink(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
+		if (DLC_Para.MeasureLog == 0) {
+			DEBUG_UART_FLUSH(); APP_delay(10);
+		}
 		// Check two batteries and auto switch if nessesary
 		if ((stat = BATTERY_checkAndSwitchBattery()) != BATTERY_ERR_NONE)
 		{

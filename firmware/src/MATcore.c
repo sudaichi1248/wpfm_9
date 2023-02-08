@@ -903,11 +903,11 @@ void MTBatt()
 	if( DLC_MatBatCnt > NUM_TIMES_ACTUALLY_BATT )
 		MTdisc();
 	else {
-		WPFM_getBatteryValue();
 		if( DLC_MatBatCnt == NUM_TIMES_ACTUALLY_BATT )
 			DLCMatTimerset( 0,TIMER_120s-TIMER_1000ms*NUM_TIMES_ACTUALLY_BATT );
 		else
 			DLCMatTimerset( 0,TIMER_1000ms );
+		WPFM_getBatteryValue();
 	}
 }
 void MTledQ()
@@ -2392,7 +2392,6 @@ void MATRts()
 void DLCMatMain()
 {
 	char key;
-int i;
 	int ret=0;
 	RTC_DATETIME dt;
 	char s[32];
@@ -2560,12 +2559,6 @@ int i;
 //				DLC_MatSPIFOTAerase();	// SPI最終セクタ消去
 				DLCEventLogDisplay();	/*			イベントログ表氏 */
 				break;
-			case 'A':
-				for (i=0; i<NUM_TIMES_ACTUALLY_BATT; i++) {
-					WPFM_getBatteryValue();
-					APP_delay(1000);
-				}
-				break;
 			case 'X':	// FOTA開始
 				if( CheckPasswd() )
 					DLCFotaGoAndReset();
@@ -2706,6 +2699,13 @@ void DLCMatError( int no )
 	DLCEventLogWrite( _ID1_ERROR,0xffffffff,no );
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
 	DLC_MatState = MATC_STATE_ERR;
+}
+void DLCMatErrorSleep()
+{
+	putst("MATcore Sleep(BatteryError)\r\n");
+	DLCMatTimerClr( 0 );
+	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
+	DLC_MatState = MATC_STATE_SLP;
 }
 /*
 	ログを出し切るdelay
