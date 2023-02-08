@@ -26,6 +26,7 @@ DLC_Parameter 	DLC_Para;
 void DLCParaRead()
 {
 	NVMCTRL_Read( (uint32_t *)&DLC_Para,sizeof( DLC_Para ),DLC_PARAMETER_ADDRESS );
+	DLC_Para.BatCarivFlg = 0;
 }
 void DLCParaSave()
 {
