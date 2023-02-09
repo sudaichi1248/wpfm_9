@@ -103,6 +103,7 @@ int MLOG_putLog(MLOG_T *log_p, bool specifySN)
     if( dt.second%WPFM_measurementInterval ){
 		DLCEventLogWrite( _ID1_ERROR,0x0100,(dt.day<<24)|(dt.hour<<16)|(dt.minute<<8)|dt.second );
 		putst("ššš");putcrlf();
+		dt.second = dt.second/WPFM_measurementInterval*WPFM_measurementInterval;			/* ’Òåë‡‚í‚¹C³ 23.2.9 by kasai */
 	}
     if ((_MLOG_headAddress & 0xfff) == 0)
     {
