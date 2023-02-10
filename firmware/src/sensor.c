@@ -35,7 +35,7 @@ const static float _SENSOR_conversionFactor                = 0.000990000;      /
 const static float _SENSOR_dividedRatioOfExternalBattery   = 880.0 / 200.0;    // Voltage division ratio: (R1) Corresponded to battery voltage change to 12V
 const static float _SENSOR_dividedRatioOfExternalBattery2     = 0.004841; // Voltage division ratio: (R1) Corresponded to battery voltage change to 12V by kamimoto
 
-#if 0
+#ifndef SENSOR_SHURINK
 int SENSOR_readSensorOutput(int sensorNo, float *result_p)
 {
     DEBUG_UART_printlnFormat("> SENSOR_readSensorOutput(%d,-)", sensorNo);
@@ -109,12 +109,12 @@ int SENSOR_readSensorOutput(int sensorNo, float *result_p)
     DEBUG_UART_printlnFormat("< SENSOR_readSensorOutput(%d,-) OK: %.3f", sensorNo, result);
     return (SENSOR_ERR_NONE);
 }
-#endif
+#else	// SENSOR_SHURINK
 
 int SENSOR_readSensorOutputShurink(float *sensorvalue_p1, float *sensorvalue_p2)
 {
 	uint16_t rawValue1 = WPFM_MISSING_VALUE_UINT16, rawValue2 = WPFM_MISSING_VALUE_UINT16;
-	DEBUG_UART_printlnFormat("> SENSOR_readSensorOutputShurink(%d,-)", sensorNo);
+	DEBUG_UART_printlnFormat("> SENSOR_readSensorOutputShurink(1/2)");
 	uint32_t sum1 = 0, sum2 = 0;
 
 	ADC_Enable();       // -- Start ADC --
@@ -206,7 +206,7 @@ int SENSOR_readSensorOutputShurink(float *sensorvalue_p1, float *sensorvalue_p2)
 			default:
 				return (SENSOR_ERR_PARAM);
 		}
-		DEBUG_UART_printlnFormat("SENSOR_readSensorOutputShurink(%d) OK: %.3f", i + 1, result3);
+		DEBUG_UART_printlnFormat("SENSOR_readSensorOutputShurink(%d) OK: %.3f", i + 1, result);
 
 		if (result > WPFM_settingParameter.upperLimits[i]) {	// è„å¿Å^â∫å¿Ç≈ä€ÇﬂçûÇ›
 			result = WPFM_settingParameter.upperLimits[i];
@@ -229,6 +229,7 @@ int SENSOR_readSensorOutputShurink(float *sensorvalue_p1, float *sensorvalue_p2)
 	}
 	return (SENSOR_ERR_NONE);
 }
+#endif	// SENSOR_SHURINK
 
 int SENSOR_readExternalBatteryVoltage(int externalNo, uint16_t *voltage_p)
 {

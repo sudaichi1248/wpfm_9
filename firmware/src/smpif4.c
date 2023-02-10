@@ -19,7 +19,7 @@
 #define NUM_COLUMNS_TYPE_E      16
 
 static int parseParameterTypeE(const char *param, WPFM_SETTING_PARAMETER *q);
-
+SENSOR_KIND     CallibrationSensorKinds[2];		// センサ種別[0:ch1/1:ch2]
 
 void SMPIF_getCallibrationValues(const char *param, char *resp)
 {
@@ -102,6 +102,8 @@ void SMPIF_setCallibrationValues(const char *param, char *resp)
 
 void SMPIF_notifyCallibrationTarget(const char *param, char *resp)
 {
+	CallibrationSensorKinds[WPFM_SETTING_CH1] = WPFM_settingParameter.sensorKinds[WPFM_SETTING_CH1];
+	CallibrationSensorKinds[WPFM_SETTING_CH2] = WPFM_settingParameter.sensorKinds[WPFM_SETTING_CH2];
     if (strlen(param) != 2)
     {
         sprintf(resp, "%c003NG%3d%c", SMPIF_STX, 101, SMPIF_ETX);
@@ -111,32 +113,32 @@ void SMPIF_notifyCallibrationTarget(const char *param, char *resp)
         switch (channelSetting)
         {
             case 11:        // Ch1: 1-3V
-                WPFM_settingParameter.sensorKinds[WPFM_SETTING_CH1] = SENSOR_KIND_1_3V;
+                CallibrationSensorKinds[WPFM_SETTING_CH1] = SENSOR_KIND_1_3V;
                 sprintf(resp, "%c000OK%c", SMPIF_STX, SMPIF_ETX);
                 DEBUG_UART_printlnString("Set: Ch1/1-3V");
                 break;
             case 12:        // Ch1: 1-5V
-                WPFM_settingParameter.sensorKinds[WPFM_SETTING_CH1] = SENSOR_KIND_1_5V;
+                CallibrationSensorKinds[WPFM_SETTING_CH1] = SENSOR_KIND_1_5V;
                 DEBUG_UART_printlnString("Set: Ch1/1-5V");
                 sprintf(resp, "%c000OK%c", SMPIF_STX, SMPIF_ETX);
                 break;
             case 21:        // Ch2: 1-3V
-                WPFM_settingParameter.sensorKinds[WPFM_SETTING_CH2] = SENSOR_KIND_1_3V;
+                CallibrationSensorKinds[WPFM_SETTING_CH2] = SENSOR_KIND_1_3V;
                 DEBUG_UART_printlnString("Set: Ch2/1-3V");
                 sprintf(resp, "%c000OK%c", SMPIF_STX, SMPIF_ETX);
                 break;
             case 22:        // Ch2: 1-5V
-                WPFM_settingParameter.sensorKinds[WPFM_SETTING_CH2] = SENSOR_KIND_1_5V;
+                CallibrationSensorKinds[WPFM_SETTING_CH2] = SENSOR_KIND_1_5V;
                 DEBUG_UART_printlnString("Set: Ch2/1-5V");
                 sprintf(resp, "%c000OK%c", SMPIF_STX, SMPIF_ETX);
                 break;
             case 23:        // Ch2: 0-20mA
-                WPFM_settingParameter.sensorKinds[WPFM_SETTING_CH2] = SENSOR_KIND_0_20MA;
+                CallibrationSensorKinds[WPFM_SETTING_CH2] = SENSOR_KIND_0_20MA;
                 DEBUG_UART_printlnString("Set: Ch2/0-20mA");
                 sprintf(resp, "%c000OK%c", SMPIF_STX, SMPIF_ETX);
                 break;
             case 24:        // Ch2: 4-20mA
-                WPFM_settingParameter.sensorKinds[WPFM_SETTING_CH2] = SENSOR_KIND_4_20MA;
+                CallibrationSensorKinds[WPFM_SETTING_CH2] = SENSOR_KIND_4_20MA;
                 DEBUG_UART_printlnString("Set: Ch2/4-20mA");
                 sprintf(resp, "%c000OK%c", SMPIF_STX, SMPIF_ETX);
                 break;
@@ -159,7 +161,7 @@ void SMPIF_readCallibrationValues(const char *param, char *resp)
     uint16_t valueChannels[2] = { 0, 0 };
     for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
     {
-        uint8_t sensorKind = WPFM_settingParameter.sensorKinds[sensorIndex];
+        uint8_t sensorKind = CallibrationSensorKinds[sensorIndex];
         if (sensorKind == SENSOR_KIND_NOT_PRESENT)
         {
             continue;   // Skip measurement if the sensor is not present

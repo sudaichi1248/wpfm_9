@@ -85,7 +85,7 @@ void WPFM_measureRegularly(bool justMeasure)
 	}
 
     // Reading a sensor(s)
-#if 0
+#ifndef SENSOR_SHURINK
     for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)
     {
         uint8_t sensorKind = WPFM_settingParameter.sensorKinds[sensorIndex];
@@ -116,7 +116,7 @@ void WPFM_measureRegularly(bool justMeasure)
             SENSOR_turnOffSensorCircuit(sensorIndex + 1);
         }
     }
-#else
+#else	// SENSOR_SHURINK
 	if ((stat = SENSOR_readSensorOutputShurink(&WPFM_lastMeasuredValues[0], &WPFM_lastMeasuredValues[1])) == SENSOR_ERR_NONE)
 	{
 		if (WPFM_settingParameter.sensorKinds[0] != SENSOR_KIND_NOT_PRESENT) {
@@ -130,7 +130,7 @@ void WPFM_measureRegularly(bool justMeasure)
 	{
 		DBG_PRINT("SENSOR_readSensorOutput(-) NG: %d", stat);
 	}
-#endif
+#endif	// SENSOR_SHURINK
 
     // Read temperature sensor on board
     WPFM_getTemperature();

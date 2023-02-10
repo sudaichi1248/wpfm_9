@@ -9,6 +9,8 @@
 #ifndef SENSOR_H
 #define	SENSOR_H
 
+#define	SENSOR_SHURINK
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
@@ -52,7 +54,7 @@ typedef enum {
 *   Global functions
 */
 extern uint16_t SENSOR_readRawValue(void);
-#if 0
+#ifndef SENSOR_SHURINK
 extern int SENSOR_readSensorOutput(int sensorNo, float *result_p);
 #else
 extern int SENSOR_readSensorOutputShurink(float *sensorvalue_p1, float *sensorvalue_p2);
