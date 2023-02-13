@@ -9,7 +9,7 @@
 #ifndef SENSOR_H
 #define	SENSOR_H
 
-#define	SENSOR_SHURINK
+//#define	SENSOR_SHURINK
 
 #ifdef	__cplusplus
 extern "C" {
