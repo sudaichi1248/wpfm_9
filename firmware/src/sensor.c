@@ -29,7 +29,6 @@
 */
 bool SENSOR_alwaysOnSensorPowers[2] = { false, false };
 uint32_t	BatteryValueSum1 = 0, BatteryValueSum2 = 0;
-uint8_t		BatteryMeasureTimes = 0;
 
 const static float _SENSOR_conversionFactor                = 0.000990000;      // Conversion to voltage factor [V/LSB]
 const static float _SENSOR_dividedRatioOfExternalBattery   = 880.0 / 200.0;    // Voltage division ratio: (R1) Corresponded to battery voltage change to 12V
@@ -280,9 +279,8 @@ int SENSOR_readExternalBatteryVoltageShurink(uint16_t *voltage_p1, uint16_t *vol
 		;
 	BatteryValueSum2 += ADC_ConversionResultGet();
 	ADC_Disable();      // -- STOP ADC --
-	BatteryMeasureTimes++;
 
-	if (BatteryMeasureTimes >= NUM_TIMES_ACTUALLY_BATT) {
+	if (DLC_MatBatCnt >= NUM_TIMES_ACTUALLY_BATT) {
 		rawValue1 = ((float)BatteryValueSum1 / (float)NUM_TIMES_ACTUALLY_BATT);
 		rawValue2 = ((float)BatteryValueSum2 / (float)NUM_TIMES_ACTUALLY_BATT);
 		DEBUG_UART_printlnFormat("readRawValue1 OK: %u", rawValue1);

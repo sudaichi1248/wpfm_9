@@ -69,7 +69,7 @@ extern void SENSOR_updateMeasurementInterval(uint16_t interval);
 *   Global variables
 */
 extern bool SENSOR_alwaysOnSensorPowers[2];         // Keep the each sensor power always on(true) or not(false)
-extern uint8_t	BatteryMeasureTimes;
+extern uint8_t	DLC_MatBatCnt;
 
 #ifdef	__cplusplus
 }
