@@ -96,6 +96,9 @@ uint8_t WPFM_lastAlertStatusSuppressed = 0;     // suppressed lasty alert status
 volatile bool WPFM_doMeasure = false;           // Need to do regular measurement processing
 volatile bool WPFM_doCommunicate = false;       // Need to do regular comminication processing
 volatile bool WPFM_doNotifies[2] = { false, false };    // Need to notify processing for each channels
+#ifdef VER_DELTA_5
+volatile bool WPFM_doConfigPost = false;
+#endif
 
   // Current time
 volatile uint32_t WPFM_now = 0;                 // Current epoch time [Sec]

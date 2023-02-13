@@ -87,6 +87,9 @@ void WPFM_initializeApplication(void)
     switch (cause)
     {
         case PM_RESET_CAUSE_POR_RESET:
+#ifdef VER_DELTA_5
+			WPFM_doConfigPost = true;	// send Config
+#endif
             putst("POR ");
             break;
         case PM_RESET_CAUSE_BOD12_RESET:
@@ -97,6 +100,9 @@ void WPFM_initializeApplication(void)
             break;
         case PM_RESET_CAUSE_EXT_RESET:
             putst("EXT_RESET ");
+#ifdef VER_DELTA_5
+			WPFM_doConfigPost = true;	// send Config
+#endif
             break;
         case PM_RESET_CAUSE_WDT_RESET:
             putst("WDT_RESET ");

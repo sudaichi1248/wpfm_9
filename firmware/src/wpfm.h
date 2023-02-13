@@ -11,6 +11,7 @@
 #include "version.h"
 
 #define ADD_FUNCTION									// Additional Function ChatteringType2 etc
+//#define VER_DELTA_5										// Specification Ver.delta 5
 
 #ifdef	__cplusplus
 extern "C" {
@@ -184,6 +185,9 @@ extern uint8_t WPFM_lastAlertStatusSuppressed;      // suppressed lasty alert st
 extern volatile bool WPFM_doMeasure;                // Need to do regular measurement processing
 extern volatile bool WPFM_doCommunicate;            // Need to do regular comminication processing
 extern volatile bool WPFM_doNotifies[2];            // Need to notify processing for each channels
+#ifdef VER_DELTA_5
+extern volatile bool WPFM_doConfigPost;
+#endif
   // Current time
 extern volatile uint32_t WPFM_now;                  // Current epoch time [Sec]
   // Tact-switch handling

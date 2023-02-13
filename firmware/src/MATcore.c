@@ -457,6 +457,9 @@ void MTtime()
 	DLC_MatLineIdx = 0;
 	if (WPFM_ForcedCall == true) {	// 強制発報
 		UTIL_LED1_ON();
+#ifdef VER_DELTA_5
+		WPFM_doConfigPost = true;	// send Config
+#endif
 	}
 	DLCMatSend( "AT$TIME\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
@@ -482,7 +485,17 @@ void MTOpen()
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$OPEN\r" );
 	DLCMatTimerset( 0,TIMER_15s );
+#ifdef VER_DELTA_5
+	if (WPFM_doConfigPost == true) {
+		WPFM_doConfigPost = false;
+		DLC_MatState = MATC_STATE_OPN1;
+	} else {
+		DLCMatPostReptInit();
+		DLC_MatState = MATC_STATE_OPN3;
+	}
+#else
 	DLC_MatState = MATC_STATE_OPN1;
+#endif
 }
 void MTcnfg()
 {
@@ -578,7 +591,12 @@ void MTopn2()
 	DLCMatSend( "AT$OPEN\r" );
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatTimerset( 0,TIMER_15s );
+#ifdef VER_DELTA_5
+	DLCMatPostReptInit();
+	DLC_MatState = MATC_STATE_OPN3;
+#else
 	DLC_MatState = MATC_STATE_OPN2;
+#endif
 }
 void MTstst()
 {
@@ -1198,8 +1216,10 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"ReprotInterval\":%ld,"		,config.communicationInterval );			strcat( http_tmp,tmp );
 	sprintf( tmp,"\"IntervalAlert\":%ld,"		,config.measurementIntervalOnAlert  );		strcat( http_tmp,tmp );
 	sprintf( tmp,"\"ReprotIntervalAlert\":%ld,"	,config.communicationIntervalOnAlert );		strcat( http_tmp,tmp );
-#ifdef ADD_FUNCTION
+#ifndef VER_DELTA_5
+ #ifdef ADD_FUNCTION
 	sprintf( tmp,"\"Measurment\":%d,"			,config.Measurment );						strcat( http_tmp,tmp );
+ #endif
 #endif
 	sprintf( tmp,"\"Select_ch1\":%d,"			,config.sensorKinds[0] )		;			strcat( http_tmp,tmp );		/* ch1 センサ種別 */
 	sprintf( tmp,"\"Upper0_ch1\":%d,"			,config.upperLimits[0] );					strcat( http_tmp,tmp );		/* ch1 センサ出力の上限値 */
@@ -1233,8 +1253,10 @@ void DLCMatPostConfig()
 	sprintf( tmp,"\"AlertPause\":\"%s\","		,config.AlertPause );						strcat( http_tmp,tmp );
 	sprintf( tmp,"\"AlertTimeOut\":%ld"			,config.alertTimeout );						strcat( http_tmp,tmp );
 	strcat( http_tmp,"}}" );
-#ifdef ADD_FUNCTION
+#ifndef VER_DELTA_5
+ #ifdef ADD_FUNCTION
 	config.Measurment = 0;	// =1だった場合、1度Config送信したら戻す
+ #endif
 #endif
 	i = (int)(strchr(http_tmp,'}')-strstr(http_tmp,"{\"Config\":{"))+1;
 	if( i > 0 ){
@@ -1428,10 +1450,17 @@ void DLCMatPostReptInit()
 }
 int DLCMatPostReport()
 {
-	char	tmp[48],*p;
+	char	tmp[48],*p,*q;
+#ifdef VER_DELTA_5
+	char	ver[6];
+#endif
 	int		i,Len;
 	MLOG_T 	log_p;
 	WPFM_readSettingParameter( &config );
+#ifdef VER_DELTA_5
+	memcpy( ver,&_Main_version[4],5 );
+	ver[5] = 0;
+#endif
 	for( i=0; DLC_MatReportMax < DLC_MatReportLmt; DLC_MatReportMax++,i++ ){			/* Lengthを求めるためにmlogを仮走査 */
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
@@ -1454,6 +1483,37 @@ int DLCMatPostReport()
 	strcat( http_tmp,"{\"Report\":{" );
 	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );
 	strcat( http_tmp,tmp );
+#ifdef VER_DELTA_5
+	sprintf( tmp,"\"Measurment\":%d,"		,config.Measurment );
+	strcat( http_tmp,tmp );
+	strcat( http_tmp,"\"Status\":{" );
+	DLC_MatTxType = 0;
+	putst("Alert=");puthxb( WPFM_TxType );putcrlf();
+	DLC_MatTxType = WPFM_TxType;
+#ifdef ADD_FUNCTION
+	if ( WPFM_isAlertPause == true )
+		DLC_MatTxType = 20;
+#endif
+	if( DLC_Matknd == 2 )				/* Push SW */
+		DLC_MatTxType = 1;
+	sprintf( tmp,"\"IMEI\":\"%s\","			,DLC_MatIMEI );									strcat( http_tmp,tmp );
+	sprintf( tmp,"\"MSISDN\":\"%s\","		,DLC_MatNUM );									strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Version\":\"%5s\","		,ver );											strcat( http_tmp,tmp );
+	sprintf( tmp,"\"LTEVersion\":\"%s\","	,DLC_MatVer );									strcat( http_tmp,tmp );
+	sprintf( tmp,"\"ExtCellPwr1\":%.3f,"	,(float)WPFM_lastBatteryVoltages[0]/1000 );		strcat( http_tmp,tmp );
+	sprintf( tmp,"\"ExtCellPwr2\":%.3f,"	,(float)WPFM_lastBatteryVoltages[1]/1000 );		strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Batt1Use\":%d,"			,WPFM_batteryStatus>>4 );						strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Batt2Use\":%d,"			,WPFM_batteryStatus&0x0F );						strcat( http_tmp,tmp );
+	sprintf( tmp,"\"EARFCN\":%d,"			,DLCMatCharInt( DLC_MatRadioDensty,"EARFCN:"));	strcat( http_tmp,tmp );
+	sprintf( tmp,"\"CellId\":%d,"			,DLCMatCharInt( DLC_MatRadioDensty,"CELLID:"));	strcat( http_tmp,tmp );
+	sprintf( tmp,"\"RSRP\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSRP:" ));	strcat( http_tmp,tmp );
+	sprintf( tmp,"\"RSRQ\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSRQ:" ));	strcat( http_tmp,tmp );
+	sprintf( tmp,"\"RSSI\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"RSSI:" ));	strcat( http_tmp,tmp );
+	sprintf( tmp,"\"SINR\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"SINR:" ));	strcat( http_tmp,tmp );
+	sprintf( tmp,"\"Temp\":%.1f,"			,(float)(WPFM_lastTemperatureOnBoard/10.0) );	strcat( http_tmp,tmp );
+ 	sprintf( tmp,"\"TxType\":%d"			,DLC_MatTxType );								strcat( http_tmp,tmp );
+	strcat( http_tmp,"}," );
+#endif
 	strcat( http_tmp,"\"Reportlist\":[" );
 	if( DLC_MatReportMax ){
 		putst("Report=");putdecw( DLC_MatReportMax );putch(' ');
@@ -1463,7 +1523,9 @@ int DLCMatPostReport()
 		}
 		putcrlf();
 		DLCEventLogWrite( _ID1_REPORT,0,DLC_MatReportMax );
-		Len = 51+DLC_MatReportMax*80+2+DLC_MatExtbyte;
+		p = strstr( http_tmp,"{\"Report\"" );
+		q = strstr( http_tmp,":[" );
+		Len = (q-p+2)+DLC_MatReportMax*80+2+DLC_MatExtbyte;
 		p = strstr( http_tmp,"Length:    " );
 		if( p < 0 ){
 				putst("format err1 \r\n" );
@@ -1473,6 +1535,9 @@ int DLCMatPostReport()
 		for( i=0;tmp[i]!=0;i++ )
 			p[7+i] = tmp[i];
 		putst( http_tmp );putcrlf();
+#ifdef VER_DELTA_5
+		config.Measurment = 0;	// =1だった場合、1度Report送信したら戻す
+#endif
 		DLCMatReportSndSub();																/* ヘッダだけ送信 */
 		return 1;																			/* 送信データ有 */
 	}
@@ -2057,9 +2122,9 @@ int DLCMatRecvDisp()
 			p = strstr( DLC_MatResBuf,"HTTP/1.1 " );
 			if( p )
 				DLCEventLogWrite( _ID1_HTTP_RES,(p[9]-'0')<<8|(p[10]-'0')<<4|(p[11]-'0'),DLC_MatState );
-			if( DLC_MatState == MATC_STATE_RPT ){
+			if( (j == 0) && (DLC_MatState == MATC_STATE_RPT) ){	// 残りデータなしでReport送信状態の場合
 				if( strstr( DLC_MatResBuf,"HTTP/1.1 200 OK" )){
-					if( strstr( DLC_MatResBuf,"Connection: close" )){		/* ここです */
+					if( strstr( DLC_MatResBuf,"Connection: close" ) ){	/* ここです */
 putst("@@@@@ wktk1\r\n");
 						if( DLC_Para.Http_Report_Hold == 0xff ){
 							if ( MLOG_updateLog() != MLOG_ERR_NONE) {	// log FLAGを通知済に変更
@@ -2076,11 +2141,19 @@ putst("@@@@@ wktk1\r\n");
 				DLC_MatResBuf[DLC_MatResIdx] = 0;
 				putst( DLC_MatResBuf );
 				DLC_MatResIdx = 0;
+#ifdef VER_DELTA_5
+//putst("\r\ncoco1\r\n");
+				if (strstr(DLC_MatResBuf,"ReportRet")) {
+//putst("coco2\r\n");
+					DLCMatConfigRet();
+				}
+#else
 //putst("\r\ncoco1\r\n");
 				if (strstr(DLC_MatResBuf,"ConfigRet")) {
 //putst("coco2\r\n");
 					DLCMatConfigRet();
 				}
+#endif
 			}
 			else {
 //				strcpy( &DLC_MatResBuf[DLC_MatResIdx],"★" );
