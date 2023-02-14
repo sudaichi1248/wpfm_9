@@ -11,7 +11,7 @@
 #include "version.h"
 
 #define ADD_FUNCTION									// Additional Function ChatteringType2 etc
-//#define VER_DELTA_5										// Specification Ver.delta 5
+#define VER_DELTA_5										// Specification Ver.delta 5
 
 #ifdef	__cplusplus
 extern "C" {
