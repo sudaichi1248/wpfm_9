@@ -137,7 +137,10 @@ struct {
 	int		cnt;
 	uchar	TO;
 } DLC_MatTimer[TIMER_NUM];
-#define		RTC_TIMER_NUM		5	// 0:alertTimeout,1:LED1 6s Timer
+#ifdef VER_DELTA_5
+#define		RTCTIMER_24hs		3600*24
+#endif
+#define		RTC_TIMER_NUM		5	// 0:alertTimeout,1:LED1 6s Timer,2:24h Config send
 struct {
 	int		cnt;
 	uchar	TO;						/* 0:not use 1;counting 2:TO */
@@ -1813,6 +1816,13 @@ putst("\r\nAlertTime T/O");putcrlf();
 		WPFM_ForcedCall = false;
 		DLC_ForcedCallOK = false;
 	}
+#ifdef VER_DELTA_5
+	if (DLCMatRtcChk(2)) {	// 24h Config send T/O?
+putst("\r\n$$$$$ Config send T/O");putcrlf();
+		WPFM_doConfigPost = true;
+		DLCMatRtcTimerset(2, RTCTIMER_24hs);	// 24h Config send
+	}
+#endif
 }
 void DLCMatAlertTimeClr()
 {
@@ -2476,6 +2486,9 @@ void DLCMatMain()
 		WDT_Enable();
 		DLCMatReset();
 		DLCMatInit();
+#ifdef VER_DELTA_5
+		DLCMatRtcTimerset(2, RTCTIMER_24hs);	// 24h Config send
+#endif
 		DLC_BigState = 1;
 		DLCEventLogWrite( _ID1_SYS_START,0,(_Main_version[4]-'0')<<12|(_Main_version[5]-'0')<<8|(_Main_version[7]-'0')<<4|(_Main_version[8]-'0' ));
 		DLC_MatReportLmt = DLC_Para.Http_Report_max;
