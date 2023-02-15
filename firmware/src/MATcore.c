@@ -1540,6 +1540,7 @@ int DLCMatPostReport()
 		putst( http_tmp );putcrlf();
 #ifdef VER_DELTA_5
 		config.Measurment = 0;	// =1だった場合、1度Report送信したら戻す
+		WPFM_writeSettingParameter( &config );
 #endif
 		DLCMatReportSndSub();																/* ヘッダだけ送信 */
 		return 1;																			/* 送信データ有 */
@@ -2058,6 +2059,7 @@ putst("\r\ncoco3\r\n");
 				}
 			}
 		}
+ #ifndef VER_DELTA_5
 		config_p = strstr(DLC_MatResBuf, "Measurment");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);
@@ -2072,13 +2074,14 @@ putst("coco4\r\n");
 				}
 			}
 		}
+ #endif	// VER_DELTA_5
 		config_p = strstr(DLC_MatResBuf, "AlertTimeOut");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, true);
 			config.alertTimeout = atoi(DLC_MatConfigItem);
 //			putst("AlertTimeOut:");puthxw(config.alertTimeout);putcrlf();
 		}
-#endif
+#endif	// ADD_FUNCTION
 #if 0
 		config.measurementInterval = 20;
 		config.communicationInterval = 120;
@@ -2094,6 +2097,23 @@ putst("coco4\r\n");
 		DLC_MatFotaExe = atoi(DLC_MatConfigItem);
 		putst("fotaexe:");puthxb(DLC_MatFotaExe);putcrlf();
 	}
+#ifdef VER_DELTA_5
+	config_p = strstr(DLC_MatResBuf, "Measurment");
+	if (config_p) {
+		DLCMatINTParamSet(config_p, false);
+		config.Measurment = atoi(DLC_MatConfigItem);
+//			putst("Measurment:");puthxw(config.Measurment);putcrlf();
+		if (config.Measurment == 1) {
+putst("coco4\r\n");
+			WPFM_cancelAlert();
+			if (WPFM_isAlertPause == true ) {	// AlertPause中?
+				WPFM_isAlertPause = false;
+				strcpy(config.AlertPause, "");	// AlertPauseクリア
+			}
+			WPFM_writeSettingParameter( &config );
+		}
+	}
+#endif
 }
 int DLCMatRecvDisp()
 {
