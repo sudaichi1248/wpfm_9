@@ -32,6 +32,7 @@ extern "C" {
 #define SMPIF_ERR_BAD_MSGID                 (-100)
 #define SMPIF_ERR_BAD_FORMAT                (-101)
 #define SMPIF_ERR_BAD_PARAMETER             (-102)
+#define SMPIF_ERR_DISAPPROVAL_MODE          (-200)
 #define SMPIF_ERR_FLASH                     (-900)
 #define SMPIF_ERR_WAIT_FOR_COMMAND          (-1000)
 

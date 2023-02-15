@@ -87,6 +87,9 @@ void SMPIF_setOperationalCondition(const char *param, char *resp)
     WPFM_SETTING_PARAMETER work;
     work = WPFM_settingParameter;
     int stat = parseParameterTypeA(param, &work);
+	if (WPFM_operationMode == WPFM_OPERATION_MODE_MEASUREMENT) {
+		stat = SMPIF_ERR_DISAPPROVAL_MODE;	// 測定モードではNG
+	}
     if (stat == SMPIF_ERR_NONE)
     {
         // Set global variable "WPFM_settingParameter" and dump it
@@ -121,6 +124,9 @@ void SMPIF_setOperationalCondition(const char *param, char *resp)
             case SMPIF_ERR_BAD_PARAMETER:
                 strcat(resp, "101");
                 break;
+			case SMPIF_ERR_DISAPPROVAL_MODE:
+				strcat(resp, "200");
+				break;
             default:
                 strcat(resp, "102");
                 break;
