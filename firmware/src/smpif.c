@@ -21,6 +21,7 @@
 #include "Eventlog.h"
 #include "Moni.h"
 #include "DLCpara.h"
+#include "mlog.h"
 /*
 *   Symbols
 */
@@ -74,6 +75,7 @@ static SMPIF_COMMAND_TABLE _SMPIF_commandTables[] =
         { "MB", DLCMatMeasureLogChange },
         { "MC", DLCMatDebugCmdChange },
         { "MD", DLCMatCPower },
+        { "ME", MLOG_dump_USB },
         { NULL, NULL }
     };
 

@@ -63,6 +63,7 @@ static uint32_t     _MLOG_tailAddressOnSRAM = 0;        // address of tail log f
 static uint8_t      _MLOG_pageBuffer[W25Q128JV_PAGE_SIZE];  // Working buffer(on SRAM)
 
 static void dumpLog(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p);
+static void dumpLog_USB(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p);
 static uint32_t findLogBySN(uint32_t sn);
 static int _MLOG_getLogOnSRAM(MLOG_T *log_p);
 
@@ -684,6 +685,60 @@ void MLOG_dump(void)
     DEBUG_UART_printlnString("<---");
 }
 
+void MLOG_dump_USB(const char *param, char *resp)
+{
+	if (WPFM_operationMode == WPFM_OPERATION_MODE_MEASUREMENT) {
+		sprintf(resp, "NG:mode not allowed.\r\n");	// ‘ª’èƒ‚[ƒh‚Å‚ÍNG
+		APP_printUSB(resp);
+		APP_delay(10);
+	} else {
+		APP_printUSB("--->\r\n");
+		APP_delay(10);
+
+		for (uint32_t blockNo = 0; blockNo < ((MLOG_ADDRESS_MLOG_LAST + 1) >> 16) + 1; blockNo++)
+		{
+			for (uint32_t sectorNo = 0; sectorNo < ((MLOG_ADDRESS_MLOG_LAST + 1) >> 12); sectorNo++)
+			{
+				for (uint32_t pageNo = 0; pageNo < W25Q128JV_NUM_PAGE; pageNo++)
+				{
+					uint32_t addr = (blockNo << 16) + (sectorNo << 12) + (pageNo << 8);
+					if (W25Q128JV_readData(addr, _MLOG_pageBuffer, (uint16_t)sizeof(_MLOG_pageBuffer)) != W25Q128JV_ERR_NONE)
+					{
+						sprintf(resp, "Page read failed: %04lX\r\n", pageNo);
+						APP_printUSB(resp);
+						APP_delay(2);
+						continue;
+					}
+					for (int n = 0; n < MLOG_LOGS_PER_PAGE; n++)
+					{
+						MLOG_ID_T mlogId = (uint32_t)addr + (MLOG_RECORD_SIZE * n);
+						MLOG_T *mlp = (MLOG_T *)_MLOG_pageBuffer + n;
+						if (IS_NOT_USED_SN(mlp->sequentialNumber))
+						{
+							// Unused entry
+							sprintf(resp, "%06lX: -\r\n", mlogId);
+							APP_printUSB(resp);
+							APP_delay(2);
+						}
+						else
+						{
+							// Used entry
+							dumpLog_USB("", mlogId, mlp);
+						}
+					}
+					// output page mark
+					sprintf(resp, "%04lX: PAGE MARK %02Xh\r\n", (blockNo << 4) + pageNo, _MLOG_pageBuffer[W25Q128JV_PAGE_SIZE - 1]);
+					APP_printUSB(resp);
+					APP_delay(2);
+				}
+			}
+		}
+
+		APP_printUSB("<---\r\n");
+		APP_delay(10);
+	}
+}
+
 int MLOG_getStatus(MLOG_STATUS_T *stat_p)
 {
     MLOG_checkLogs(true);   // just get oldest/latest info only
@@ -728,6 +783,27 @@ static void dumpLog(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p)
             (unsigned int)log_p->batteryStatus
     );
     DEBUG_UART_printlnString(line);
+    APP_delay(10);
+#endif // DEBUG_UART
+}
+
+static void dumpLog_USB(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p)
+{
+#ifdef DEBUG_UART
+    char line[80];
+    snprintf(line, sizeof(line),
+            "%s%06X: %08u,%06u.%03u,%.3f/%.3f,%u/%u,%d,%02Xh,%02Xh\r\n",
+            prefix,
+            (unsigned int)mlogId,
+            (unsigned int)log_p->sequentialNumber,
+            (unsigned int)log_p->timestamp.second, (unsigned int)log_p->timestamp.mSecond,
+            log_p->measuredValues[0], log_p->measuredValues[1],
+            (unsigned int)log_p->batteryVoltages[0], (unsigned int)log_p->batteryVoltages[1],
+            (int)log_p->temperatureOnBoard,
+            (unsigned int)log_p->alertStatus,
+            (unsigned int)log_p->batteryStatus
+    );
+    APP_printUSB(line);
     APP_delay(10);
 #endif // DEBUG_UART
 }

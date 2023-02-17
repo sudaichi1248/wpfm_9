@@ -133,6 +133,7 @@ extern bool MLOG_IsSwitchedSRAM(void);          // Has the log storage destinati
 extern int MLOG_putLogOnSRAM(MLOG_T *log_p);    // put log in fifo buffer(on SRAM)
   // Debug function
 extern void MLOG_dump(void);                    // Dump all logs in Mlog region to debug uart port
+extern void MLOG_dump_USB(const char *param, char *resp);	// Dump all logs in Mlog region to debug USB port
 
 /*
 *   Variables
