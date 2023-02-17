@@ -174,15 +174,22 @@ void WPFM_initializeApplication(void)
         else
         {
             // Both batteries are low voltage, blink ext1-led and ext2-led until the battery is replaced and reset.
+			// ‚±‚±‚ÍVBAT‹ì“®
+putst("##### VBAT drive\r\n");
 #if 1
+			WPFM_operationMode = WPFM_OPERATION_MODE_NON_MEASUREMENT;	// ”ñ‘ª’èƒ‚[ƒh‚Éã‘‚«
+			WPFM_isVbatDrive = true;	// VBAT‹ì“®
+#else
+ #if 1
 		        WPFM_externalBatteryNumberInUse = 1;
 		        WPFM_batteryStatus = MLOG_BAT_STATUS_BAT1_IN_USE | MLOG_BAT_STATUS_BAT2_NOT_USE;
 		        EXT2_OFF_Set();         // detach battery #2
 				DLCEventLogWrite( _ID1_POWER_START,cause,3 );
-#else
+ #else
 	            UTIL_startBlinkEXT1AND2LED();
 	            while (true)
 	                ;           // Stop here
+ #endif
 #endif
         }
     }

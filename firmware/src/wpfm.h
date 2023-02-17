@@ -152,6 +152,7 @@ extern WPFM_OPERATION_MODE WPFM_operationMode;      // Current operation mode(WP
 extern WPFM_STATUS WPFM_status;                     // Current status(WPFM_STATUS_*)
 extern bool WPFM_isConnectingUSB;                   // Is connected to USB to PC/Smartphone.
 extern bool WPFM_isBeingReplacedBattery;           // Is being exchanged battery.
+extern bool WPFM_isVbatDrive;
 extern bool WPFM_ForcedCall;
   // current settings
 extern WPFM_SETTING_PARAMETER WPFM_settingParameter; // Current setting parameters

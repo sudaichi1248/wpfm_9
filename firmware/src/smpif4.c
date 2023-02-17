@@ -23,27 +23,31 @@ SENSOR_KIND     CallibrationSensorKinds[2];		// センサ種別[0:ch1/1:ch2]
 
 void SMPIF_getCallibrationValues(const char *param, char *resp)
 {
-    snprintf(resp + 6, SMPIF_MAX_RESPONSE_LENGTH - 1,
-        "%lu,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",
-        WPFM_settingParameter.serialNumber,
-        WPFM_settingParameter.calibrationLowerValues[0][0], WPFM_settingParameter.calibrationUpperValues[0][0],
-        WPFM_settingParameter.calibrationLowerValues[0][1], WPFM_settingParameter.calibrationUpperValues[0][1],
-        WPFM_settingParameter.calibrationLowerValues[1][0], WPFM_settingParameter.calibrationUpperValues[1][0],
-        WPFM_settingParameter.calibrationLowerValues[1][1], WPFM_settingParameter.calibrationUpperValues[1][1],
-        WPFM_settingParameter.calibrationLowerValues[1][2], WPFM_settingParameter.calibrationUpperValues[1][2],
-        WPFM_settingParameter.calibrationLowerValues[1][3], WPFM_settingParameter.calibrationUpperValues[1][3],
-        WPFM_settingParameter.lowThresholdVoltage, WPFM_settingParameter.timesLessThresholdVoltage,
-        WPFM_settingParameter.maximumBatteryExchangeTime
-    );
-    int length = strlen(resp + 6);
-    resp[0] = SMPIF_STX;
-    resp[1] = '0' + (length / 100);
-    resp[2] = '0' + ((length / 10) % 10);
-    resp[3] = '0' + (length % 10);
-    resp[4] = 'O';
-    resp[5] = 'K';
-    resp[6 + length] = SMPIF_ETX;
-    resp[7 + length] = '\0';    // terminate
+	if (WPFM_isVbatDrive == true) {
+		sprintf(resp, "%c003NG%3d%c", SMPIF_STX, 204, SMPIF_ETX);	// VBAT駆動ではNG204
+	} else {
+	    snprintf(resp + 6, SMPIF_MAX_RESPONSE_LENGTH - 1,
+	        "%lu,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",
+	        WPFM_settingParameter.serialNumber,
+	        WPFM_settingParameter.calibrationLowerValues[0][0], WPFM_settingParameter.calibrationUpperValues[0][0],
+	        WPFM_settingParameter.calibrationLowerValues[0][1], WPFM_settingParameter.calibrationUpperValues[0][1],
+	        WPFM_settingParameter.calibrationLowerValues[1][0], WPFM_settingParameter.calibrationUpperValues[1][0],
+	        WPFM_settingParameter.calibrationLowerValues[1][1], WPFM_settingParameter.calibrationUpperValues[1][1],
+	        WPFM_settingParameter.calibrationLowerValues[1][2], WPFM_settingParameter.calibrationUpperValues[1][2],
+	        WPFM_settingParameter.calibrationLowerValues[1][3], WPFM_settingParameter.calibrationUpperValues[1][3],
+	        WPFM_settingParameter.lowThresholdVoltage, WPFM_settingParameter.timesLessThresholdVoltage,
+	        WPFM_settingParameter.maximumBatteryExchangeTime
+	    );
+	    int length = strlen(resp + 6);
+	    resp[0] = SMPIF_STX;
+	    resp[1] = '0' + (length / 100);
+	    resp[2] = '0' + ((length / 10) % 10);
+	    resp[3] = '0' + (length % 10);
+	    resp[4] = 'O';
+	    resp[5] = 'K';
+	    resp[6 + length] = SMPIF_ETX;
+	    resp[7 + length] = '\0';    // terminate
+	}
 
     // Send message to smartphone app.
     APP_printUSB(resp);
@@ -59,7 +63,9 @@ void SMPIF_setCallibrationValues(const char *param, char *resp)
     work = WPFM_settingParameter;
     int stat = parseParameterTypeE(param, &work);
 	if (WPFM_operationMode == WPFM_OPERATION_MODE_MEASUREMENT) {
-		stat = SMPIF_ERR_DISAPPROVAL_MODE;	// 測定モードではNG
+		stat = SMPIF_ERR_DISAPPROVAL_MODE;	// 測定モードではNG200
+	} else if (WPFM_isVbatDrive == true) {
+		stat = SMPIF_ERR_VBATDRIVE;	// VBAT駆動ではNG204
 	}
     if (stat == SMPIF_ERR_NONE)
     {
@@ -93,6 +99,9 @@ void SMPIF_setCallibrationValues(const char *param, char *resp)
 			case SMPIF_ERR_DISAPPROVAL_MODE:
 				strcat(resp, "200");
 				break;
+			case SMPIF_ERR_VBATDRIVE:
+				strcat(resp, "204");
+				break;
         }
         char etx[2] = { SMPIF_ETX, '\0' };
         strcat(resp, etx);
@@ -109,7 +118,9 @@ void SMPIF_setCallibrationValues(const char *param, char *resp)
 void SMPIF_notifyCallibrationTarget(const char *param, char *resp)
 {
 	if (WPFM_operationMode == WPFM_OPERATION_MODE_MEASUREMENT) {
-		sprintf(resp, "%c003NG%3d%c", SMPIF_STX, 200, SMPIF_ETX);	// 測定モードではNG
+		sprintf(resp, "%c003NG%3d%c", SMPIF_STX, 200, SMPIF_ETX);	// 測定モードではNG200
+	} else if (WPFM_isVbatDrive == true) {
+		sprintf(resp, "%c003NG%3d%c", SMPIF_STX, 204, SMPIF_ETX);	// VBAT駆動ではNG204
 	} else {
 		CallibrationSensorKinds[WPFM_SETTING_CH1] = WPFM_settingParameter.sensorKinds[WPFM_SETTING_CH1];
 		CallibrationSensorKinds[WPFM_SETTING_CH2] = WPFM_settingParameter.sensorKinds[WPFM_SETTING_CH2];
@@ -169,7 +180,9 @@ void SMPIF_notifyCallibrationTarget(const char *param, char *resp)
 void SMPIF_readCallibrationValues(const char *param, char *resp)
 {
 	if (WPFM_operationMode == WPFM_OPERATION_MODE_MEASUREMENT) {
-		sprintf(resp, "%c003NG%3d%c", SMPIF_STX, 200, SMPIF_ETX);	// 測定モードではNG
+		sprintf(resp, "%c003NG%3d%c", SMPIF_STX, 200, SMPIF_ETX);	// 測定モードではNG200
+	} else if (WPFM_isVbatDrive == true) {
+		sprintf(resp, "%c003NG%3d%c", SMPIF_STX, 204, SMPIF_ETX);	// VBAT駆動ではNG204
 	} else {
 	    uint16_t valueChannels[2] = { 0, 0 };
 	    for (int sensorIndex = 0; sensorIndex < 2; sensorIndex++)

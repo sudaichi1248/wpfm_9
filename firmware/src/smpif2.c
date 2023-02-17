@@ -42,30 +42,34 @@ void SMPIF_startSendRegularly(const char *param, char *resp)
     DEBUG_UART_printlnFormat("> SMPIF_startSendRegularly(\"%s\", -)", param);
     APP_delay(3);
 
-    if (WPFM_isInSendingRegularly)
-    {
-        // Already start..
-        sprintf(resp, "%c003NG201%c", SMPIF_STX, SMPIF_ETX);
-    }
-    else
-    {
-        WPFM_isInSendingRegularly = true;
+	if (WPFM_isVbatDrive == true) {
+		sprintf(resp, "%c003NG%3d%c", SMPIF_STX, 204, SMPIF_ETX);	// VBAT‹ì“®‚Å‚ÍNG204
+	} else {
+	    if (WPFM_isInSendingRegularly)
+	    {
+	        // Already start..
+	        sprintf(resp, "%c003NG201%c", SMPIF_STX, SMPIF_ETX);
+	    }
+	    else
+	    {
+	        WPFM_isInSendingRegularly = true;
 
-        WPFM_measureRegularly(true);
+	        WPFM_measureRegularly(true);
 
-        snprintf(resp + 6, SMPIF_MAX_RESPONSE_LENGTH - 1,
-                "%lu,%.3f,%.3f",
-                WPFM_measurementInterval, WPFM_lastMeasuredValues[0], WPFM_lastMeasuredValues[1]);
-        int length = strlen(resp + 6);
-        resp[0] = SMPIF_STX;
-        resp[1] = '0' + (length / 100);
-        resp[2] = '0' + ((length / 10) % 10);
-        resp[3] = '0' + (length % 10);
-        resp[4] = 'O';
-        resp[5] = 'K';
-        resp[6 + length] = SMPIF_ETX;
-        resp[7 + length] = '\0';    // terminate
-    }
+	        snprintf(resp + 6, SMPIF_MAX_RESPONSE_LENGTH - 1,
+	                "%lu,%.3f,%.3f",
+	                WPFM_measurementInterval, WPFM_lastMeasuredValues[0], WPFM_lastMeasuredValues[1]);
+	        int length = strlen(resp + 6);
+	        resp[0] = SMPIF_STX;
+	        resp[1] = '0' + (length / 100);
+	        resp[2] = '0' + ((length / 10) % 10);
+	        resp[3] = '0' + (length % 10);
+	        resp[4] = 'O';
+	        resp[5] = 'K';
+	        resp[6 + length] = SMPIF_ETX;
+	        resp[7 + length] = '\0';    // terminate
+	    }
+	}
 
     // Send message to smartphone app.
     APP_printUSB(resp);
@@ -80,17 +84,21 @@ void SMPIF_endSendRegularly(const char *param, char *resp)
     DEBUG_UART_printlnFormat("> SMPIF_endSendRegularly(\"%s\", -)", param);
     APP_delay(2);
 
-    if (! WPFM_isInSendingRegularly)
-    {
-        // Already end..
-        sprintf(resp, "%c003NG202%c", SMPIF_STX, SMPIF_ETX);
-    }
-    else
-    {
-        WPFM_isInSendingRegularly = false;
+	if (WPFM_isVbatDrive == true) {
+		sprintf(resp, "%c003NG%3d%c", SMPIF_STX, 204, SMPIF_ETX);	// VBAT‹ì“®‚Å‚ÍNG204
+	} else {
+	    if (! WPFM_isInSendingRegularly)
+	    {
+	        // Already end..
+	        sprintf(resp, "%c003NG202%c", SMPIF_STX, SMPIF_ETX);
+	    }
+	    else
+	    {
+	        WPFM_isInSendingRegularly = false;
 
-        sprintf(resp, "%c000OK%c", SMPIF_STX, SMPIF_ETX);
-    }
+	        sprintf(resp, "%c000OK%c", SMPIF_STX, SMPIF_ETX);
+	    }
+	}
 
     // Send message to smartphone app.
     APP_printUSB(resp);
