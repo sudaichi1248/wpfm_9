@@ -253,8 +253,11 @@ int DLCMatWake()
 */
 void DLCMatInit()
 {
-    TC5_TimerCallbackRegister( (TC_TIMER_CALLBACK)DLCMatTimerInt, (uintptr_t)0 );
- 	TC5_TimerStart();
+	TC5_TimerCallbackRegister( (TC_TIMER_CALLBACK)DLCMatTimerInt, (uintptr_t)0 );
+	TC5_TimerStart();
+	if (WPFM_isVbatDrive == true) {	// VBAT‹ì“®?
+		return;
+	}
 	DLCMatTimerset( 0,TIMER_5000ms );
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
 }
@@ -2831,6 +2834,11 @@ void DLCMatReset( )
 {
 	putst("MATcore RST!\r\n");
 	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );		/* OFF */
+	if (WPFM_isVbatDrive == true) {	// VBAT‹ì“®?
+		putst( "VBAT drive.\r\nMATcore not reset.\r\n" );
+		DLCEventLogWrite( _ID1_VBAT_DRIVE,0,0 );
+		return;
+	}
 	APP_delay(1000);
 	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,-1 );		/* ON */
 	DLCMatTimerset( 0,15000 );
