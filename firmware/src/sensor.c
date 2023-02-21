@@ -32,7 +32,7 @@ uint32_t	BatteryValueSum1 = 0, BatteryValueSum2 = 0;
 
 const static float _SENSOR_conversionFactor                = 0.000990000;      // Conversion to voltage factor [V/LSB]
 const static float _SENSOR_dividedRatioOfExternalBattery   = 880.0 / 200.0;    // Voltage division ratio: (R1) Corresponded to battery voltage change to 12V
-const static float _SENSOR_dividedRatioOfExternalBattery2     = 0.006000; // Voltage division ratio: (R1) Corresponded to battery voltage change to 12V by kamimoto
+const static float _SENSOR_dividedRatioOfExternalBattery2     = 0.005750; // Voltage division ratio: (R1) Corresponded to battery voltage change to 12V by kamimoto
 
 #ifndef SENSOR_SHURINK
 int SENSOR_readSensorOutput(int sensorNo, float *result_p)
