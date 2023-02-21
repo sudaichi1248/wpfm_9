@@ -59,3 +59,4 @@ void DLCEventLogClr( int );
 #define		_ID1_SEREAL_NOISE			0x1032
 #define		_ID1_MANTE_START			0x1033
 #define		_ID1_INIT_ALL				0x1034
+#define		_ID1_VBAT_DRIVE				0x1035
