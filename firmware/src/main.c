@@ -372,7 +372,11 @@ static void eventLoopOnNonMeasurementMode(void)
             if ((SYS_tick-WPFM_lastButtonPressedTime) >=  WPFM_LONG_PRESSED_TIME ){
 			    if (TEST_SW_Get()){ 	                // ボタン押されてない
 	                DEBUG_UART_printlnFormat("SHORT PRESSED: %u %u", (unsigned int)WPFM_lastButtonReleasedTime, (unsigned int)WPFM_lastButtonPressedTime);
-	                WPFM_uploadOneShot(false);      // 空のデータをアップロード
+					if (WPFM_isVbatDrive == true) {	// VBAT駆動?
+						DEBUG_UART_printlnString("Can not call because VBAT drive.");
+					} else {	// VBAT駆動
+		                WPFM_uploadOneShot(false);      // 空のデータをアップロード
+					}
 	            }
 	            else
 	            {
