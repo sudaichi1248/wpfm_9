@@ -69,12 +69,13 @@ void WPFM_measureRegularly(bool justMeasure)
             if  (sensorKind == SENSOR_KIND_1_3V)
             {
                 SENSOR_turnOnSensorCircuit(sensorIndex + 1, true);
-                kind_1_3v = true;
+				kind_1_3v = true;
             }
             else
             {
                 SENSOR_turnOnSensorCircuit(sensorIndex + 1, false);
-                SYSTICK_DelayMs(10);        // wait a little
+//                SYSTICK_DelayMs(10);        // wait a little
+				kind_1_3v = true;	// 入力信号種別によらずに一律ウェイト
             }
         }
     }
