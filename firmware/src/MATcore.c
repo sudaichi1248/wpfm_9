@@ -737,7 +737,7 @@ void MTRSlp()
 	if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11))
 		putst("MATcore can't Sleep(ToT)\r\n");
 	else {
-		putst("ySleepz\r\n");
+		putst("[Sleep]\r\n");
 	}
 	if( DLC_Matknd ){
 		DLCMatWake();
@@ -750,7 +750,7 @@ void MTslep()
 		DLC_MatFotaExe = 0;
 		DLCFotaGoAndReset();
 	}
-	putst("ySleepz\r\n");
+	putst("[Sleep]\r\n");
 	DLCMatTimerClr( 0 );
 	DLCEventLogWrite( _ID1_SLEEP,0,0 );
 	DLC_MatState = MATC_STATE_SLP;
@@ -761,7 +761,7 @@ void MTslp1()
 }
 void MTwake()
 {
-	putst("yWakez\r\n");
+	putst("[Wake]\r\n");
 	DLCMatWake();
 	DLC_MatLineIdx = 0;
 	DLC_Matknd = 0;
@@ -774,7 +774,7 @@ void MTwake()
 }
 void MTFwak()
 {
-	putst("yFWakz\r\n");
+	putst("[FWak]\r\n");
 	DLC_MatLineIdx = 0;
 	DLCMatWake();
 }
@@ -804,7 +804,7 @@ void MTtoF()	// fota T/O
 			DLC_MatFotaTOcnt++;
 			DLCMatTimerset( 4,TIMER_5000ms);
 			DLCMatSend( "AT$RECV,1024\r" );
-			putst("ƒŠƒgƒ‰ƒC(*o*)\r\n");
+			putst("Retry(*o*)\r\n");
 		} else {
 			// FOTAŽ¸”s ÄŽÀs
 			putst("FOTA FAILED(T/O).\r\n");
@@ -1058,7 +1058,7 @@ void DLCMatState()
 				dt2.second = (p[21]-'0')*10 + (p[22]-'0');
 				if( memcmp( &dt2,&dt1,4 ) ){				/* “ú•t‚ªˆÙ‚È‚é */
 					RTC_setDateTime( dt2 );
-					putst("ItsTime Adjust!\r\n");
+					putst("Time Adjust!\r\n");
 					WPFM_setNextCommunicateAlarm();
 				}
 			}
@@ -1124,7 +1124,7 @@ void DLCMatState()
 			DLC_Matfact = MATC_FACT_TO2;
 		else if( DLCMatTmChk( 3 ) ){
 			DLCMatSend( "AT$RECV,1024\r" );
-			putst("ƒŠƒgƒ‰ƒC(ToT)\r\n");
+			putst("Retry(ToT)\r\n");
 		}
 //		else if( DLCMatRtcChk( 0 ) ){
 //			DLCMatSend( "AT$RECV,1024\r" );
@@ -2598,7 +2598,7 @@ void DLCMatMain()
 				break;
 			case 'E':												/* ‹­§–{ƒvƒíœ+Reset */
 				if( CheckPasswd() ){
-					putst("–{ƒvƒíœ‚µ‚ÄBoot‹N“®‚µ‚Ü‚·B");putcrlf();
+					putst("Program deleted. goto Boot.");putcrlf();
 					DLC_delay(1000);
 					DLCsumBreakAndReset();
 				}
@@ -2849,6 +2849,6 @@ void DLCMatReset( )
 */
 void DLCMatSettingClear()
 {
-	putst("•Û‘¶ƒpƒ‰ƒ[ƒ^íœ\r\n");
+	putst("The Parameter Deleted!\r\n");
 	NVMCTRL_RowErase( 0x0003FE00 );				/* •Û‘¶ƒpƒ‰ƒ[ƒ^íœ */
 }
