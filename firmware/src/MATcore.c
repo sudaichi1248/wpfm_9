@@ -854,14 +854,14 @@ void DLCMatCall(int knd )
 		putst("Stacked TheCall..\r\n" );
 	switch( knd ){
 	case 1:
-		putst("íËä˙ÅúCALL!\r\n");										/* Constant */
+		putst("Constant-CALL!\r\n");									/* Constant */
 		break;
 	case 2:	
-		putst("ã≠êßÅ°CALL!\r\n");										/* Push */
+		putst("Push-CALL!\r\n");										/* Push */
 		DLC_Matknd = knd;
 		break;
 	case 3:
-		putst("åxïÒÅöCALL!\r\n");										/* Alert */
+		putst("Alert-CALL!\r\n");										/* Alert */
 		DLC_Matknd = knd;
 		break;
 	}
@@ -1056,9 +1056,10 @@ void DLCMatState()
 				dt2.hour   = (p[15]-'0')*10 + (p[16]-'0');
 				dt2.minute = (p[18]-'0')*10 + (p[19]-'0');
 				dt2.second = (p[21]-'0')*10 + (p[22]-'0');
-				if( memcmp( &dt2,&dt1,4 ) ){
+				if( memcmp( &dt2,&dt1,4 ) ){				/* ì˙ïtÇ™àŸÇ»ÇÈ */
 					RTC_setDateTime( dt2 );
-					putst("éûçèï‚ê≥!\r\n");
+					putst("ItsTime Adjust!\r\n");
+					WPFM_setNextCommunicateAlarm();
 				}
 			}
 		}
@@ -1153,7 +1154,7 @@ void DLCMatState()
 	}
 	if( DLC_Matfact != 0xff ){
 		char	s[20];
-		DLCMatClockDisplay(s);putst( s );putch('.');putdecs(SYS_mSec);putst("Åy");puthxb( DLC_Matfact );putch(':');puthxb( DLC_MatState );putst("Åz\r\n");
+		DLCMatClockDisplay(s);putst( s );putch('.');putdecs(SYS_mSec);putch('[');puthxb( DLC_Matfact );putch(':');puthxb( DLC_MatState );putst("]\r\n");
 		(*MTjmp[DLC_Matfact][DLC_MatState])();
 	}
 	if( DLC_MatLineIdx == 0 )
@@ -1378,7 +1379,6 @@ void DLCMatReportSndSub()
 {
 	char	tmp[3],v;
 	int		i;
-	putst("Å°\r\n");
 	strcpy( DLC_MatSendBuff,"AT$SEND,\"" );
 	tmp[2] = 0;
 	for( i=0;http_tmp[i]!=0;i++ ){
