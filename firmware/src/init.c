@@ -177,7 +177,6 @@ void WPFM_initializeApplication(void)
 			// ‚±‚±‚ÍVBAT‹ì“®
 putst("##### VBAT drive\r\n");
 #if 1
-			WPFM_operationMode = WPFM_OPERATION_MODE_NON_MEASUREMENT;	// ”ñ‘ª’èƒ‚[ƒh‚Éã‘‚«
 			WPFM_isVbatDrive = true;	// VBAT‹ì“®
 #else
  #if 1

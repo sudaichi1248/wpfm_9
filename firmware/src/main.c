@@ -123,6 +123,43 @@ int main(void)
         DEBUG_UART_printlnFormat("START NON-MEASURE MODE(%lu)", SYS_tick);
         eventLoopOnNonMeasurementMode();
     }
+#ifdef BOARD_PROTOTYPE2
+	else if (WPFM_operationMode == WPFM_OPERATION_MODE_MEASUREMENT)
+    {
+        // Execute on measurement mode processing
+        DEBUG_UART_printlnString("RUN AS MEASUREMENT MODE");
+		if (WPFM_isVbatDrive == true){
+			// Fall asleep..
+			WPFM_sleep();
+			while (true);
+		}
+        UTIL_startBlinkLED1(5);
+		// initから移動
+        if (! WPFM_setNextCommunicateAlarm())
+        {
+            DEBUG_UART_printlnString("RTC_setAlarm() ERROR");
+            DEBUG_HALT();
+        }
+        if ((stat = MLOG_begin(true)) != MLOG_ERR_NONE)
+        {
+            DEBUG_UART_printlnFormat("MLOG ERROR: %d", stat);
+            DEBUG_HALT();
+        }
+        WPFM_status = WPFM_STATUS_WAIT_COMMAND;
+        DEBUG_UART_printlnFormat("START MEASURE MODE(%lu)", SYS_tick);
+        eventLoopOnMeasurementMode();
+    }
+	else
+	{
+		// Execute on measurement mode processing
+		DEBUG_UART_printlnString("RUN AS POWEROFF MODE");
+		if (WPFM_isVbatDrive == true){
+			// Fall asleep..
+			WPFM_sleep();
+			while (true);
+		}
+	}
+#else
     else
     {
         // Execute on measurement mode processing
@@ -143,6 +180,7 @@ int main(void)
         DEBUG_UART_printlnFormat("START MEASURE MODE(%lu)", SYS_tick);
         eventLoopOnMeasurementMode();
     }
+#endif
 
     /* Execution should not come here during normal operation */
     return (EXIT_FAILURE);

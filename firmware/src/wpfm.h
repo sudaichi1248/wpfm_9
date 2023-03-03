@@ -12,6 +12,7 @@
 
 #define ADD_FUNCTION									// Additional Function ChatteringType2 etc
 #define VER_DELTA_5										// Specification Ver.delta 5
+#define BOARD_PROTOTYPE2								// Prototype Ver.2 board
 
 #ifdef	__cplusplus
 extern "C" {
@@ -64,7 +65,8 @@ extern "C" {
 typedef enum
 {
     WPFM_OPERATION_MODE_MEASUREMENT = 0,    // 計測モード（通常モード）
-    WPFM_OPERATION_MODE_NON_MEASUREMENT      // 非計測モード（設置モード）
+    WPFM_OPERATION_MODE_NON_MEASUREMENT,    // 非計測モード（設置モード）
+    WPFM_POWEROFF_MODE                      // POWER OFFモード
 } WPFM_OPERATION_MODE;      // 動作モード
 
 typedef enum

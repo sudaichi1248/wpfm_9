@@ -207,10 +207,21 @@ WPFM_OPERATION_MODE UTIL_getPowerModeSW(void)
     {
         mode = WPFM_OPERATION_MODE_MEASUREMENT;
     }
+#ifdef BOARD_PROTOTYPE2
+    else if (nV2GD_Get() == 1)
+    {
+        mode = WPFM_OPERATION_MODE_NON_MEASUREMENT;
+    }
+    else
+    {
+        mode = WPFM_POWEROFF_MODE;
+    }
+#else
     else
     {
         mode = WPFM_OPERATION_MODE_NON_MEASUREMENT;
     }
+#endif
 
     return (mode);
 }
