@@ -244,6 +244,8 @@ int DLCMatWake()
 	if( i == WAKE_CHECK_RETRY ){
 		DLCMatError(0);
 		putst("MATcore Wake Err!\r\n");
+		DLCEventLogWrite( _ID1_ERROR,0x110,DLC_MatState );
+		__NVIC_SystemReset();
 		return 1;
 	}
 	return 0;
