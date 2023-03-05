@@ -1876,7 +1876,7 @@ putst("\r\ncoco3\r\n");
 			config.communicationIntervalOnAlert = atoi(DLC_MatConfigItem);
 //			putst("ReprotIntervalAlert:");puthxw(config.communicationIntervalOnAlert);putcrlf();
 		}
-		DLCEventLogWrite( _ID1_CONFIGRET,0,0 );
+		DLCEventLogWrite( _ID1_REPORTRET,0,0 );
 		config_p = strstr(DLC_MatResBuf, "Select_ch1");
 		if (config_p) {
 			DLCMatINTParamSet(config_p, false);

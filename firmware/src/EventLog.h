@@ -50,7 +50,7 @@ void DLCEventLogClr( int );
 #define		_ID1_HTTP_OK				0x0111
 #define		_ID1_HTTP_RES				0x0112
 #define		_ID1_CONN_NG				0x0113
-#define		_ID1_CONFIGRET				0x0120
+#define		_ID1_REPORTRET				0x0120
 #define		_ID1_REPORT   				0x0130
 #define		_ID1_SLEEP	 				0x0140
 #define		_ID1_CELLACT 				0x0200

@@ -254,8 +254,8 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_CONN_NG:
 		strcat( str,"CNN NG ");
 		break;
-	case _ID1_CONFIGRET:
-		strcat( str,"CNFRET ");
+	case _ID1_REPORTRET:
+		strcat( str,"RPTRET ");
 		break;
 	case _ID1_REPORT:
 		strcat( str,"REPORT ");
