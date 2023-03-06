@@ -625,6 +625,11 @@ void MTopn3()
 void MTrprt()
 {
 	DLC_MatLineIdx = 0;
+	DLC_MatRSRP = (short)DLCMatCharInt( DLC_MatRadioDensty,"RSRP:" );
+	DLC_MatRSRP *= -1;
+	DLC_MatRSRQ = (short)DLCMatCharInt( DLC_MatRadioDensty,"RSRQ:" );
+	DLC_MatRSRQ *= -1;
+	DLCEventLogWrite( _ID1_OPEN_OK,WPFM_ForcedCall,DLC_MatRSRP<<16|DLC_MatRSRQ );
 	switch( DLCMatPostReport() ){													/* Report‘—Mˆ— */
 	case 0:
 		DLCMatSend( "AT$DISCONNECT\r" );
