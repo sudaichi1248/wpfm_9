@@ -109,6 +109,9 @@ void WPFM_initializeApplication(void)
             break;
         case PM_RESET_CAUSE_SYST_RESET:
             putst("SYS_RESET ");
+#ifdef VER_DELTA_5
+			WPFM_doConfigPost = true;	// send Config
+#endif
             break;
         default:
             putst("UNKNOWN ");
