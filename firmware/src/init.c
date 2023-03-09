@@ -196,6 +196,9 @@ putst("##### VBAT drive\r\n");
         }
     }
 
+	if (WPFM_isVbatDrive == false) {	// VBAT‹ì“®‚Å‚È‚¢
+		nV1GD_Clear();	// PA06 Low
+	}
     //- Initialize RTC
     int stat;
     if (RTC_initialize(WPFM_RTC_INTERRUPT_PINA, WPFM_RTC_INTERRUPT_PINB) == RTC_ERR_INITIALIZED)

@@ -2846,7 +2846,7 @@ void DLCMatReset( )
 	putst("MATcore RST!\r\n");
 	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );		/* OFF */
 	if (WPFM_isVbatDrive == true) {	// VBAT‹ì“®?
-		putst( "VBAT drive.\r\nMATcore not reset.\r\n" );
+		putst( "VBAT drive.\r\nMATcore not POW ON.\r\n" );
 		DLCEventLogWrite( _ID1_VBAT_DRIVE,0,0 );
 		return;
 	}

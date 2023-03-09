@@ -154,6 +154,8 @@ int main(void)
 		// Execute on measurement mode processing
 		DEBUG_UART_printlnString("RUN AS POWEROFF MODE");
 		if (WPFM_isVbatDrive == true){
+			APP_delay(5000);
+			nV1GD_Clear();	// PA06 Low
 			// Fall asleep..
 			WPFM_sleep();
 			while (true);
