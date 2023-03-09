@@ -1063,8 +1063,8 @@ void DLCMatState()
 				dt2.hour   = (p[15]-'0')*10 + (p[16]-'0');
 				dt2.minute = (p[18]-'0')*10 + (p[19]-'0');
 				dt2.second = (p[21]-'0')*10 + (p[22]-'0');
-				if( memcmp( &dt2,&dt1,4 ) ){				/* ì˙ïtÇ™àŸÇ»ÇÈ */
-					RTC_setDateTime( dt2 );
+				if( memcmp( &dt2,&dt1,sizeof(RTC_DATETIME)) ){	/* ç∑ï™Ç†ÇË */
+					RTC_setDateTime( dt2 );						/* RTCçXêV */
 					putst("Time Adjust!\r\n");
 					WPFM_setNextCommunicateAlarm();
 				}
@@ -1372,6 +1372,8 @@ void MATReportLmtUpDw( int updw )
 			DLC_MatReportLmt = 1000;
 		else if( DLC_MatReportLmt == 100 )
 			DLC_MatReportLmt = 300;
+		else if( DLC_MatReportLmt == 1 )
+			DLC_MatReportLmt = 100;
 	}
 	else {
 		if( DLC_MatReportLmt == DLC_REPORT_ALL_MAX )
@@ -1380,6 +1382,8 @@ void MATReportLmtUpDw( int updw )
 			DLC_MatReportLmt = 300;
 		else if( DLC_MatReportLmt == 300 )
 			DLC_MatReportLmt = 100;
+		else if( DLC_MatReportLmt == 100 )
+			DLC_MatReportLmt = 1;
 	}
 }
 void DLCMatReportSndSub()
