@@ -68,6 +68,7 @@ uchar	DLC_MatBatCnt;						/* 電池電圧SCAN回数 */
 bool	DLC_MatFotaAlloverTO=false;	// fota  オールオーバータイマT/Oフラグ
 int		DLC_MatFotaTOcnt=0;	// fota  タイムアウトカウンタ
 int		DLC_MatFotaExe=0;	// fota  実行フラグ
+uchar	DLC_NeedTimeAdjust;					/* 24hに1度は時刻補正する */
 // 測定logリングバッファ試験用
 int mlogdumywrite(uint32_t logtime);
 uint32_t logtime;
@@ -1063,7 +1064,9 @@ void DLCMatState()
 				dt2.hour   = (p[15]-'0')*10 + (p[16]-'0');
 				dt2.minute = (p[18]-'0')*10 + (p[19]-'0');
 				dt2.second = (p[21]-'0')*10 + (p[22]-'0');
-				if( memcmp( &dt2,&dt1,sizeof(RTC_DATETIME)) ){	/* 差分あり */
+				if( DLC_NeedTimeAdjust == 0 ){
+					DLC_NeedTimeAdjust = 1;
+//				if( memcmp( &dt2,&dt1,sizeof(RTC_DATETIME)) ){	/* 差分あり */
 					RTC_setDateTime( dt2 );						/* RTC更新 */
 					putst("Time Adjust!\r\n");
 					WPFM_setNextCommunicateAlarm();
@@ -1834,6 +1837,7 @@ putst("\r\nAlertTime T/O");putcrlf();
 #ifdef VER_DELTA_5
 	if (DLCMatRtcChk(2)) {	// 24h Config send T/O?
 putst("\r\n$$$$$ Config send T/O");putcrlf();
+		DLC_NeedTimeAdjust = 0;
 		WPFM_doConfigPost = true;
 		DLCMatRtcTimerset(2, RTCTIMER_24hs);	// 24h Config send
 	}
