@@ -287,6 +287,9 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_INIT_ALL:
 		strcat( str,"ROM CLR");
 		break;
+	case _ID1_VBAT_DRIVE:
+		strcat( str,"USB   " );
+		break;
 	case 0:
 		strcat( str,"       ");
 		break;
