@@ -91,7 +91,14 @@ int main(void)
         UTIL_stopBlinkLED1();
 		DLCEventLogWrite( _ID1_INIT_ALL,0,0 );
     }
-
+#if 1
+	if(( PORT_GroupRead( PORT_GROUP_0 ) & 0x8080) == 0 ){						/* PA07と15が同時Lo(スライドSWが真ん中 ) */
+		SERCOM0_USART_Write((unsigned char*)"GoHalt1!\r\n",9);
+		nV1GD_Clear();	// PA06 Low
+		WPFM_sleep();
+		while (true);
+	}
+#endif
     /* Get current operation mode */
     WPFM_operationMode = UTIL_getPowerModeSW();
 
@@ -103,7 +110,6 @@ int main(void)
     //DEBUG_UART_printlnFormat("MLOG Max logs = %u", ((MLOG_ADDRESS_MLOG_LAST + 1) / 256) * MLOG_LOGS_PER_PAGE);
 
     // Read temperature sensor on board 起動時も温度測定
-	WPFM_getTemperature();
 
     // Main-loop
     int stat;
@@ -111,7 +117,6 @@ int main(void)
     {
         // Execute on non-measurement mode processing
         DEBUG_UART_printlnString("RUN AS NON-MEASUREMENT MODE");
-
 		// 押しボタン強制発報のため測定logチェック要
         if ((stat = MLOG_begin(true)) != MLOG_ERR_NONE)
         {
@@ -121,6 +126,7 @@ int main(void)
         WPFM_status = WPFM_STATUS_WAIT_COMMAND;
         SENSOR_updateMeasurementInterval(1);
         DEBUG_UART_printlnFormat("START NON-MEASURE MODE(%lu)", SYS_tick);
+		WPFM_getTemperature();
         eventLoopOnNonMeasurementMode();
     }
 #ifdef BOARD_PROTOTYPE2
@@ -147,19 +153,17 @@ int main(void)
         }
         WPFM_status = WPFM_STATUS_WAIT_COMMAND;
         DEBUG_UART_printlnFormat("START MEASURE MODE(%lu)", SYS_tick);
+		WPFM_getTemperature();
         eventLoopOnMeasurementMode();
     }
 	else
 	{
 		// Execute on measurement mode processing
 		DEBUG_UART_printlnString("RUN AS POWEROFF MODE");
-		if (WPFM_isVbatDrive == true){
-			APP_delay(5000);
-			nV1GD_Clear();	// PA06 Low
+		nV1GD_Clear();	// PA06 Low
 			// Fall asleep..
-			WPFM_sleep();
-			while (true);
-		}
+		WPFM_sleep();
+		while (true);
 	}
 #else
     else
@@ -183,7 +187,6 @@ int main(void)
         eventLoopOnMeasurementMode();
     }
 #endif
-
     /* Execution should not come here during normal operation */
     return (EXIT_FAILURE);
 }
@@ -192,6 +195,18 @@ int main(void)
 */
 void SlideSwProc()
 {
+	if (WPFM_isVbatDrive != true) {	// VBAT駆動以外?
+		if(( PORT_GroupRead( PORT_GROUP_0 ) & 0x8080) == 0 ){						/* PA07と15が同時Lo(スライドSWが真ん中 ) */
+			SERCOM0_USART_Write((unsigned char*)"GoHalt1!\r\n",9);
+			nV1GD_Clear();	// PA06 Low
+			WPFM_sleep();
+			while (true);
+		}
+		if(( PORT_GroupRead( PORT_GROUP_0 ) & 0x8080) == 0x8080 ){					/* PA07と15が同時Hi */
+			SERCOM0_USART_Write((unsigned char*)"GoHalt2!\r\n",9);
+			WPFM_halt("");
+		}
+	}
 	if (UTIL_getPowerModeSW() != WPFM_operationMode){								// スライドスイッチの設定が変更されたか否かをチェックする
 		WPFM_reboot();																// 変更されていた時は、リブートして新しい動作モードで処理を開始する
 	}
