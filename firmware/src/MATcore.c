@@ -68,7 +68,7 @@ uchar	DLC_MatBatCnt;						/* 電池電圧SCAN回数 */
 bool	DLC_MatFotaAlloverTO=false;	// fota  オールオーバータイマT/Oフラグ
 int		DLC_MatFotaTOcnt=0;	// fota  タイムアウトカウンタ
 int		DLC_MatFotaExe=0;	// fota  実行フラグ
-uchar	DLC_NeedTimeAdjust;					/* 24hに1度は時刻補正する */
+uchar	DLC_NeedTimeAdjust;					/*  1hに1度は時刻補正する */
 // 測定logリングバッファ試験用
 int mlogdumywrite(uint32_t logtime);
 uint32_t logtime;
@@ -142,6 +142,8 @@ struct {
 #define		RTCTIMER_24hs		3600*24
 #endif
 #define		RTC_TIMER_NUM		5	// 0:alertTimeout,1:LED1 6s Timer,2:24h Config send
+#define		RTCTIMER_1h			3600
+
 struct {
 	int		cnt;
 	uchar	TO;						/* 0:not use 1;counting 2:TO */
@@ -246,7 +248,6 @@ int DLCMatWake()
 		DLCMatError(0);
 		putst("MATcore Wake Err!\r\n");
 		DLCEventLogWrite( _ID1_ERROR,0x110,DLC_MatState );
-		__NVIC_SystemReset();
 		return 1;
 	}
 	return 0;
@@ -426,7 +427,6 @@ void MTapn()
 				;
 			else {
 				DLCMatError(1);
-				DLCMatTimerClr( 0 );
 				return;
 			}
 		}
@@ -1069,7 +1069,7 @@ void DLCMatState()
 //				if( memcmp( &dt2,&dt1,sizeof(RTC_DATETIME)) ){	/* 差分あり */
 					RTC_setDateTime( dt2 );						/* RTC更新 */
 					putst("Time Adjust!\r\n");
-					WPFM_setNextCommunicateAlarm();
+					WPFM_setNextCommunicateAlarm();				/* 時刻をセットしなおしたので、次回通信予約 */
 				}
 			}
 		}
@@ -1136,10 +1136,6 @@ void DLCMatState()
 			DLCMatSend( "AT$RECV,1024\r" );
 			putst("Retry(ToT)\r\n");
 		}
-//		else if( DLCMatRtcChk( 0 ) ){
-//			DLCMatSend( "AT$RECV,1024\r" );
-//			putst("RTC Timer Ok\r\n");
-//		}
 		else if( DLCMatTmChk( 4 ) )
 			DLC_Matfact = MATC_FACT_TO1;
 		else if( DLCMatTmChk( 5 ) ) {
@@ -1837,11 +1833,14 @@ putst("\r\nAlertTime T/O");putcrlf();
 #ifdef VER_DELTA_5
 	if (DLCMatRtcChk(2)) {	// 24h Config send T/O?
 putst("\r\n$$$$$ Config send T/O");putcrlf();
-		DLC_NeedTimeAdjust = 0;
 		WPFM_doConfigPost = true;
 		DLCMatRtcTimerset(2, RTCTIMER_24hs);	// 24h Config send
 	}
 #endif
+	if (DLCMatRtcChk(3)) {						/* 時刻補正用 1hタイマー */
+		DLC_NeedTimeAdjust = 0;
+		DLCMatRtcTimerset( 3,RTCTIMER_1h );
+	}
 }
 void DLCMatAlertTimeClr()
 {
@@ -2527,6 +2526,7 @@ void DLCMatMain()
 #ifdef VER_DELTA_5
 		DLCMatRtcTimerset(2, RTCTIMER_24hs);	// 24h Config send
 #endif
+		DLCMatRtcTimerset( 3,RTCTIMER_1h );					/* 時刻補正用1時間毎 */
 		DLC_BigState = 1;
 		DLCEventLogWrite( _ID1_SYS_START,0,(_Main_version[4]-'0')<<12|(_Main_version[5]-'0')<<8|(_Main_version[7]-'0')<<4|(_Main_version[8]-'0' ));
 		DLC_MatReportLmt = DLC_Para.Http_Report_max;
@@ -2680,8 +2680,8 @@ void DLCMatMain()
 #endif
 				break;
 			case 'V':
-//				DLC_MatSPIFOTAerase();	// SPI最終セクタ消去
-				DLCEventLogDisplay();	/*			イベントログ表氏 */
+				if( CheckPasswd() )
+					DLCEventLogDisplay();	/*			イベントログ表氏 */
 				break;
 			case 'X':	// FOTA開始
 				if( CheckPasswd() )
@@ -2733,9 +2733,14 @@ void DLCMatMain()
 				sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 				putst(s);putcrlf();
 				break;
-			case 0x03:												/* CTRL+A */
+			case 0x03:												/* CTRL+C */
 				if( CheckPasswd() ){
 					__NVIC_SystemReset();
+				}
+				break;
+			case 0x01:												/* CTRL+A */
+				if( CheckPasswd() ){
+					WPFM_halt("TEST");
 				}
 				break;
 			case 'Q':												/* 強制STBY */
