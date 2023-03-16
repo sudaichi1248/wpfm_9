@@ -468,8 +468,10 @@ void WPFM_sleep(void)
 void WPFM_halt(const char *lastMessage)
 {
     // Output death message
+	DLCEventLogWrite( _ID1_SYS_ERROR,0x55,0 );
     DEBUG_UART_printlnFormat("WPFM_halt(%s).", lastMessage);
     DEBUG_UART_FLUSH();
+	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );		/* OFF */
 
     // Disable all wake-up interrupts
     RTC_setTimeUpdateInterrupt(RTC_TIMEUPDATE_SECOND, NULL);
@@ -477,9 +479,10 @@ void WPFM_halt(const char *lastMessage)
     EIC_InterruptDisable(WPFM_TACTSW_INTERRUPT_PIN);
 	WDT_Disable();
 	DLCMatErrorSleep();
-
+	nV1GD_Clear();
     // Fall asleep..
     WPFM_sleep();
+	while (true);
 }
 
 /*******************************************************************************
