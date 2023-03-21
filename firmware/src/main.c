@@ -89,17 +89,20 @@ int main(void)
             DEBUG_UART_printlnFormat("ERASE CHIP ERROR: %d", stat);
         }
         UTIL_stopBlinkLED1();
+//DLCsumBreakAndReset(); 
 		DLCEventLogWrite( _ID1_INIT_ALL,0,0 );
     }
-#if 1
+ResetReset:
+	WDT_SetClkCycle(8);	// WDT設定
+	WDT_Enable();
 	if(( PORT_GroupRead( PORT_GROUP_0 ) & 0x8080) == 0 ){						/* PA07と15が同時Lo(スライドSWが真ん中 ) */
-		SERCOM0_USART_Write((unsigned char*)"GoHalt1!\r\n",9);
+		WDT_Disable();
+        DEBUG_UART_printlnString("## PA07andPA15=Lo HALT ##");
 		nV1GD_Clear();	// PA06 Low
 		WPFM_sleep();
-		while (true);
+		goto ResetReset;
 	}
-#endif
-    /* Get current operation mode */
+   /* Get current operation mode */
     WPFM_operationMode = UTIL_getPowerModeSW();
 
     /* Initialize for application */

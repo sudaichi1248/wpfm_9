@@ -129,6 +129,7 @@ void IDLEputch( )
 #define		TIMER_10s		10000
 #define		TIMER_12s		12000
 #define		TIMER_15s		15000
+#define		TIMER_20s		20000
 #define		TIMER_30s		30000
 #define		TIMER_90s		90000
 #define		TIMER_120s		120000
@@ -217,8 +218,7 @@ int	DLCMatRtcChk(int tmid)
 }
 void DLCMATrtctimer()
 {
-//	putch('@');
-	WDT_Clear();
+    WDT_Clear();
 	for(int i=0;i<RTC_TIMER_NUM;i++ ){
 		if( DLC_MatRtcTimer[i].cnt != 0 ){
 			DLC_MatRtcTimer[i].cnt--;
@@ -237,7 +237,7 @@ int DLCMatWake()
 	int		i;
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
 	for(i=0;i<WAKE_CHECK_RETRY;i++){
-		DLC_delay(10);
+		DLC_delay(100);
 		if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11))
 			break;
 		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );
@@ -248,6 +248,7 @@ int DLCMatWake()
 		DLCMatError(0);
 		putst("MATcore Wake Err!\r\n");
 		DLCEventLogWrite( _ID1_ERROR,0x110,DLC_MatState );
+		__NVIC_SystemReset();
 		return 1;
 	}
 	return 0;
@@ -262,7 +263,6 @@ void DLCMatInit()
 	if (WPFM_isVbatDrive == true) {	// VBAT駆動?
 		return;
 	}
-	DLCMatTimerset( 0,TIMER_5000ms );
 	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
 }
 void DLCMatLog(int len)
@@ -788,9 +788,12 @@ void MTFwak()
 }
 void MTwVer()
 {
-	DLCMatWake();
-	if(	DLC_MatState != MATC_STATE_ERR )
-		MTRdy();
+	if( DLC_Para.ReportLog ){								/* 運用時はWakeリトライしてダメならリセット */
+		DLCMatWake();
+		return;
+	}
+	putst("MATCore not exist! just keep measuring...\r\n");
+	DLCMatError(2);
 }
 void MTconW()
 {
@@ -2517,10 +2520,8 @@ void DLCMatMain()
 	char s[32];
 //	PORT_GroupWrite( PORT_GROUP_1,0x1<<22,0 );
 	if( DLC_BigState == 0 ){
-		putst( VerPrint() );
-		putst( "\r\nMATcore Task Started.\r\n" );
-		WDT_SetClkCycle(8);	// WDT設定
-		WDT_Enable();
+		putcrlf();putst( VerPrint() );
+		putcrlf();DLCMatClockDisplay(s);putst( s );putch('.');putdecs(SYS_mSec);putst( " MATcore Task Started.\r\n" );
 		DLCMatReset();
 		DLCMatInit();
 #ifdef VER_DELTA_5
@@ -2861,7 +2862,7 @@ void DLCMatReset( )
 	}
 	APP_delay(1000);
 	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,-1 );		/* ON */
-	DLCMatTimerset( 0,15000 );
+	DLCMatTimerset( 0,TIMER_15s );
 	DLC_MatState = MATC_STATE_INIT;
 }
 /*
