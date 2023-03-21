@@ -84,9 +84,9 @@ void EIC_Initialize(void)
                               EIC_CONFIG_SENSE2_NONE  |
                               EIC_CONFIG_SENSE3_NONE  |
                               EIC_CONFIG_SENSE4_BOTH  |
-                              EIC_CONFIG_SENSE5_NONE  |
+                              EIC_CONFIG_SENSE5_BOTH  |
                               EIC_CONFIG_SENSE6_NONE  |
-                              EIC_CONFIG_SENSE7_NONE ;
+                              EIC_CONFIG_SENSE7_BOTH | EIC_CONFIG_FILTEN7_Msk;
 
     /* Interrupt sense type and filter control for EXTINT channels 8 to 15 */
     EIC_REGS->EIC_CONFIG[1] = EIC_CONFIG_SENSE0_NONE  |
@@ -96,13 +96,13 @@ void EIC_Initialize(void)
                               EIC_CONFIG_SENSE4_NONE  |
                               EIC_CONFIG_SENSE5_FALL  |
                               EIC_CONFIG_SENSE6_FALL  |
-                              EIC_CONFIG_SENSE7_LOW ;
+                              EIC_CONFIG_SENSE7_BOTH | EIC_CONFIG_FILTEN7_Msk;
 
     /* External Interrupt Asynchronous Mode enable */
-    EIC_REGS->EIC_WAKEUP = 0x6010;
+    EIC_REGS->EIC_WAKEUP = 0xe090;
 
     /* External Interrupt enable*/
-    EIC_REGS->EIC_INTENSET = 0x6010;
+    EIC_REGS->EIC_INTENSET = 0xe090;
 
     /* Callbacks for enabled interrupts */
     eicCallbackObject[0].eicPinNo = EIC_PIN_MAX;
@@ -112,7 +112,7 @@ void EIC_Initialize(void)
     eicCallbackObject[4].eicPinNo = EIC_PIN_4;
     eicCallbackObject[5].eicPinNo = EIC_PIN_MAX;
     eicCallbackObject[6].eicPinNo = EIC_PIN_MAX;
-    eicCallbackObject[7].eicPinNo = EIC_PIN_MAX;
+    eicCallbackObject[7].eicPinNo = EIC_PIN_7;
     eicCallbackObject[8].eicPinNo = EIC_PIN_MAX;
     eicCallbackObject[9].eicPinNo = EIC_PIN_MAX;
     eicCallbackObject[10].eicPinNo = EIC_PIN_MAX;
@@ -120,7 +120,7 @@ void EIC_Initialize(void)
     eicCallbackObject[12].eicPinNo = EIC_PIN_MAX;
     eicCallbackObject[13].eicPinNo = EIC_PIN_13;
     eicCallbackObject[14].eicPinNo = EIC_PIN_14;
-    eicCallbackObject[15].eicPinNo = EIC_PIN_MAX;
+    eicCallbackObject[15].eicPinNo = EIC_PIN_15;
 
     /* Enable the EIC */
     EIC_REGS->EIC_CTRL |= EIC_CTRL_ENABLE_Msk;
