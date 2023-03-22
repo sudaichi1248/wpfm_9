@@ -62,7 +62,12 @@ static void eventLoopOnNonMeasurementMode(void);
 // Section: Main Entry Point
 // *****************************************************************************
 // *****************************************************************************
-
+void DLC_Halt()
+{
+	nV1GD_Clear();	// PA06 Low
+	WPFM_sleep();
+	__NVIC_SystemReset();
+}
 int main(void)
 {
     WPFM_status = WPFM_STATUS_INITIALIZING;
@@ -107,6 +112,7 @@ ResetReset:
 
     /* Initialize for application */
     WPFM_initializeApplication();
+	nV1GD_Set();
 
     //DEBUG_UART_printlnFormat("WPFM_SETTING_PARAMETER size = %u", (unsigned int)sizeof(WPFM_SETTING_PARAMETER));
     //DEBUG_UART_printlnFormat("MLOG_T size = %u", (unsigned int)sizeof(MLOG_T));
@@ -139,8 +145,7 @@ ResetReset:
         DEBUG_UART_printlnString("RUN AS MEASUREMENT MODE");
 		if (WPFM_isVbatDrive == true){
 			// Fall asleep..
-			WPFM_sleep();
-			while (true);
+           DEBUG_HALT();
 		}
         UTIL_startBlinkLED1(5);
 		// initから移動
@@ -165,8 +170,7 @@ ResetReset:
 		DEBUG_UART_printlnString("RUN AS POWEROFF MODE");
 		nV1GD_Clear();	// PA06 Low
 			// Fall asleep..
-		WPFM_sleep();
-		while (true);
+           DEBUG_HALT();
 	}
 #else
     else
@@ -201,13 +205,11 @@ void SlideSwProc()
 	if (WPFM_isVbatDrive != true) {	// VBAT駆動以外?
 		if(( PORT_GroupRead( PORT_GROUP_0 ) & 0x8080) == 0 ){						/* PA07と15が同時Lo(スライドSWが真ん中 ) */
 			SERCOM0_USART_Write((unsigned char*)"GoHalt1!\r\n",9);
-			nV1GD_Clear();	// PA06 Low
-			WPFM_sleep();
-			while (true);
+           DEBUG_HALT();
 		}
 		if(( PORT_GroupRead( PORT_GROUP_0 ) & 0x8080) == 0x8080 ){					/* PA07と15が同時Hi */
 			SERCOM0_USART_Write((unsigned char*)"GoHalt2!\r\n",9);
-			WPFM_halt("");
+           DEBUG_HALT();
 		}
 	}
 	if (UTIL_getPowerModeSW() != WPFM_operationMode){								// スライドスイッチの設定が変更されたか否かをチェックする

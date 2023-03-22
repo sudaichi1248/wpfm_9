@@ -23,7 +23,7 @@ extern "C" {
 *   Macros & symbols
 */
 //#define DEBUG_HALT()                        while (true)
-#define DEBUG_HALT()                          DLCMatMain()
+#define DEBUG_HALT()                          DLC_Halt()
 
 #ifdef DEBUG_USB
 #   include "app.h"
