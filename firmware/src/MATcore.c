@@ -1449,13 +1449,15 @@ void DLCMatReportSnd()
 		sprintf( tmp,"\"Alert\":\"%02x\"}"	,log_p.alertStatus  );						strcat( http_tmp,tmp );
 	}
 	if ( DLC_MatReportCnt == DLC_MatReportMax ){													/* 最後のList */
-		strcat( http_tmp,"]}}" );
+		if( DLC_MatReportMax)
+			strcat( http_tmp,"]}}" );
 		DLC_MatReportFin = -1;
 	}
 	if( DLC_Para.ReportLog == 0 ){
 		putst( http_tmp );putcrlf();
 	}
-	DLCMatReportSndSub();
+	if( DLC_MatReportMax)
+		DLCMatReportSndSub();
 }
 void DLCMatPostReptInit()
 {
@@ -1531,39 +1533,42 @@ int DLCMatPostReport()
 	sprintf( tmp,"\"SINR\":%d,"				,DLCMatCharInt( DLC_MatRadioDensty,"SINR:" ));	strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Temp\":%.1f,"			,(float)(WPFM_lastTemperatureOnBoard/10.0) );	strcat( http_tmp,tmp );
  	sprintf( tmp,"\"TxType\":%d"			,DLC_MatTxType );								strcat( http_tmp,tmp );
-	strcat( http_tmp,"}," );
+	strcat( http_tmp,"}" );
 #endif
-	strcat( http_tmp,"\"Reportlist\":[" );
 	if( DLC_MatReportMax ){
+		strcat( http_tmp,",\"Reportlist\":[" );
 		putst("Report=");putdecw( DLC_MatReportMax );putch(' ');
-		if( DLC_MatReportMax == DLC_MatReportLmt ){										/* Maxまで溜まっていたら、more=1 */
+		if( DLC_MatReportMax == DLC_MatReportLmt ){											/* Maxまで溜まっていたら、more=1 */
 			putst("More!" );
 			DLC_MatRptMore++;
 		}
 		putcrlf();
-		DLCEventLogWrite( _ID1_REPORT,0,DLC_MatReportMax );
-		p = strstr( http_tmp,"{\"Report\"" );
+	}
+	DLCEventLogWrite( _ID1_REPORT,0,DLC_MatReportMax );
+	p = strstr( http_tmp,"{\"Report\"" );
+	if( DLC_MatReportMax ){
 		q = strstr( http_tmp,":[" );
 		Len = (q-p+2)+DLC_MatReportMax*80+2+DLC_MatExtbyte;
-		p = strstr( http_tmp,"Length:    " );
-		if( p < 0 ){
-				putst("format err1 \r\n" );
-			return 0;
-		}
-		sprintf( tmp,"%d",Len );
-		for( i=0;tmp[i]!=0;i++ )
-			p[7+i] = tmp[i];
-		putst( http_tmp );putcrlf();
-#ifdef VER_DELTA_5
-		config.Measurment = 0;	// =1だった場合、1度Report送信したら戻す
-		WPFM_writeSettingParameter( &config );
-#endif
-		DLCMatReportSndSub();																/* ヘッダだけ送信 */
-		return 1;																			/* 送信データ有 */
 	}
 	else {
-		return 0;																			/* なし */
+		strcat( http_tmp,"}}" );
+		Len = strlen( p );
 	}
+	sprintf( tmp,"%d",Len );
+	p = strstr( http_tmp,"Length:    " );
+	if( p < 0 ){
+			putst("format err1 \r\n" );
+		return 0;
+	}
+	for( i=0;tmp[i]!=0;i++ )
+		p[7+i] = tmp[i];
+	putst( http_tmp );putcrlf();
+#ifdef VER_DELTA_5
+	config.Measurment = 0;	// =1だった場合、1度Report送信したら戻す
+	WPFM_writeSettingParameter( &config );
+#endif
+	DLCMatReportSndSub();																	/* ヘッダだけ送信 */
+	return 1;																				/* 送信データ有 */
 }
 void DLCMatINTParamSet(char *config_p, bool end)
 {
