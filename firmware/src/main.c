@@ -97,6 +97,7 @@ int main(void)
 //DLCsumBreakAndReset(); 
 		DLCEventLogWrite( _ID1_INIT_ALL,0,0 );
     }
+#ifdef BOARD_PROTOTYPE2
 ResetReset:
 	WDT_SetClkCycle(8);	// WDT設定
 	WDT_Enable();
@@ -107,6 +108,10 @@ ResetReset:
 		WPFM_sleep();
 		goto ResetReset;
 	}
+#else
+	WDT_SetClkCycle(8);	// WDT設定
+	WDT_Enable();
+#endif
    /* Get current operation mode */
     WPFM_operationMode = UTIL_getPowerModeSW();
 
@@ -202,6 +207,7 @@ ResetReset:
 */
 void SlideSwProc()
 {
+#ifdef BOARD_PROTOTYPE2
 	if (WPFM_isVbatDrive != true) {	// VBAT駆動以外?
 		if(( PORT_GroupRead( PORT_GROUP_0 ) & 0x8080) == 0 ){						/* PA07と15が同時Lo(スライドSWが真ん中 ) */
 			SERCOM0_USART_Write((unsigned char*)"GoHalt1!\r\n",9);
@@ -212,6 +218,7 @@ void SlideSwProc()
            DEBUG_HALT();
 		}
 	}
+#endif
 	if (UTIL_getPowerModeSW() != WPFM_operationMode){								// スライドスイッチの設定が変更されたか否かをチェックする
 		WPFM_reboot();																// 変更されていた時は、リブートして新しい動作モードで処理を開始する
 	}
