@@ -105,6 +105,7 @@ ResetReset:
 		WDT_Disable();
         DEBUG_UART_printlnString("## PA07andPA15=Lo HALT ##");
 		nV1GD_Clear();	// PA06 Low
+		UTIL_delayMicros(1000*100);
 		WPFM_sleep();
 		goto ResetReset;
 	}
@@ -124,6 +125,7 @@ ResetReset:
     //DEBUG_UART_printlnFormat("MLOG Max logs = %u", ((MLOG_ADDRESS_MLOG_LAST + 1) / 256) * MLOG_LOGS_PER_PAGE);
 
     // Read temperature sensor on board 起動時も温度測定
+	WPFM_getTemperature();
 
     // Main-loop
     int stat;
@@ -140,7 +142,6 @@ ResetReset:
         WPFM_status = WPFM_STATUS_WAIT_COMMAND;
         SENSOR_updateMeasurementInterval(1);
         DEBUG_UART_printlnFormat("START NON-MEASURE MODE(%lu)", SYS_tick);
-		WPFM_getTemperature();
         eventLoopOnNonMeasurementMode();
     }
 #ifdef BOARD_PROTOTYPE2
@@ -166,7 +167,6 @@ ResetReset:
         }
         WPFM_status = WPFM_STATUS_WAIT_COMMAND;
         DEBUG_UART_printlnFormat("START MEASURE MODE(%lu)", SYS_tick);
-		WPFM_getTemperature();
         eventLoopOnMeasurementMode();
     }
 	else

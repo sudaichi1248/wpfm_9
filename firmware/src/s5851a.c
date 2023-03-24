@@ -64,10 +64,12 @@ int S5851A_setMode(S5851A_MODE mode)
 
     return (S5851A_ERR_NONE);
 }
+void putch( char c );
 
 int S5851A_getTemperature(float *temp_p)
 {
     uint8_t buf[2];
+
     if (_S5851A_mode & S5851A_MODE_SHUTDOWN)
     {
         // if shutdown mode then measurement by one shut
@@ -76,7 +78,7 @@ int S5851A_getTemperature(float *temp_p)
             S5851A_startMeasurement();
         }
         // Wait until measurement is complete
-        uint32_t start = SYS_mSec;
+        int		i=0;
         bool timeouted = false;
         buf[0] = 0xff;
         while (SERCOM3_I2C_Read(S5851A_I2C_ADDRESS, buf, 1)) {
@@ -89,14 +91,11 @@ int S5851A_getTemperature(float *temp_p)
             {
                 break;      // Measurement completed
             }
-            if (SYS_mSec - start > ONE_SHOT_TIMEOUT)
-            {
+            if( ++i > (ONE_SHOT_TIMEOUT/I2C_OPERATION_TIMEOUT)){
                 timeouted = true;
                 break;      // Timed out, can't measure temperature
             }
-
-            APP_delay(20);  //@
-
+            APP_delay(I2C_OPERATION_TIMEOUT);  //@
         }
         _S5851A_is_measuring = false;
         if (timeouted)
