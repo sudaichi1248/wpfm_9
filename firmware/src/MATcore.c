@@ -773,7 +773,6 @@ void MTwake()
 	putst("[Wake]\r\n");
 	DLCMatWake();
 	DLC_MatLineIdx = 0;
-	DLC_Matknd = 0;
 	DLCMatSend( "AT$CONNECT\r" );
 	DLCEventLogWrite( _ID1_CONNECT,0,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
 	TC5_TimerStart();
@@ -964,7 +963,7 @@ void	 (*MTjmp[18][19])() = {
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $SLEEP     16 */{ MTFwak, ______, ______, ______, ______, ______, ______, ______, MTslep, MTslep, MTslep, MTslep, MTslep, ______, ______, ______, ______, MTslep, ______ },
-/* TimeOut2   17 */{ MTtim2, ______, ______, ______, ______, MTBatt, MTBatt, MTBatt, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTtim2 },
+/* TimeOut2   17 */{ MTtim2, ______, ______, ______, ______, MTBatt, MTBatt, MTBatt, ______, ______, ______, MTBatt, MTBatt, ______, ______, ______, ______, ______, MTtim2 },
 							};
 void DLCMatState()
 {
