@@ -1304,8 +1304,10 @@ void DLCMatPostStatus()
 	if ( WPFM_isAlertPause == true )
 		DLC_MatTxType = 20;
 #endif
-	if( DLC_Matknd == 2 )				/* Push SW */
+	if( DLC_Matknd == 2 ){				/* Push SW */
 		DLC_MatTxType = 1;
+	}
+	DLC_Matknd = 0;
 	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );					strcat( http_tmp,tmp );
 	sprintf( tmp,"\"IMEI\":\"%s\","			,DLC_MatIMEI );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"MSISDN\":\"%s\","		,DLC_MatNUM );									strcat( http_tmp,tmp );
@@ -1506,8 +1508,10 @@ int DLCMatPostReport()
 	if ( WPFM_isAlertPause == true )
 		DLC_MatTxType = 20;
 #endif
-	if( DLC_Matknd == 2 )				/* Push SW */
+	if( DLC_Matknd == 2 ){				/* Push SW */
 		DLC_MatTxType = 1;
+	}
+	DLC_Matknd = 0;
 	sprintf( tmp,"\"IMEI\":\"%s\","			,DLC_MatIMEI );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"MSISDN\":\"%s\","		,DLC_MatNUM );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"Version\":\"%5s\","		,ver );											strcat( http_tmp,tmp );
