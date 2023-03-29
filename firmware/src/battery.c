@@ -19,7 +19,7 @@
 #include "Eventlog.h"
 #include "DLCpara.h"
 
-#define BATTERY_MEASURE_MARGIN  2	// 交換後測定マージン2V
+#define BATTERY_MEASURE_MARGIN  2000	// 交換後測定マージン2V
 
 #ifdef DEBUG_UART
 #   define  DBG_PRINT(...)  { if (DLC_Para.MeasureLog == 0) {char _line[80]; snprintf(_line, sizeof(_line),  __VA_ARGS__); UART_DEBUG_writeBytes(_line, strlen(_line)); UART_DEBUG_writeBytes("\n", 1);} }
