@@ -949,7 +949,7 @@ void	 (*MTjmp[18][19])() = {
 /* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy  },
 /* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, MTdisc, ______ },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
-/* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
+/* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, MTrprt, ______, ______, ______, ______, ______, ______, ______ },
 /* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______ },
 /* $CONNECT:1  5 */{ ______, ______, ______, ______, ______, ______, MTtime, ______, ______, ______, ______, ______, ______, ______, MTopnF, ______, ______, ______, ______ },
 /* $TIME       6 */{ ______, ______, ______, ______, ______, ______, MTrsrp, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
@@ -1145,7 +1145,7 @@ void DLCMatState()
 				DLC_Matfact = MATC_FACT_WUP;
 				break;
 			case MSGID_DELAY:
-				DLC_Matfact = MATC_FACT_WUP;
+				DLC_Matfact = MATC_FACT_NUM;
 				break;
 			default:
 				return;
@@ -2758,6 +2758,10 @@ void DLCMatMain()
 			case 'H':
 				if( CheckPasswd() )
 					_RTC_handlerBClr();
+				break;
+			case 'J':
+				if( CheckPasswd() )
+					WPFM_doConfigPost = true;
 				break;
 			default:
 				break;
