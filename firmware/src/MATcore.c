@@ -2113,8 +2113,10 @@ putst("coco4\r\n");
 // fota
 	config_p = strstr(DLC_MatResBuf, "FOTA");
 	if (config_p) {
-		DLCMatINTParamSet(config_p, false);
-		DLC_MatFotaExe = atoi(DLC_MatConfigItem);
+		if (DLC_MatFotaExe == 0) {
+			DLCMatINTParamSet(config_p, false);
+			DLC_MatFotaExe = atoi(DLC_MatConfigItem);
+		}
 		putst("fotaexe:");puthxb(DLC_MatFotaExe);putcrlf();
 	}
 #ifdef VER_DELTA_5
