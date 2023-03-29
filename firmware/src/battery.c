@@ -19,6 +19,8 @@
 #include "Eventlog.h"
 #include "DLCpara.h"
 
+#define BATTERY_MEASURE_MARGIN  2	// 交換後測定マージン2V
+
 #ifdef DEBUG_UART
 #   define  DBG_PRINT(...)  { if (DLC_Para.MeasureLog == 0) {char _line[80]; snprintf(_line, sizeof(_line),  __VA_ARGS__); UART_DEBUG_writeBytes(_line, strlen(_line)); UART_DEBUG_writeBytes("\n", 1);} }
 #else
@@ -178,7 +180,7 @@ int BATTERY_leaveReplaceBattery(void)
     DEBUG_UART_printlnFormat("> BATTERY_leaveReplaceBattery() : %d", WPFM_externalBatteryNumberToReplace);
     uint16_t voltage = 0;
     SENSOR_readExternalBatteryVoltage(WPFM_externalBatteryNumberToReplace, &voltage);
-    if (voltage < WPFM_settingParameter.lowThresholdVoltage)
+    if (voltage < WPFM_settingParameter.lowThresholdVoltage + BATTERY_MEASURE_MARGIN)
     {
         // If the battery is replaced failed
         DEBUG_UART_printlnFormat("< BATTERY_leaveReplaceBattery() ERROR: %dmV", voltage);
