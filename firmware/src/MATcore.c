@@ -449,11 +449,14 @@ void MTapn()
 	DLCMatTimerset( 0,TIMER_5000ms );
 	DLC_MatState = MATC_STATE_SVR;
 }
+extern	uint32_t	BatteryValueSum1,BatteryValueSum2;
+
 void MTconn()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT?\r" );
 	DLCMatTimerset( 0,TIMER_120s );
+	BatteryValueSum1 = BatteryValueSum2 = 0;
 	DLC_MatBatCnt = 0;
 	DLCMatTimerset( 1,TIMER_1000ms );
 	if (DLC_Para.FOTAact != 0) {	// fota ‰^—pŽž
