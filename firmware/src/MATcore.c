@@ -1301,15 +1301,16 @@ void DLCMatPostStatus()
 	strcpy( http_tmp,http_status );
 	strcat( http_tmp,"{\"Status\":{" );
 	DLC_MatTxType = 0;
-	putst("Alert=");puthxb( WPFM_TxType );putcrlf();
-	DLC_MatTxType = WPFM_TxType;
+	if( DLC_Matknd == 2 ){					/* Push SW */
+		DLC_MatTxType = 1;
+	}
 #ifdef ADD_FUNCTION
 	if ( WPFM_isAlertPause == true )
 		DLC_MatTxType = 20;
 #endif
-	if( DLC_Matknd == 2 ){				/* Push SW */
-		DLC_MatTxType = 1;
-	}
+	putst("Alert=");puthxb( WPFM_TxType );putcrlf();
+	if( WPFM_TxType )
+		DLC_MatTxType = WPFM_TxType;
 	DLC_Matknd = 0;
 	sprintf( tmp,"\"LoggerSerialNo\":%d,"	,(int)config.serialNumber );					strcat( http_tmp,tmp );
 	sprintf( tmp,"\"IMEI\":\"%s\","			,DLC_MatIMEI );									strcat( http_tmp,tmp );
@@ -1505,15 +1506,16 @@ int DLCMatPostReport()
 	strcat( http_tmp,tmp );
 	strcat( http_tmp,"\"Status\":{" );
 	DLC_MatTxType = 0;
-	putst("Alert=");puthxb( WPFM_TxType );putcrlf();
-	DLC_MatTxType = WPFM_TxType;
+	if( DLC_Matknd == 2 ){					/* Push SW */
+		DLC_MatTxType = 1;
+	}
 #ifdef ADD_FUNCTION
 	if ( WPFM_isAlertPause == true )
 		DLC_MatTxType = 20;
 #endif
-	if( DLC_Matknd == 2 ){				/* Push SW */
-		DLC_MatTxType = 1;
-	}
+	putst("Alert=");puthxb( WPFM_TxType );putcrlf();
+	if( WPFM_TxType )
+		DLC_MatTxType = WPFM_TxType;
 	DLC_Matknd = 0;
 	sprintf( tmp,"\"IMEI\":\"%s\","			,DLC_MatIMEI );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"MSISDN\":\"%s\","		,DLC_MatNUM );									strcat( http_tmp,tmp );
