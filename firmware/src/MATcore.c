@@ -227,6 +227,13 @@ void DLCMATrtctimer()
 		}
 	}
 }
+void DLCMATrtcDisp()
+{
+	putcrlf();
+	for(int i=0;i<RTC_TIMER_NUM;i++ ){
+		puthxb( i );putch(':');putdecw( DLC_MatRtcTimer[i].cnt );putch(' ');puthxb( DLC_MatRtcTimer[i].TO  );putcrlf();
+	}
+}
 /*
 	MATcore‚ðWAKEUP‚³‚¹‚éˆ—
 	3•b‘Ò‚Â
@@ -2769,6 +2776,10 @@ void DLCMatMain()
 			case 'J':
 				if( CheckPasswd() )
 					WPFM_doConfigPost = true;
+				break;
+			case 'W':
+				if( CheckPasswd() )
+					DLCMATrtcDisp();
 				break;
 			default:
 				break;
