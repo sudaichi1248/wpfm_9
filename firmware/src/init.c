@@ -508,7 +508,7 @@ void WPFM_halt(const char *lastMessage)
     Update global variable "WPFM_communicationInterval"
  */
 
-void WPFM_updateCommunicationInterval(uint16_t interval)
+void WPFM_updateCommunicationInterval(uint32_t interval)
 {
     WPFM_communicationInterval = interval;
     if (! WPFM_setNextCommunicateAlarm())
@@ -544,7 +544,8 @@ bool WPFM_setNextCommunicateAlarm(void)
 {
     // Adjust and set next alarm
     uint32_t nextTime = RTC_now + WPFM_communicationInterval;
-//    DEBUG_UART_printlnFormat(">>nextTime: %lu,%lu", nextTime, WPFM_communicationInterval);
+//   putst("WPFM_communicationInterval=");putdecw( WPFM_communicationInterval );putcrlf();
+    DEBUG_UART_printlnFormat(">>nextTime: %lu,%lu", nextTime, WPFM_communicationInterval);
 // ’èŠú’Ê’m•ªŽU‚Ì‚½‚ß“dŒ¹ON‚©‚çÝ’èŽžŠÔŒã
 //    nextTime -= nextTime % WPFM_communicationInterval;
 //    DEBUG_UART_printlnFormat(">>nextTime: %lu", nextTime);

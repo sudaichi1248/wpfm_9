@@ -228,7 +228,7 @@ extern void WPFM_onTimeupdate(void);
 extern void WPFM_reboot(void);
 extern void WPFM_sleep(void);
 extern void WPFM_halt(const char *lastMessage);
-extern void WPFM_updateCommunicationInterval(uint16_t interval);
+extern void WPFM_updateCommunicationInterval(uint32_t interval);
 extern bool WPFM_setNextCommunicateAlarm(void);
 // defind in wpfm.c
 extern bool WPFM_writeSettingParameter(WPFM_SETTING_PARAMETER *param_p);
