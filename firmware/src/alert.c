@@ -406,7 +406,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                else if (occurrenceTime < (WPFM_lastAlertStartTimes[channelIndex][0] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
 	                {
 #ifdef ADD_FUNCTION
-	                    DBG_PRINT("[ALERT_T1(%d)] Not Suppress upper attention/warning(ChatteringKind 1): %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes[channelIndex][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+	                    DBG_PRINT("[ALERT_T1(%d)] Not Suppress upper attent/warn(Kind1): %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes[channelIndex][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
 #else
 	                    DBG_PRINT("[ALERT_T1(%d)] Suppress upper attention/warning: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes[channelIndex][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
 	                    // Suppress upper limit alert
@@ -416,7 +416,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                else
 	                {
 	                    // Time out
-	                    DBG_PRINT("[ALERT_T1(%d)] Not suppress upper attention/warning: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][0], (WPFM_lastAlertStartTimes[channelIndex][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+	                    DBG_PRINT("[ALERT_T1(%d)] Not suppress upper atten/warn: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][0], (WPFM_lastAlertStartTimes[channelIndex][0]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
 	                    WPFM_lastAlertStartTimes[channelIndex][0] += WPFM_settingParameter.alertChatteringTimes[channelIndex];  // Extend chattering time
 	                    if ((alertStatus & (0x0F << (channelIndex * 4))) == upperWarning)
 	                    {
@@ -437,9 +437,9 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                else if (occurrenceTime < (WPFM_lastAlertStartTimes[channelIndex][1] + WPFM_settingParameter.alertChatteringTimes[channelIndex]))
 	                {
 #ifdef ADD_FUNCTION
-	                    DBG_PRINT("[ALERT_T1(%d)] Not Suppress lower attention/warning(ChatteringKind 1): %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes[channelIndex][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+	                    DBG_PRINT("[ALERT_T1(%d)] Not Suppress lower attent/warn(Kind1): %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes[channelIndex][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
 #else
-	                    DBG_PRINT("[ALERT_T1(%d)] Suppress lower attention/warning: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes[channelIndex][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+	                    DBG_PRINT("[ALERT_T1(%d)] Suppress lower attent/warn: %lu<%lu", channelIndex+1, occurrenceTime, (WPFM_lastAlertStartTimes[channelIndex][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
 	                    // Suppress lower limit alert
 	                    alertStatusSuppressed &= ~(lowerWarning | lowerAttention);
 #endif
@@ -447,7 +447,7 @@ uint8_t WPFM_judegAlert(uint32_t occurrenceTime)
 	                else
 	                {
 	                    // Time out
-	                    DBG_PRINT("[ALERT_T1(%d)] Not suppress lower attention/warning: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][1], (WPFM_lastAlertStartTimes[channelIndex][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
+	                    DBG_PRINT("[ALERT_T1(%d)] Not suppress lower attent/warn: %lu->%lu", channelIndex+1, WPFM_lastAlertStartTimes[channelIndex][1], (WPFM_lastAlertStartTimes[channelIndex][1]+WPFM_settingParameter.alertChatteringTimes[channelIndex]));
 	                    WPFM_lastAlertStartTimes[channelIndex][1] += WPFM_settingParameter.alertChatteringTimes[channelIndex];  // Extend chattering time
 	                    if ((alertStatus & (0x0F << (channelIndex * 4))) == lowerWarning)
 	                    {
