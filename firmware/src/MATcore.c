@@ -1475,7 +1475,7 @@ void DLCMatPostReptInit()
 }
 int DLCMatPostReport()
 {
-	char	tmp[48],*p,*q;
+	char	tmp[48],*p,*q,TxType=0;
 #ifdef VER_DELTA_5
 	char	ver[6];
 #endif
@@ -1499,6 +1499,8 @@ int DLCMatPostReport()
 			;
 		else
 			DLC_MatExtbyte += (strlen( tmp )-5);
+		if( log_p.alertStatus )
+			TxType = 1;
 		if( i == 300 )
 			return 2;
 	}
@@ -1521,7 +1523,7 @@ int DLCMatPostReport()
 		DLC_MatTxType = 20;
 #endif
 	putst("Alert=");puthxb( WPFM_TxType );putcrlf();
-	if( WPFM_TxType )
+	if( WPFM_TxType | TxType )
 		DLC_MatTxType = WPFM_TxType;
 	DLC_Matknd = 0;
 	sprintf( tmp,"\"IMEI\":\"%s\","			,DLC_MatIMEI );									strcat( http_tmp,tmp );
