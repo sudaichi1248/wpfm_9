@@ -665,7 +665,7 @@ void MTrpOk()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatReportSnd();
-	DLCMatTimerset( 0,TIMER_15s );
+	DLCMatTimerset( 0,TIMER_30s );										// 23.4.21 15->30Ç÷ 3000åèÇ≈TOÇµÇƒÇµÇ‹Ç§Ç©ÇÁ
 	DLC_MatState = MATC_STATE_RPT;
 }
 void MTdisc()
@@ -1475,7 +1475,7 @@ void DLCMatPostReptInit()
 }
 int DLCMatPostReport()
 {
-	char	tmp[48],*p,*q,TxType=0;
+	char	tmp[48],*p,*q,TxTypeIsAll0=0;
 #ifdef VER_DELTA_5
 	char	ver[6];
 #endif
@@ -1500,7 +1500,7 @@ int DLCMatPostReport()
 		else
 			DLC_MatExtbyte += (strlen( tmp )-5);
 		if( log_p.alertStatus )
-			TxType = 1;
+			TxTypeIsAll0 = 1;
 		if( i == 300 )
 			return 2;
 	}
@@ -1523,8 +1523,12 @@ int DLCMatPostReport()
 		DLC_MatTxType = 20;
 #endif
 	putst("Alert=");puthxb( WPFM_TxType );putcrlf();
-	if( WPFM_TxType | TxType )
+	if( WPFM_TxType )
 		DLC_MatTxType = WPFM_TxType;
+	if( TxTypeIsAll0 == 0 ){				/* Listì‡ÇÃalertÇ™ëSïî0Ç≈TxTypÇ™11ÇÃÇ∆Ç´ÇÕ0Ç÷ */
+		if( DLC_MatTxType == 11 )
+			DLC_MatTxType = 0;
+	}
 	DLC_Matknd = 0;
 	sprintf( tmp,"\"IMEI\":\"%s\","			,DLC_MatIMEI );									strcat( http_tmp,tmp );
 	sprintf( tmp,"\"MSISDN\":\"%s\","		,DLC_MatNUM );									strcat( http_tmp,tmp );
