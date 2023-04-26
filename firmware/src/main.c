@@ -452,10 +452,12 @@ static void eventLoopOnNonMeasurementMode(void)
 	                // 非測定モードの時は電池交換を許容しないので、何もしない
 
 	                // デバッグ用
+#if 0
 	                WDT_Disable();
 	                MLOG_dump();        // FOR DEBUG! @remove
 	                MLOG_checkLogs(false);
 	                WDT_Enable();
+#endif
 	            }
 	            WPFM_wasButtonPressed = false;
                 WPFM_tactSwStatus = WPFM_TACTSW_STATUS_NORMAL;
