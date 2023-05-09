@@ -76,27 +76,29 @@ int main(void)
     SYS_Initialize(NULL);
 	DLCParaRead();
     /*** FOR DEBUG ***/
-    if (TEST_SW_Get() == 0)
-    {
-        DEBUG_UART_printlnString("## ERASE CHIP ##");
-        DEBUG_UART_printlnString("## DO NOT POWER OFF ##");
-        UTIL_startBlinkLED1(0);
-        // Erase flash memory chip
-        W25Q128JV_begin(MEM_CS_PIN);
-        int stat;
-		DLCEventLogClr(0);
-        if ((stat = W25Q128JV_eraseChip(true)) == W25Q128JV_ERR_NONE)
-        {
-            DEBUG_UART_printlnString("ERASE CHIP OK.");
-        }
-        else
-        {
-            DEBUG_UART_printlnFormat("ERASE CHIP ERROR: %d", stat);
-        }
-        UTIL_stopBlinkLED1();
-//DLCsumBreakAndReset(); 
-		DLCEventLogWrite( _ID1_INIT_ALL,0,0 );
-    }
+    if (TEST_SW_Get() == 0){
+		UTIL_delayMicros(10000);
+		if (TEST_SW_Get() == 0){
+      		DEBUG_UART_printlnString("## ERASE CHIP ##");
+	        DEBUG_UART_printlnString("## DO NOT POWER OFF ##");
+	        UTIL_startBlinkLED1(0);
+	        // Erase flash memory chip
+	        W25Q128JV_begin(MEM_CS_PIN);
+	        int stat;
+			DLCEventLogClr(0);
+	        if ((stat = W25Q128JV_eraseChip(true)) == W25Q128JV_ERR_NONE)
+	        {
+	            DEBUG_UART_printlnString("ERASE CHIP OK.");
+	        }
+	        else
+	        {
+	            DEBUG_UART_printlnFormat("ERASE CHIP ERROR: %d", stat);
+	        }
+	        UTIL_stopBlinkLED1();
+	//DLCsumBreakAndReset(); 
+			DLCEventLogWrite( _ID1_INIT_ALL,0,0 );
+	    }
+	}
 #ifdef BOARD_PROTOTYPE2
 ResetReset:
 	WDT_SetClkCycle(8);	// WDT設定
