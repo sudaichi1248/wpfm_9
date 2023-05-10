@@ -233,7 +233,6 @@ void MLOG_tailAddressBuckUp()
 void MLOG_tailAddressRestore()
 {
 	_MLOG_tailAddress = _MLOG_tailAddressBuckUp;
-	puthxw(_MLOG_tailAddress);putcrlf();
 }
 void MLOG_addressDisp()
 {
