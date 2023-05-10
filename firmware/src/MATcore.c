@@ -52,8 +52,8 @@ int		DLC_MatLineIdx;
 uchar	DLC_Matfact,DLC_MatState;
 char	DLC_MatDateTime[32];
 char	DLC_MatRadioDensty[80];
-char	DLC_MatNUM[16];
-char	DLC_MatIMEI[16];
+char	DLC_MatNUM[32];
+char	DLC_MatIMEI[32];
 int		DLC_MatTmid;
 uchar	DLC_BigState,DLC_Matknd;
 uchar	DLC_MatRetry;
@@ -91,6 +91,21 @@ char getch()
 			return c;
 		}
 		DLC_delay(1000);
+	}
+    return -1;
+}
+/*
+ 3秒ルール版
+*/
+char getchT()
+{
+	char	c;
+	for(int i=0;i<30;i++){
+		if( SERCOM0_USART_Read( (unsigned char*)&c,1 ) ){
+			putch(c);
+			return c;
+		}
+		DLC_delay(100);
 	}
     return -1;
 }
@@ -216,9 +231,9 @@ int	DLCMatRtcChk(int tmid)
 	}
 	return 0;
 }
-void DLCMATrtctimer()
+void DLCMatRtcProc()
 {
-    WDT_Clear();
+	WDT_Clear();
 	for(int i=0;i<RTC_TIMER_NUM;i++ ){
 		if( DLC_MatRtcTimer[i].cnt != 0 ){
 			DLC_MatRtcTimer[i].cnt--;
@@ -858,10 +873,10 @@ void DLCMatClockDisplay(char *s)
 	RTC_getDatetime( &dt );
 	sprintf( s,"%02d/%02d/%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 }
-void DLCMatClockGet(MLOG_T *log_p,char *s)
+void DLCMatClockGet(uint32_t t,char *s)
 {
 	RTC_DATETIME dt;
-	RTC_convertToDateTime(log_p->timestamp.second,&dt);
+	RTC_convertToDateTime( t,&dt);
 	sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 }
 /*
@@ -1408,6 +1423,27 @@ void DLCMatReportSndSub()
 	DLCMatSend( DLC_MatSendBuff );
 	memset( http_tmp,0,sizeof( http_tmp ));
 }
+void DLCMatReportDisp()
+{
+	char	tmp[48],s[32];
+	int		i;
+	MLOG_T 	log_p;
+	putcrlf();
+	for( i=0;; i++ ){
+		if( i == DLC_REPORT_SND_LMT )
+			break;
+		if( MLOG_getLog( &log_p ) < 0 )
+			break;
+		DLCMatClockGet( log_p.timestamp.second,s );
+		sprintf( tmp,"{\"Time\":\"%s\","		,s );									strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Value_ch1\":%.3f,"	,log_p.measuredValues[0] );
+		strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Value_ch2\":%.3f,"	,log_p.measuredValues[1] );
+		strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Alert\":\"%02x\"}"	,log_p.alertStatus  );						strcat( http_tmp,tmp );
+	}
+	putst( http_tmp );putcrlf();
+}
 /* 
 	ListのDLC_REPORT_SND_LMTまで分割して送る
 */
@@ -1425,7 +1461,7 @@ void DLCMatReportSnd()
 			break;
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
-		DLCMatClockGet( &log_p,s );
+		DLCMatClockGet( log_p.timestamp.second,s );
 		if( DLC_MatReportFin ){
 			strcat( http_tmp,"," );
 		}
@@ -1463,6 +1499,13 @@ void DLCMatReportSnd()
 	if( DLC_MatReportMax)
 		DLCMatReportSndSub();
 }
+void DLCMatRptLimit()
+{
+	DLC_MatReportLmt = DLC_Para.Http_Report_max;
+	if(( DLC_MatReportLmt >= 10000 )||( DLC_MatReportLmt < 0 ))
+		DLC_MatReportLmt = DLC_REPORT_ALL_MAX;
+	putst("ReportLmt=");putdech(DLC_MatReportLmt);putcrlf();
+}
 void DLCMatPostReptInit()
 {
 	DLC_MatReportMax = 0;
@@ -1471,7 +1514,7 @@ void DLCMatPostReptInit()
 	DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
 	MLOG_tailAddressBuckUp();
 	DLC_MatExtbyte = 0;
-	putst("ReportLmt=");putdech(DLC_MatReportLmt);putcrlf();
+	DLCMatRptLimit();
 }
 int DLCMatPostReport()
 {
@@ -2372,9 +2415,9 @@ void DLCSPIFlashTest()
 int CheckPasswd()
 {
 	putst("PASSWD=");
-	if( getch() == 'y')
-		if( getch() == 'e')
-			if( getch() == 's')
+	if( getchT() == 'y')
+		if( getchT() == 'e')
+			if( getchT() == 's')
 				return 1;
 	return 0;
 }
@@ -2532,12 +2575,78 @@ void MATRts()
 	if( PORT_GroupRead( PORT_GROUP_1 )&(0x1<<22))
 		putch('@');
 }
+void DLCMatMlogMenu()
+{
+	char    key;
+	RTC_DATETIME dt;
+	int ret=0;
+	char s[32];
+	while(1){
+		putst("\r\nmlog>");
+		key = toupper( getch() );
+		switch( key ){
+		case 'A':															/* 通知済に変更 */
+			if( CheckPasswd() ){
+				if ( MLOG_updateLog() != MLOG_ERR_NONE) {	// 
+					putst("write error\r\n");
+				}
+			}
+			break;
+		case 'B':
+			MLOG_tailAddressBuckUp();
+			DLCMatReportDisp();
+			break;
+		case 'C':
+			MLOG_addressDisp();
+			break;
+		case 'D':
+			logtime = RTC_now;
+			logtime &= ~0x03;
+			logtime -= (3000*4);
+			for(int i=0;i<3000;i++){
+				ret = mlogdumywrite(logtime);
+				if (ret == 0)
+					break;
+				logtime += 4;
+				WDT_Clear();
+			}
+			putst("##### write end #####");
+			break;
+		case 'E':
+			logtime = RTC_now;
+			logtime &= ~0x03;
+			logtime -= (300000*4);
+			for(int i=0;i<300000;i++){
+				ret = mlogdumywrite(logtime);
+				if (ret == 0)
+					break;
+				logtime += 4;
+				WDT_Clear();
+			}
+			putst("##### write end #####");
+			break;
+		case 'F':
+			MLOG_getNumberofLog();
+			putst("\r\nnum:");putdecw(_MLOG_NumberofLog);putcrlf();
+			putst("head addr:");puthxw(_MLOG_headAddress);putcrlf();
+			RTC_convertToDateTime(_MLOG_headTime,&dt);
+			sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+			putst(s);putcrlf();
+			putst("tail addr:");puthxw(_MLOG_tailAddress);putcrlf();
+			RTC_convertToDateTime(_MLOG_tailTime,&dt);
+			sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
+			putst(s);putcrlf();
+			break;
+		case 0x1b:															/* Exit */
+			return;
+		}
+	}
+}
 void DLCMatMain()
 {
-	char key;
-	int ret=0;
-	RTC_DATETIME dt;
 	char s[32];
+	int ret=0;
+	char key;
 //	PORT_GroupWrite( PORT_GROUP_1,0x1<<22,0 );
 	if( DLC_BigState == 0 ){
 		putcrlf();putst( VerPrint() );
@@ -2550,23 +2659,21 @@ void DLCMatMain()
 		DLCMatRtcTimerset( 3,RTCTIMER_1h );					/* 時刻補正用1時間毎 */
 		DLC_BigState = 1;
 		DLCEventLogWrite( _ID1_SYS_START,0,(_Main_version[4]-'0')<<12|(_Main_version[5]-'0')<<8|(_Main_version[7]-'0')<<4|(_Main_version[8]-'0' ));
-		DLC_MatReportLmt = DLC_Para.Http_Report_max;
-		if(( DLC_MatReportLmt >= 10000 )||( DLC_MatReportLmt < 0 ))
-			DLC_MatReportLmt = DLC_REPORT_ALL_MAX;
+		DLCMatRptLimit();
 	}
 	key = getkey();
 	if (DLC_Para.DebugCmd == 0) {
 		if( key ){
 			key = toupper(key);
 			switch( key ){
-			case 0x1b:
+			case 0x1b:															/* モニターモード */
 				Moni();
 				break;
-			case 'M':
+			case 'M':															/* MATcoreテスト */
 				if( CheckPasswd() )
 					DLCMatTest();
 				break;
-			case 'I':
+			case 'I':															/* IO Read */
 				putst("Read IO(1-7)=>");
 				key = getch()-'1';
 				putcrlf();puthxb(GPIOEXP_get(key));
@@ -2617,10 +2724,9 @@ void DLCMatMain()
 //				PORT_GroupWrite( PORT_GROUP_1,0x1<<23,-1 );
 //				PORT_GroupWrite( PORT_GROUP_1,0x1<<23,0 );
 //				break;
-			case 'Z':
+			case 'Z':														/* Log全削除 */
 				if( CheckPasswd() )
-//				DLCEventLogWrite( _ID1_CONFIGRET,-1,0 );
-				DLCEventLogClr(0);
+					DLCEventLogClr(0);
 				break;
 //			case 'W':
 //				puthxw( EVENT_LOG_NUMOF_ITEM );
@@ -2702,7 +2808,7 @@ void DLCMatMain()
 				break;
 			case 'V':
 				if( CheckPasswd() )
-					DLCEventLogDisplay();	/*			イベントログ表氏 */
+					DLCEventLogDisplay();	/*			イベントログ表示 */
 				break;
 			case 'X':	// FOTA開始
 				if( CheckPasswd() )
@@ -2712,80 +2818,35 @@ void DLCMatMain()
 				if( CheckPasswd() )
 					DLCFotaFinAndReset();
 				break;
-			case 'P':
-				if( !CheckPasswd() )
-					break;
-				putst("1:time set 2:3000件 3:FULL save ==>");
-				switch( getch() ){
-				case '1':
-					logtime = RTC_now;
-					break;
-				case '2':
-					for(int i=0;i<DLC_MatReportLmt;i++){
-						ret = mlogdumywrite(logtime);
-						if (ret == 0)
-							break;
-						logtime += 1;
-						WDT_Clear();
-					}
-					putst("##### write end #####");
-					break;
-				case '3':
-					while(1) {
-						ret = mlogdumywrite(logtime);
-						if (ret == 0)
-							break;
-						logtime += 4;
-						WDT_Clear();
-					}
-					putst("##### write end #####");
-					break;
-				}
-				break;
-			case 'N':
-				MLOG_getNumberofLog();
-				putst("\r\nnum:");putdecw(_MLOG_NumberofLog);putcrlf();
-				putst("headtime:");puthxw(_MLOG_headTime);putcrlf();
-				RTC_convertToDateTime(_MLOG_headTime,&dt);
-				sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
-				putst(s);putcrlf();
-				putst("tailtime:");puthxw(_MLOG_tailTime);putcrlf();
-				RTC_convertToDateTime(_MLOG_tailTime,&dt);
-				sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
-				putst(s);putcrlf();
-				break;
-			case 0x03:												/* CTRL+C */
+			case 0x03:												/* CTRL+C リセット*/
 				if( CheckPasswd() ){
 					__NVIC_SystemReset();
 				}
 				break;
-			case 0x01:												/* CTRL+A */
+			case 0x01:												/* CTRL+A  強制Halt*/
 				if( CheckPasswd() ){
 					WPFM_halt("TEST");
 				}
 				break;
-			case 'Q':												/* 強制STBY */
-				if( CheckPasswd() ){
-					DLC_MatState = MATC_STATE_SLP;
-	           		 WPFM_sleep();     							  // MCUをスタンバイモードにする
-	           	}
-				break;
-			case 'S':												/* Flash Powerdown */
-				if( !CheckPasswd() )
-					break;
-				W25Q128JV_powerDown();
-				break;
-			case 'H':
+			case 'Q':												/* mlogメニュー */
 				if( CheckPasswd() )
-					_RTC_handlerBClr();
+					DLCMatMlogMenu();
 				break;
-			case 'J':
+			case 'J':												/* Config送信有無 */
+				putst("Post Config\r\n");
 				if( CheckPasswd() )
 					WPFM_doConfigPost = true;
 				break;
-			case 'W':
+			case 'W':												/* RTCタイマー一覧 */
 				if( CheckPasswd() )
 					DLCMATrtcDisp();
+				break;
+			case 'A':												/* DummyLog 3万write */
+				putst("EventLog 30000 DmyWrite\r\n");
+				if( CheckPasswd() ){
+					for(int i=0;i<30000;i++)
+						DLCEventLogWrite( _ID1_FACTORY_TEST,0,0 );
+				}
 				break;
 			default:
 				break;
