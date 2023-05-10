@@ -35,8 +35,8 @@ extern "C" {
 */
   // (1) Mlog region (12MB)
 #define MLOG_ADDRESS_MLOG_TOP           0x000000    // Mlog region top
-#define MLOG_ADDRESS_MLOG_LAST        0xAFFFFF    // Mlog region last
-//#define MLOG_ADDRESS_MLOG_LAST          0x001FFF    // Mlog region last for test
+#define MLOG_ADDRESS_MLOG_LAST          0xAFFFFF    // Mlog region last
+//#define MLOG_ADDRESS_MLOG_LAST          0x01FFFF    // Mlog region last for test
   // (2) Reserved region (4MB)
 #define MLOG_ADDRESS_RESERVED_TOP       0xC00000    // Reserved region top
 #define MLOG_ADDRESS_RESERVED_LAST      0xFFFFFF    // Reserved region last
@@ -134,13 +134,15 @@ extern int MLOG_putLogOnSRAM(MLOG_T *log_p);    // put log in fifo buffer(on SRA
   // Debug function
 extern void MLOG_dump(void);                    // Dump all logs in Mlog region to debug uart port
 extern void MLOG_dump_USB(const char *param, char *resp);	// Dump all logs in Mlog region to debug USB port
-
+void MLOG_addressDisp();
 /*
 *   Variables
 */
 extern uint32_t	_MLOG_NumberofLog;
 extern uint32_t	_MLOG_headTime;
+extern uint32_t	_MLOG_headAddress;
 extern uint32_t	_MLOG_tailTime;
+extern uint32_t	_MLOG_tailAddress;
 
 #ifdef	__cplusplus
 }

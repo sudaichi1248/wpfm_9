@@ -47,8 +47,8 @@
 /*
 *   Local(static) variables and functions
 */
-static uint32_t     _MLOG_headAddress    = 0;           // address of head log (point next address)
-static uint32_t     _MLOG_tailAddress    = 0;           // address of tail log for upload
+ uint32_t     _MLOG_headAddress    = 0;           // address of head log (point next address)
+ uint32_t     _MLOG_tailAddress    = 0;           // address of tail log for upload
 static uint32_t     _MLOG_tailAddressBuckUp    = 0;
 static uint32_t     _MLOG_oldestAddress  = 0;           // oldest log address in chip
 static uint32_t     _MLOG_latestAddress  = 0;           // latest log address in chip
@@ -233,6 +233,13 @@ void MLOG_tailAddressBuckUp()
 void MLOG_tailAddressRestore()
 {
 	_MLOG_tailAddress = _MLOG_tailAddressBuckUp;
+	puthxw(_MLOG_tailAddress);putcrlf();
+}
+void MLOG_addressDisp()
+{
+	putst("\r\nMLOG_tailAddress:");puthxw(_MLOG_tailAddress);putcrlf();
+	putst("MLOG_headAddress:");puthxw(_MLOG_headAddress);putcrlf();
+	putst("MLOG_tailAddressBuckUp:");puthxw(_MLOG_tailAddressBuckUp);putcrlf();
 }
 
 int MLOG_updateLog()
@@ -389,7 +396,7 @@ int MLOG_checkLogs(bool oldestOnly)
     uint32_t latestSN = 0, oldestSN = MLOG_MAX_SEQUENTIAL_NUMBER, latestSN2 = 0;
     uint32_t latestAddr = 0, oldestAddr = 0, latestAddr2 = 0;
 
-    for (uint32_t blockNo = 0; blockNo < (MLOG_ADDRESS_MLOG_LAST >> 16) + 1; blockNo++)
+    for (uint32_t blockNo = 0; blockNo < (MLOG_ADDRESS_MLOG_LAST >> 16); blockNo++)
     {
         for (uint32_t sectorNo = 0; sectorNo < W25Q128JV_NUM_SECTOR; sectorNo++)
         {
@@ -426,17 +433,16 @@ int MLOG_checkLogs(bool oldestOnly)
                     return (MLOG_ERR_READ);
                 }
 #if 0	// ‹N“®Žž‚‘¬‰»
-                DEBUG_UART_printlnFormat("READ FLAG %06lX: %02Xh", addr + (W25Q128JV_PAGE_SIZE-1), flag);
+                DEBUG_UART_printlnFormat("READ FLAG %06lX: %02X", addr + (W25Q128JV_PAGE_SIZE-1), flag);
                 APP_delay(20);
 #endif
                 if (flag == 0x00)
                 {
                     // when this page was uploaded
-                    if (latestSN2 < sn)
-                    {
+                   latestAddr2 = addr+0x100;      /* 23.4.28 kasai */
+                   if (latestSN2 < sn){
                         latestSN2 = sn + MLOG_LOGS_PER_PAGE;
-                        latestAddr2 = addr;
-                    }
+                   }
                 }
             }
         }
@@ -456,7 +462,7 @@ int MLOG_checkLogs(bool oldestOnly)
     DEBUG_UART_printlnString("\n-- 1st --");
     DEBUG_UART_printlnFormat("oldestSN=%08lu,oldestAddr=%06Xh", oldestSN, (unsigned int)oldestAddr);
     DEBUG_UART_printlnFormat("latestSN=%08lu,latestAddr=%06Xh", latestSN, (unsigned int)latestAddr);
-    DEBUG_UART_printlnFormat("latestSN2=%08lu,latestAddr2=%06Xh", latestSN2, (unsigned int)latestAddr2);
+    DEBUG_UART_printlnFormat("latestS2=%08lu,latestAdd2=%06Xh", latestSN2,(unsigned int)latestAddr2);
     APP_delay(30);
 
     // latest
@@ -499,7 +505,7 @@ int MLOG_checkLogs(bool oldestOnly)
     DEBUG_UART_printlnString("\n-- 2nd --");
     DEBUG_UART_printlnFormat("oldestSN=%08lu,oldestAddr=%06Xh", oldestSN, (unsigned int)oldestAddr);
     DEBUG_UART_printlnFormat("latestSN=%08lu,latestAddr=%06Xh", latestSN, (unsigned int)latestAddr);
-    DEBUG_UART_printlnFormat("latestSN2=%08lu,latestAddr2=%06Xh", latestSN2, (unsigned int)latestAddr2);
+    DEBUG_UART_printlnFormat("latestS2=%08lu,latestAdd2=%06Xh", latestSN2, (unsigned int)latestAddr2);
     APP_delay(30);
 
     _MLOG_lastSequentialNumber = latestSN;
@@ -643,14 +649,14 @@ int MLOG_putLogOnSRAM(MLOG_T *log_p)
 
     return ((int)mlogID);       // return mlog ID when succeed
 }
-
+#if 0
 void MLOG_dump(void)
 {
     DEBUG_UART_printlnString("--->");
 
-    for (uint32_t blockNo = 0; blockNo < ((MLOG_ADDRESS_MLOG_LAST + 1) >> 16) + 1; blockNo++)
+    for (uint32_t blockNo = 0; blockNo < ((MLOG_ADDRESS_MLOG_LAST + 1) >> 16); blockNo++)
     {
-        for (uint32_t sectorNo = 0; sectorNo < ((MLOG_ADDRESS_MLOG_LAST + 1) >> 12); sectorNo++)
+		for (uint32_t sectorNo = 0; sectorNo < W25Q128JV_NUM_SECTOR; sectorNo++)
         {
             for (uint32_t pageNo = 0; pageNo < W25Q128JV_NUM_PAGE; pageNo++)
             {
@@ -684,7 +690,7 @@ void MLOG_dump(void)
 
     DEBUG_UART_printlnString("<---");
 }
-
+#endif
 void MLOG_dump_USB(const char *param, char *resp)
 {
 	if (WPFM_operationMode == WPFM_OPERATION_MODE_MEASUREMENT) {
@@ -695,9 +701,9 @@ void MLOG_dump_USB(const char *param, char *resp)
 		APP_printUSB("--->\r\n");
 		APP_delay(10);
 
-		for (uint32_t blockNo = 0; blockNo < ((MLOG_ADDRESS_MLOG_LAST + 1) >> 16) + 1; blockNo++)
+		for (uint32_t blockNo = 0; blockNo < ((MLOG_ADDRESS_MLOG_LAST + 1) >> 16); blockNo++)
 		{
-			for (uint32_t sectorNo = 0; sectorNo < ((MLOG_ADDRESS_MLOG_LAST + 1) >> 12); sectorNo++)
+			for (uint32_t sectorNo = 0; sectorNo < W25Q128JV_NUM_SECTOR; sectorNo++)
 			{
 				for (uint32_t pageNo = 0; pageNo < W25Q128JV_NUM_PAGE; pageNo++)
 				{
@@ -786,17 +792,20 @@ static void dumpLog(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p)
     APP_delay(10);
 #endif // DEBUG_UART
 }
+void DLCMatClockGet(uint32_t,char*);
 
 static void dumpLog_USB(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p)
 {
 #ifdef DEBUG_UART
     char line[80];
-    snprintf(line, sizeof(line),
-            "%s%06X: %08u,%06u.%03u,%.3f/%.3f,%u/%u,%d,%02Xh,%02Xh\r\n",
+    char	s[32];
+	DLCMatClockGet(log_p->timestamp.second,s );
+   snprintf(line, sizeof(line),
+            "%s%06X: %08u,%s.%03u,%.3f/%.3f,%u/%u,%d,%02Xh,%02Xh\r\n",
             prefix,
             (unsigned int)mlogId,
-            (unsigned int)log_p->sequentialNumber,
-            (unsigned int)log_p->timestamp.second, (unsigned int)log_p->timestamp.mSecond,
+            (unsigned int)log_p->sequentialNumber,s,
+            (unsigned int)log_p->timestamp.mSecond,
             log_p->measuredValues[0], log_p->measuredValues[1],
             (unsigned int)log_p->batteryVoltages[0], (unsigned int)log_p->batteryVoltages[1],
             (int)log_p->temperatureOnBoard,
@@ -875,7 +884,7 @@ static int _MLOG_getLogOnSRAM(MLOG_T *log_p)
 int MLOG_putLogtest(MLOG_T *log_p, bool specifySN)
 {
     bool Flg=false;
-    DEBUG_UART_printlnFormat("_MLOG_headAddress=%06x,%d", (unsigned int)_MLOG_headAddress, specifySN); APP_delay(2);
+//    DEBUG_UART_printlnFormat("_MLOG_headAddress=%06x,%d", (unsigned int)_MLOG_headAddress, specifySN); APP_delay(2);
     if ((_MLOG_headAddress & 0xfff) == 0)
     {
         // if page number and offset are zero - first log in current sector
@@ -900,13 +909,13 @@ int MLOG_putLogtest(MLOG_T *log_p, bool specifySN)
         }
         log_p->sequentialNumber = _MLOG_lastSequentialNumber;
     }
-    DEBUG_UART_printlnFormat("programPage(%04Xh,%02Xh):", (unsigned int)pageNo, (unsigned int)offset);
+//    DEBUG_UART_printlnFormat("programPage(%04Xh,%02Xh):", (unsigned int)pageNo, (unsigned int)offset);
     if (W25Q128JV_programPage(pageNo, offset, (uint8_t *)log_p, MLOG_RECORD_SIZE, true) != W25Q128JV_ERR_NONE)
     {
         return (MLOG_ERR_PROGRAM_PAGE);
     }
-    MLOG_ID_T mlogID = (pageNo << 8) + offset;
-    dumpLog(">", mlogID, log_p);
+//    MLOG_ID_T mlogID = (pageNo << 8) + offset;
+//    dumpLog(">", mlogID, log_p);
 
     // update _MLOG_headAddress for next use
     if (offset < MLOG_RECORD_SIZE * (MLOG_LOGS_PER_PAGE - 1))
