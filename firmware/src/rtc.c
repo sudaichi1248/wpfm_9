@@ -19,7 +19,7 @@
 #include "rtc.h"
 #include "moni.h"
 void SlideSwProc();
-void DLCMATrtctimer();
+void DLCMatRtcProc();
 /*
  *  Register number
  */
@@ -456,7 +456,7 @@ static void _RTC_handlerB(uintptr_t ptr)
 {
     uint8_t value = 0;
 	SlideSwProc();
-	DLCMATrtctimer();
+	DLCMatRtcProc();
 	RTCReadRetry = RTCWriteRetry = 0;
 RepeatR:
     if (_RTC_readRegister(RTC_REGISTER_CONTROL2, &value) == RTC_ERR_NONE){
