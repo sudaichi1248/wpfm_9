@@ -44,12 +44,13 @@ void DLCEventLogInit()
 	W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
 	DLC_EventIdx = 0;
 	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
+		WDT_Clear();
 		if( readAddress > EVENT_LOG_AREA_ADDRESS_END )
 			break;
 		if( readAddress < EVENT_LOG_AREA_ADDRESS_START )
 			break;
 		if( log.second & 0x80000000 )
-			return;
+			goto FinFin;
 		DLC_EventIdx++;
 		sec = log.second;
 		readAddress += EVENT_LOG_AREA_WRITE_SZ;
@@ -60,6 +61,7 @@ void DLCEventLogInit()
 	W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
 	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
 //		puthxw( log.second );putcrlf();
+		WDT_Clear();
 		if( log.second < 100 ){
 			readAddress += EVENT_LOG_AREA_WRITE_SZ;
 			W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
@@ -67,8 +69,8 @@ void DLCEventLogInit()
 		}
 		if( sec > log.second ){
 			W25Q128JV_eraseSctor(readAddress/EVENT_LOG_AREA_ERASE_SZ, true);
-			//puthxw( readAddress );putst("deleted!\r\n");
-			return;
+			puthxw( readAddress );putst("deleted!\r\n");
+			goto FinFin;
 		}
 		DLC_EventIdx++;
 		sec = log.second;
@@ -92,7 +94,7 @@ void DLCEventLogInit()
 		if( (uint)log < EVENT_LOG_AREA_ADDRESS_START )
 			break;
 		if( log->second & 0x80000000 )
-			return;
+			goto FinFin;
 		DLC_EventIdx++;
 		sec = log->second;
 	}
@@ -106,12 +108,14 @@ void DLCEventLogInit()
 			block = (uint)log & EVENT_LOG_AREA_BLOCK_MSK;
 			NVMCTRL_RowErase( block );
 			//puthxw( block );putst("deleted!\r\n");
-			return;
+			goto FinFin;
 		}
 		DLC_EventIdx++;
 		sec = log->second;
 	}
 #endif
+FinFin:
+	putst("EventLog:" );putdecw( i );putst(" Recodes!\r\n");
 }
 /*****
 * TITLE		：DLC イベントログの保存
@@ -300,10 +304,12 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 		sprintf( tmp,"%08X ",log->ID1 );
 		break;
 	}
-	sprintf( tmp,"%08X ",log->ID2 );
-	strcat( str, tmp );
-	sprintf( tmp,"%08X ",log->ID3 );
-	strcat( str, tmp );
+	if( log->ID2 | log->ID3 ){
+		sprintf( tmp,"%08X ",log->ID2 );
+		strcat( str, tmp );
+		sprintf( tmp,"%08X ",log->ID3 );
+		strcat( str, tmp );
+	}
 	strcat( str, "\r\n" );
 	if( forword )
 		APP_printUSB( str );
