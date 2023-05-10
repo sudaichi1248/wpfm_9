@@ -69,6 +69,7 @@ bool	DLC_MatFotaAlloverTO=false;	// fota  オールオーバータイマT/Oフラグ
 int		DLC_MatFotaTOcnt=0;	// fota  タイムアウトカウンタ
 int		DLC_MatFotaExe=0;	// fota  実行フラグ
 uchar	DLC_NeedTimeAdjust;					/*  1hに1度は時刻補正する */
+uchar	DLC_MatErr;							/* MATcore連続エラーカウンタ */
 // 測定logリングバッファ試験用
 int mlogdumywrite(uint32_t logtime);
 uint32_t logtime;
@@ -475,6 +476,7 @@ extern	uint32_t	BatteryValueSum1,BatteryValueSum2;
 
 void MTconn()
 {
+	DLC_MatErr = 0;
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT?\r" );
 	DLCMatTimerset( 0,TIMER_120s );
@@ -716,6 +718,29 @@ void MTcls0()
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatSend( "AT$DISCONNECT\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
+}
+void MTcls1()
+{
+	DLC_MatLineIdx = 0;
+	if (WPFM_ForcedCall == true) {	// 強制発報
+		UTIL_startBlinkLED1(5);	// LED1 5回点滅
+		DLCMatRtcTimerset(1, 6);
+	}
+	if( DLC_MatState == MATC_STATE_RPT ){	// Report送信で
+		if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
+			MLOG_tailAddressRestore();	// tailAddress戻す
+			MATReportLmtUpDw(0);								/* Report Limit 下げる */
+		}
+	}
+	if( DLC_MatErr++ >= 3 ){
+		DLCMatReset();
+		return;
+	}
+	DLCEventLogWrite( _ID1_ERROR,0x300,1 );
+	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
+	DLCMatSend( "AT$DISCONNECT\r" );
+	DLCMatTimerset( 0,TIMER_3000ms );
+	DLC_MatState = MATC_STATE_DISC;
 }
 void MTcls3()
 {
@@ -972,7 +997,7 @@ void	 (*MTjmp[18][19])() = {
 /*					  0         1       2      3       4       5       6       7       8       9       10      11      12      13      14      15      16      17   18     */
 /*				  	 INIT    IDLE    IMEI    APN     SVR     CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR   */
 /* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy  },
-/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, MTdisc, ______ },
+/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, MTcls1, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, MTdisc, ______ },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, MTrprt, ______, ______, ______, ______, ______, ______, ______ },
 /* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______ },
@@ -1444,6 +1469,14 @@ void DLCMatReportDisp()
 	}
 	putst( http_tmp );putcrlf();
 }
+int DLCMatValChk( char c )
+{
+	if( c == '-' )
+		return 0;
+	if(( '0' > c )||( c > '9' ))
+		return 1;
+	return 0;
+}
 /* 
 	ListのDLC_REPORT_SND_LMTまで分割して送る
 */
@@ -1469,19 +1502,19 @@ void DLCMatReportSnd()
 			DLC_MatReportFin = 1;
 		sprintf( tmp,"{\"Time\":\"%s\","		,s );									strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch1\":%.3f,"	,log_p.measuredValues[0] );
-		if(( '0' > tmp[12] )||( tmp[12] > '9' )){
-			sprintf( tmp,"\"Value_ch1\":%.3f,"	,old1 );
+		if( DLCMatValChk( tmp[12] )){
 			DLCEventLogWrite( _ID1_ERROR,0x11,(tmp[12]<<24)|(tmp[13]<<16)|(tmp[14]<<8)|tmp[15] );
-			putst("Strange1=");puthxw(log_p.measuredValues[0] );putcrlf();
+			putst("Strange1=");Dump( &tmp[12],8 );
+			sprintf( tmp,"\"Value_ch1\":%.3f,"	,old1 );
 		}
 		else
 			old1 = log_p.measuredValues[0];
 		strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch2\":%.3f,"	,log_p.measuredValues[1] );
-		if(( '0' > tmp[12] )||( tmp[12] > '9' )){
+		if( DLCMatValChk( tmp[12] )){
 			DLCEventLogWrite( _ID1_ERROR,0x12,(tmp[12]<<24)|(tmp[13]<<16)|(tmp[14]<<8)|tmp[15] );
+			putst("Strange1=");Dump( &tmp[12],8 );
 			sprintf( tmp,"\"Value_ch2\":%.3f,"	,old2 );
-			putst("Strange2=");puthxw(log_p.measuredValues[1] );putcrlf();
 		}
 		else
 			old2 = log_p.measuredValues[1];
@@ -1533,12 +1566,12 @@ int DLCMatPostReport()
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
 		sprintf( tmp,"%.3f"	,log_p.measuredValues[0] );												/* #.### 以外のレングス増え分を求める */
-		if(( '0' > tmp[0] )||( tmp[0] > '9' ))
+		if( DLCMatValChk( tmp[0] ))
 			;
 		else
 			DLC_MatExtbyte += (strlen( tmp )-5);
 		sprintf( tmp,"%.3f"	,log_p.measuredValues[1] );
-		if(( '0' > tmp[0] )||( tmp[0] > '9' ))
+		if( DLCMatValChk( tmp[0] ))
 			;
 		else
 			DLC_MatExtbyte += (strlen( tmp )-5);
@@ -2564,7 +2597,7 @@ void DLCMatTest()
 			break;
 		case 0x03:
 			DLCMatReset();
-			break;
+			return;
 		case 0x1b:
 			return;
 		}
