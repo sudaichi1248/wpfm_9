@@ -120,6 +120,7 @@ void WPFM_initializeApplication(void)
             putst("UNKNOWN ");
             break;
     }
+    putcrlf();
     SYSTICK_DelayMs(10);
 
     // Load setting parameter from internal-flash
