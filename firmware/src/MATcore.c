@@ -146,7 +146,7 @@ void IDLEputch( )
 #define		TIMER_12s		12000
 #define		TIMER_15s		15000
 #define		TIMER_20s		20000
-#define		TIMER_30s		30000
+#define		TIMER_HTTP		30000
 #define		TIMER_90s		90000
 #define		TIMER_120s		120000
 #define		TIMER_300s		300000
@@ -682,7 +682,7 @@ void MTrpOk()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatReportSnd();
-	DLCMatTimerset( 0,TIMER_30s );										// 23.4.21 15->30へ 3000件でTOしてしまうから
+	DLCMatTimerset( 0,TIMER_HTTP );										// 23.4.21 15->30へ 3000件でTOしてしまうから
 	DLC_MatState = MATC_STATE_RPT;
 }
 void MTdisc()
@@ -1547,7 +1547,6 @@ void DLCMatPostReptInit()
 	DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
 	MLOG_tailAddressBuckUp();
 	DLC_MatExtbyte = 0;
-	DLCMatRptLimit();
 }
 int DLCMatPostReport()
 {
@@ -2282,6 +2281,8 @@ putst("@@@@@ wktk1\r\n");
 						MATReportLmtUpDw(1);								/* Report Limit数Up */
 					}
 				}
+				else
+					MATReportLmtUpDw(0);									/* Report Limit数Dw(その他のエラー 504 Gatewa TOなど) */
 			}
 			if( j == 0 ){
 				DLC_MatResBuf[DLC_MatResIdx] = 0;

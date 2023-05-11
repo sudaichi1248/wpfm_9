@@ -23,6 +23,7 @@
 #define		FIRM_SUM_ADDRESS		0x3DFFC
 #define		FIRM_SUM_SECTOR			0x3DF00
 DLC_Parameter 	DLC_Para;
+void	DLCMatRptLimit();
 void DLCParaRead()
 {
 	NVMCTRL_Read( (uint32_t *)&DLC_Para,sizeof( DLC_Para ),DLC_PARAMETER_ADDRESS );
@@ -179,6 +180,7 @@ void DLCMatReportLmt(const char *p, char *resp)
 	DLC_Para.Http_Report_max = ((p[0]-'0')*10000)+((p[1]-'0')*1000)+((p[2]-'0')*100)+((p[3]-'0')*10)+p[4]-'0';
 	putst("ReportLmt=");putdech( DLC_Para.Http_Report_max );putcrlf();
 	DLCParaSave();
+	DLCMatRptLimit();
 	DLCMatParaRes( resp );
 }
 void DLCMatReportFlg(const char *param, char *resp)
