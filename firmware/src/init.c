@@ -475,8 +475,6 @@ void WPFM_halt(const char *lastMessage)
 	DLCEventLogWrite( _ID1_SYS_ERROR,0x55,0 );
     DEBUG_UART_printlnFormat("WPFM_halt(%s).", lastMessage);
     DEBUG_UART_FLUSH();
-	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );		/* OFF */
-
     // Disable all wake-up interrupts
     RTC_setTimeUpdateInterrupt(RTC_TIMEUPDATE_SECOND, NULL);
     RTC_setAlarm((WPFM_communicationInterval / 60), NULL);
