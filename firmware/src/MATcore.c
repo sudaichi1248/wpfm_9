@@ -20,6 +20,7 @@
 #include "Eventlog.h"
 #include "version.h"
 #include "FOTAcmd.h"
+#include "util.h"
 char *VerPrint();
 void DLCMatTimerInt();
 void DLCMatState();
@@ -39,7 +40,7 @@ void DLCMatConfigDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatReportSnd(),DLCMatPostReptInit();
 int	DLCMatPostReport();
 void MATReportLmtUpDw( int );
-void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatReset();
+void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatStart(),DLCMatReset();
 void DLCMatServerChange();
 extern	char _Main_version[];
 int DLCMatRecvDisp();
@@ -141,6 +142,7 @@ void IDLEputch( )
 #define		TIMER_1000ms	1000
 #define		TIMER_3000ms	3000
 #define		TIMER_5000ms	5000
+#define		TIMER_6000ms	6000
 #define		TIMER_7000ms	7000
 #define		TIMER_10s		10000
 #define		TIMER_12s		12000
@@ -160,7 +162,8 @@ struct {
 #endif
 #define		RTC_TIMER_NUM		5	// 0:alertTimeout,1:LED1 6s Timer,2:24h Config send
 #define		RTCTIMER_1h			3600
-
+#define		DLCMatGoSleep()		PORT_GroupWrite(PORT_GROUP_1,0x1<<10,0)
+#define		DLCMatGoWake()		PORT_GroupWrite(PORT_GROUP_1,0x1<<10,-1)
 struct {
 	int		cnt;
 	uchar	TO;						/* 0:not use 1;counting 2:TO */
@@ -258,14 +261,14 @@ void DLCMATrtcDisp()
 int DLCMatWake()
 {
 	int		i;
-	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
+	DLCMatGoWake();						/* Wake! */
 	for(i=0;i<WAKE_CHECK_RETRY;i++){
 		DLC_delay(100);
 		if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11))
 			break;
-		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );
+		DLCMatGoSleep();
 		DLC_delay(1);
-		PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );
+		DLCMatGoWake();
 	}
 	if( i == WAKE_CHECK_RETRY ){
 		DLCMatError(0);
@@ -286,7 +289,7 @@ void DLCMatInit()
 	if (WPFM_isVbatDrive == true) {	// VBAT駆動?
 		return;
 	}
-	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
+	DLCMatGoWake();						/* Wake! */
 }
 void DLCMatLog(int len)
 {
@@ -399,7 +402,7 @@ void ______(){	DLC_MatLineIdx = 0;};
 void MTRdy()
 {
 	DLC_MatLineIdx = 0;
-	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );					/* WAKE! */
+	DLCMatGoWake();					/* WAKE! */
 	DLCMatSend( "AT$VER\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
 	DLC_MatState = MATC_STATE_IDLE;
@@ -703,9 +706,9 @@ void MTdisc()
 		if (DLC_Para.FOTAact != 0) {									/* 運用時 */
 			if( DLC_MatState < MATC_STATE_RPT )
 				DLCEventLogWrite( _ID1_CONN_NG,0,DLC_MatState );
-			DLCMatTimerset( 0,TIMER_7000ms );
+			DLCMatTimerset( 0,TIMER_6000ms );
 			putst("Go Sleep\r\n");
-			PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );					/* Sleep! */
+			DLCMatGoSleep();											/* Sleep! */
 			DLC_MatState = MATC_STATE_DISC;
 		}
 		else
@@ -718,6 +721,9 @@ void MTcls0()
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatSend( "AT$DISCONNECT\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
+}
+void MTErr()
+{
 }
 void MTcls1()
 {
@@ -813,10 +819,6 @@ void MTslep()
 	DLCMatTimerClr( 0 );
 	DLCEventLogWrite( _ID1_SLEEP,0,0 );
 	DLC_MatState = MATC_STATE_SLP;
-}
-void MTslp1()
-{
-	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );						/* Wake! */
 }
 void MTwake()
 {
@@ -991,13 +993,21 @@ void MTledQ()
 	GPIOEXP_set(0);												/* LED全消灯 */
 	GPIOEXP_set(1);
 	GPIOEXP_set(2);
-	MTRdy();
+	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );					/* MATcoreOFF */
+	APP_delay(1000);
+	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,-1 );					/* MATcoreON */
+	DLCMatTimerset( 0,TIMER_15s );
+	DLC_MatState = MATC_STATE_INIT;
+}
+void MT____()
+{
+	DLC_MatLineIdx = 0;
 }
 void	 (*MTjmp[18][19])() = {
 /*					  0         1       2      3       4       5       6       7       8       9       10      11      12      13      14      15      16      17   18     */
 /*				  	 INIT    IDLE    IMEI    APN     SVR     CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR   */
 /* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy  },
-/* ERROR       1 */{ ______, MTVrT,  ______, ______, ______, MTcls1, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, ______, ______, ______, ______, MTdisc, ______ },
+/* ERROR       1 */{ ______, MTVrT,  MT____, MT____, MT____, MTcls1, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MT____, MT____, MT____, MT____, MTdisc ,MT____ },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, MTrprt, ______, ______, ______, ______, ______, ______, ______ },
 /* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______ },
@@ -1008,11 +1018,11 @@ void	 (*MTjmp[18][19])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, MTcls0, MTclsF, ______, ______, ______, ______ },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______ },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, MTdisc, ______ },
-/* TimOut1    12 */{ MTwVer, MTVrT,  MTVer,  MTRapn, MTdisc, MTdisc, MTdisc, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTdisc, MTledQ },
+/* TimOut1    12 */{ MTwVer, MTVrT,  MTVer,  MTRapn, MTdisc, MTdisc, MTdisc, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTErr , MTledQ },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, MTwake, ______ },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
-/* $SLEEP     16 */{ MTFwak, ______, ______, ______, ______, ______, ______, ______, MTslep, MTslep, MTslep, MTslep, MTslep, ______, ______, ______, ______, MTslep, ______ },
+/* $SLEEP     16 */{ MTFwak, ______, ______, ______, ______, ______, ______, ______, MTslep, MTslep, MTslep, MTslep, MTslep, ______, ______, ______, ______, MTslep, MTledQ },
 /* TimeOut2   17 */{ MTtim2, ______, ______, ______, ______, MTBatt, MTBatt, MTBatt, ______, ______, ______, MTBatt, MTBatt, ______, ______, ______, ______, ______, MTtim2 },
 							};
 void DLCMatState()
@@ -2592,9 +2602,9 @@ void DLCMatTest()
 			break;
 		case '!':
 			if( DLC_MatSleep ^= 1 )
-				PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );
+				DLCMatGoSleep();
 			else
-				PORT_GroupWrite( PORT_GROUP_1,0x1<<10,-1 );
+				DLCMatGoWake();
 			break;
 		case 0x03:
 			DLCMatReset();
@@ -2613,53 +2623,74 @@ void DLCMatMlogMenu()
 {
 	char    key;
 	RTC_DATETIME dt;
-	int ret=0;
+	int ret=0,num;
 	char s[32];
 	while(1){
 		putst("\r\nmlog>");
 		key = toupper( getch() );
 		switch( key ){
 		case 'A':															/* 通知済に変更 */
-			if( CheckPasswd() ){
-				if ( MLOG_updateLog() != MLOG_ERR_NONE) {	// 
-					putst("write error\r\n");
-				}
+			if ( MLOG_updateLog() != MLOG_ERR_NONE) {	// 
+				putst("write error\r\n");
 			}
 			break;
 		case 'B':
-			MLOG_tailAddressBuckUp();
 			DLCMatReportDisp();
 			break;
 		case 'C':
 			MLOG_addressDisp();
 			break;
 		case 'D':
-			logtime = RTC_now;
-			logtime &= ~0x03;
-			logtime -= (3000*4);
-			for(int i=0;i<3000;i++){
-				ret = mlogdumywrite(logtime);
-				if (ret == 0)
-					break;
-				logtime += 4;
-				WDT_Clear();
-			}
-			putst("##### write end #####");
+			MLOG_tailAddressRestore();
 			break;
 		case 'E':
-			logtime = RTC_now;
-			logtime &= ~0x03;
-			logtime -= (300000*4);
-			for(int i=0;i<300000;i++){
-				ret = mlogdumywrite(logtime);
-				if (ret == 0)
+			putst("0:input recode num 1:3000 2:30000\r\n");
+			switch( getch() ){
+			case '0':
+				putst("Hex=");
+				if( c_gethxw( &num ))
 					break;
-				logtime += 4;
-				WDT_Clear();
+				logtime = RTC_now;
+				logtime &= ~0x03;
+				logtime -= (num*4);
+				for(int i=0;i<num;i++){
+					ret = mlogdumywrite(logtime);
+					if (ret == 0)
+						break;
+					logtime += 4;
+					WDT_Clear();
+				}
+				putst("##### write end #####");
+				break;
+			case '1':
+				logtime = RTC_now;
+				logtime &= ~0x03;
+				logtime -= (3000*4);
+				for(int i=0;i<3000;i++){
+					ret = mlogdumywrite(logtime);
+					if (ret == 0)
+						break;
+					logtime += 4;
+					WDT_Clear();
+				}
+				putst("##### write end #####");
+				break;
+			case '2':
+				logtime = RTC_now;
+				logtime &= ~0x03;
+				logtime -= (300000*4);
+				for(int i=0;i<300000;i++){
+					ret = mlogdumywrite(logtime);
+					if (ret == 0)
+						break;
+					logtime += 4;
+					WDT_Clear();
+				}
+				putst("##### write end #####");
+				break;
 			}
-			putst("##### write end #####");
 			break;
-		case 'F':
+		case 'G':
 			MLOG_getNumberofLog();
 			putst("\r\nnum:");putdecw(_MLOG_NumberofLog);putcrlf();
 			putst("head addr:");puthxw(_MLOG_headAddress);putcrlf();
@@ -2685,7 +2716,7 @@ void DLCMatMain()
 	if( DLC_BigState == 0 ){
 		putcrlf();putst( VerPrint() );
 		putcrlf();DLCMatClockDisplay(s);putst( s );putch('.');putdecs(SYS_mSec);putst( " MATcore Task Started.\r\n" );
-		DLCMatReset();
+		DLCMatStart();
 		DLCMatInit();
 #ifdef VER_DELTA_5
 		DLCMatRtcTimerset(2, RTCTIMER_24hs);	// 24h Config send
@@ -2950,15 +2981,17 @@ void DLCMatError( int no )
 {
 	putst("MATcore No Response!\r\n");
 	DLCEventLogWrite( _ID1_ERROR,0xffffffff,no );
-	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
+	DLCMatGoSleep();											/* Sleep! */
 	DLC_MatState = MATC_STATE_ERR;
 }
 void DLCMatErrorSleep()
 {
 	putst("MATcore Sleep(BatteryError)\r\n");
 	DLCMatTimerClr( 0 );
-	PORT_GroupWrite( PORT_GROUP_1,0x1<<10,0 );						/* Sleep! */
-	DLC_MatState = MATC_STATE_SLP;
+	DLCMatGoSleep();
+	UTIL_delayMicros(1000*6000);								/* 6s */
+	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );					/* OFF */
+	DLC_MatState = MATC_STATE_ERR;
 }
 /*
 	ログを出し切るdelay
@@ -2972,21 +3005,30 @@ void DLC_delay( int msec )
 	}
 }
 /*
-	MATcoreのRESET
+	MATcoreのStart
 */
-void DLCMatReset( )
+void DLCMatStart( )
 {
-	putst("MATcore RST!\r\n");
-	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );		/* OFF */
+	putst("MATcore Start!\r\n");
 	if (WPFM_isVbatDrive == true) {	// VBAT駆動?
 		putst( "VBAT drive.\r\nMATcore not POW ON.\r\n" );
 		DLCEventLogWrite( _ID1_VBAT_DRIVE,0,0 );
 		return;
 	}
-	APP_delay(1000);
 	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,-1 );		/* ON */
 	DLCMatTimerset( 0,TIMER_15s );
 	DLC_MatState = MATC_STATE_INIT;
+}
+/*
+	MATcoreのRESET
+*/
+void DLCMatReset( )
+{
+	putst("MATcore RST!\r\n");
+	DLCMatTimerset( 0,TIMER_6000ms );
+	putst("Go Sleep\r\n");
+	DLCMatGoSleep();											/* Sleep! */
+	DLC_MatState = MATC_STATE_ERR;
 }
 /*
 	ROM設定のクリアT
