@@ -38,7 +38,7 @@
 #include "battery.h"
 #include "rtc.h"
 #include "smpif.h"
-
+#include "gpioexp.h"
 /* temporary */
 #include "w25q128jv.h"
 #include "s5851a.h"
@@ -46,8 +46,9 @@
 #include "Moni.h"
 #include "DLCpara.h"
 #include "Eventlog.h"
-void	DLCMatMain();
-int		DLCMatIsSleep();
+void	DLCMatMain(),DLCMatHalt();
+int		DLCMatIsSleep(),DLCMatOffChk();
+
 extern int		RTCReadRetry;
 extern int		RTCWriteRetry;
 
@@ -62,9 +63,30 @@ static void eventLoopOnNonMeasurementMode(void);
 // Section: Main Entry Point
 // *****************************************************************************
 // *****************************************************************************
+/*
+	PA07と15が同時Lo(スライドSWが真ん中)or同時Hi チェック
+		then return 1;
+		elese return 0;
+*/
+int	DLCSlideSw()
+{
+	uint32_t	sw;
+	sw = PORT_GroupRead( PORT_GROUP_0 );
+	sw &= 0x8080;
+	if( sw == 0 )
+//	if(( sw == 0 )||( sw = 0x8080 ))				/* PA07と15が同時Lo(スライドSWが真ん中or同時Hi ) */
+		return	1;
+	return 0;
+}
 void DLC_Halt()
 {
-	nV1GD_Clear();	// PA06 Low
+	DLCEventLogWrite( _ID1_POWER_OFF,0,1 );
+	PORT_GroupWrite( PORT_GROUP_0,0x1<<6,0 );		/* DCDC Lo */
+	if( DLCSlideSw() == 0 ){						/* Swが変わった */
+		DLCEventLogWrite( _ID1_POWER_OFF,0,2 );
+		WPFM_reboot();								// 変更されていた時は、リブートして新しい動作モードで処理を開始する
+	}
+	WDT_Disable();
 	WPFM_sleep();
 	__NVIC_SystemReset();
 }
@@ -75,10 +97,11 @@ int main(void)
     /* Initialize all modules */
     SYS_Initialize(NULL);
 	DLCParaRead();
-    /*** FOR DEBUG ***/
+   /*** FOR DEBUG ***/
     if (TEST_SW_Get() == 0){
-		UTIL_delayMicros(10000);
+		UTIL_delayMicros(10000);					/* 10ms Wait */
 		if (TEST_SW_Get() == 0){
+#if 0
       		DEBUG_UART_printlnString("## ERASE CHIP ##");
 	        DEBUG_UART_printlnString("## DO NOT POWER OFF ##");
 	        UTIL_startBlinkLED1(0);
@@ -95,32 +118,19 @@ int main(void)
 	            DEBUG_UART_printlnFormat("ERASE CHIP ERROR: %d", stat);
 	        }
 	        UTIL_stopBlinkLED1();
-	//DLCsumBreakAndReset(); 
 			DLCEventLogWrite( _ID1_INIT_ALL,0,0 );
+#else
+			DLCsumBreakAndReset(); 
+#endif
 	    }
 	}
-#ifdef BOARD_PROTOTYPE2
-ResetReset:
 	WDT_SetClkCycle(8);	// WDT設定
 	WDT_Enable();
-	if(( PORT_GroupRead( PORT_GROUP_0 ) & 0x8080) == 0 ){						/* PA07と15が同時Lo(スライドSWが真ん中 ) */
-		WDT_Disable();
-        DEBUG_UART_printlnString("## PA07andPA15=Lo HALT ##");
-		nV1GD_Clear();	// PA06 Low
-		UTIL_delayMicros(1000*100);
-		WPFM_sleep();
-		goto ResetReset;
-	}
-#else
-	WDT_SetClkCycle(8);	// WDT設定
-	WDT_Enable();
-#endif
    /* Get current operation mode */
     WPFM_operationMode = UTIL_getPowerModeSW();
 
     /* Initialize for application */
     WPFM_initializeApplication();
-	nV1GD_Set();
 
     //DEBUG_UART_printlnFormat("WPFM_SETTING_PARAMETER size = %u", (unsigned int)sizeof(WPFM_SETTING_PARAMETER));
     //DEBUG_UART_printlnFormat("MLOG_T size = %u", (unsigned int)sizeof(MLOG_T));
@@ -209,19 +219,19 @@ ResetReset:
 */
 void SlideSwProc()
 {
+	if( DLCMatOffChk() )															/* OFF以降待ち */
+		return;
 #ifdef BOARD_PROTOTYPE2
 	if (WPFM_isVbatDrive != true) {	// VBAT駆動以外?
-		if(( PORT_GroupRead( PORT_GROUP_0 ) & 0x8080) == 0 ){						/* PA07と15が同時Lo(スライドSWが真ん中 ) */
-			SERCOM0_USART_Write((unsigned char*)"GoHalt1!\r\n",9);
-           DEBUG_HALT();
-		}
-		if(( PORT_GroupRead( PORT_GROUP_0 ) & 0x8080) == 0x8080 ){					/* PA07と15が同時Hi */
-			SERCOM0_USART_Write((unsigned char*)"GoHalt2!\r\n",9);
-           DEBUG_HALT();
+		if( DLCSlideSw() ){														/* PA07と15が同時Lo(スライドSWが真ん中 ) */
+			SERCOM0_USART_Write((unsigned char*)"GoHalt!\r\n",9);
+			DLCMatHalt();															/* 停止へ　*/
+			return;
 		}
 	}
 #endif
 	if (UTIL_getPowerModeSW() != WPFM_operationMode){								// スライドスイッチの設定が変更されたか否かをチェックする
+		DLCEventLogWrite( _ID1_POWER_OFF,0,2 );
 		WPFM_reboot();																// 変更されていた時は、リブートして新しい動作モードで処理を開始する
 	}
 }

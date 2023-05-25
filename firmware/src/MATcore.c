@@ -41,7 +41,7 @@ void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatReportSnd(),DLCMatPostReptInit(
 int	DLCMatPostReport();
 void MATReportLmtUpDw( int );
 void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatStart(),DLCMatReset();
-void DLCMatServerChange();
+void DLCMatServerChange(),DLC_Halt();
 extern	char _Main_version[];
 int DLCMatRecvDisp();
 char 	zLogOn=1;
@@ -142,7 +142,7 @@ void IDLEputch( )
 #define		TIMER_1000ms	1000
 #define		TIMER_3000ms	3000
 #define		TIMER_5000ms	5000
-#define		TIMER_6000ms	6000
+#define		TIMER_SYSFIN	5500
 #define		TIMER_7000ms	7000
 #define		TIMER_10s		10000
 #define		TIMER_12s		12000
@@ -394,9 +394,12 @@ int	DLCMatCharInt( char *p,char *title )
 #define		MATC_STATE_FTP  16
 #define		MATC_STATE_DISC	17
 #define		MATC_STATE_ERR 	18
+#define		MATC_STATE_OFF 	19
+
 #define		MSGID_TIMER		1
 #define		MSGID_WAKEUP	2
 #define		MSGID_DELAY		3
+#define		MSGID_SYSFIN	4
 
 void ______(){	DLC_MatLineIdx = 0;};
 void MTRdy()
@@ -704,9 +707,9 @@ void MTdisc()
 	}
 	else {
 		if (DLC_Para.FOTAact != 0) {									/* 運用時 */
-			if( DLC_MatState < MATC_STATE_RPT )
+			if(( DLC_MatState < MATC_STATE_RPT )&&( DLC_MatState != MATC_STATE_SVR ))
 				DLCEventLogWrite( _ID1_CONN_NG,0,DLC_MatState );
-			DLCMatTimerset( 0,TIMER_6000ms );
+			DLCMatTimerset( 0,TIMER_SYSFIN );
 			putst("Go Sleep\r\n");
 			DLCMatGoSleep();											/* Sleep! */
 			DLC_MatState = MATC_STATE_DISC;
@@ -1003,27 +1006,51 @@ void MT____()
 {
 	DLC_MatLineIdx = 0;
 }
-void	 (*MTjmp[18][19])() = {
-/*					  0         1       2      3       4       5       6       7       8       9       10      11      12      13      14      15      16      17   18     */
-/*				  	 INIT    IDLE    IMEI    APN     SVR     CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR   */
-/* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy  },
-/* ERROR       1 */{ ______, MTVrT,  MT____, MT____, MT____, MTcls1, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MT____, MT____, MT____, MT____, MTdisc ,MT____ },
-/* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
-/* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, MTrprt, ______, ______, ______, ______, ______, ______, ______ },
-/* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______ },
-/* $CONNECT:1  5 */{ ______, ______, ______, ______, ______, ______, MTtime, ______, ______, ______, ______, ______, ______, ______, MTopnF, ______, ______, ______, ______ },
-/* $TIME       6 */{ ______, ______, ______, ______, ______, ______, MTrsrp, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
-/* $RSRP       7 */{ ______, ______, ______, ______, ______, ______, MTOpen, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
-/* $OPEN/$WAKE 8 */{ MTRdy,  ______, ______, ______, ______, ______, ______, MTcnfg, ______, MTstst, ______, MTrprt, ______, MTconW, MTwget, ______, ______, ______, ______ },
-/* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, MTcls0, MTclsF, ______, ______, ______, ______ },
-/* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______ },
-/* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, MTdisc, ______ },
-/* TimOut1    12 */{ MTwVer, MTVrT,  MTVer,  MTRapn, MTdisc, MTdisc, MTdisc, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTErr , MTledQ },
-/* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, MTwake, ______ },
-/* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
-/* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______ },
-/* $SLEEP     16 */{ MTFwak, ______, ______, ______, ______, ______, ______, ______, MTslep, MTslep, MTslep, MTslep, MTslep, ______, ______, ______, ______, MTslep, MTledQ },
-/* TimeOut2   17 */{ MTtim2, ______, ______, ______, ______, MTBatt, MTBatt, MTBatt, ______, ______, ______, MTBatt, MTBatt, ______, ______, ______, ______, ______, MTtim2 },
+void MTstop()
+{
+	DLC_MatState = MATC_STATE_OFF;
+	if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11)){
+		DLCMatTimerset( 0,TIMER_SYSFIN );
+		DLCMatGoSleep();
+		DLCEventLogWrite( _ID1_ERROR,0x400,0 );
+		putst("MATcore GoSleep\r\n");
+	}
+	else {
+		DLC_Halt();
+	}
+}
+void MTOff1()
+{
+	DLCEventLogWrite( _ID1_POWER_OFF,1,0 );
+	DLC_Halt();
+}
+void MTOff2()
+{
+	DLCMatTimerClr( 0 );
+	DLCEventLogWrite( _ID1_POWER_OFF,2,0 );
+	DLC_Halt();
+}
+void	 (*MTjmp[18][20])() = {
+/*					  0         1       2      3       4       5       6       7       8       9       10      11      12      13      14      15      16      17   18     19     **/
+/*				  	 INIT    IDLE    IMEI    APN     SVR     CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR    OFF   **/
+/* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy, MT____  },
+/* ERROR       1 */{ ______, MTVrT,  MT____, MT____, MT____, MTcls1, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MT____, MT____, MT____, MT____, MTdisc ,MT____,MT____  },
+/* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
+/* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, MTrprt, ______, ______, ______, ______, ______, ______, ______,______  },
+/* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______,______  },
+/* $CONNECT:1  5 */{ ______, ______, ______, ______, ______, ______, MTtime, ______, ______, ______, ______, ______, ______, ______, MTopnF, ______, ______, ______, ______,______  },
+/* $TIME       6 */{ ______, ______, ______, ______, ______, ______, MTrsrp, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
+/* $RSRP       7 */{ ______, ______, ______, ______, ______, ______, MTOpen, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
+/* $OPEN/$WAKE 8 */{ MTRdy,  ______, ______, ______, ______, ______, ______, MTcnfg, ______, MTstst, ______, MTrprt, ______, MTconW, MTwget, ______, ______, ______, ______,______  },
+/* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, MTcls0, MTclsF, ______, ______, ______, ______,______  },
+/* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______,______  },
+/* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, MTdisc, ______,______  },
+/* TimOut1    12 */{ MTwVer, MTVrT,  MTVer,  MTRapn, MTdisc, MTdisc, MTdisc, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTErr , MTledQ,MTOff1  },
+/* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, MTwake, ______,______  },
+/* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
+/* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
+/* $SLEEP     16 */{ MTFwak, ______, ______, ______, ______, ______, ______, ______, MTslep, MTslep, MTslep, MTslep, MTslep, ______, ______, ______, ______, MTslep, MTledQ,MTOff2  },
+/* TimeOut2   17 */{ MTtim2, ______, ______, ______, ______, MTBatt, MTBatt, MTBatt, ______, ______, ______, MTBatt, MTBatt, ______, ______, ______, ______, ______, MTtim2,MTtim2  },
 							};
 void DLCMatState()
 {
@@ -1207,6 +1234,9 @@ void DLCMatState()
 			case MSGID_DELAY:
 				DLC_Matfact = MATC_FACT_NUM;
 				break;
+			case MSGID_SYSFIN:
+				MTstop();
+				return;
 			default:
 				return;
 			}
@@ -2790,7 +2820,7 @@ void DLCMatMain()
 //				PORT_GroupWrite( PORT_GROUP_1,0x1<<23,0 );
 //				break;
 			case 'Z':														/* Log全削除 */
-				if( CheckPasswd() )
+			if( CheckPasswd() )
 					DLCEventLogClr(0);
 				break;
 //			case 'W':
@@ -3010,6 +3040,7 @@ void DLC_delay( int msec )
 void DLCMatStart( )
 {
 	putst("MATcore Start!\r\n");
+	PORT_GroupWrite( PORT_GROUP_0,0x1<<6,-1 );		/* DCDC ON */
 	if (WPFM_isVbatDrive == true) {	// VBAT駆動?
 		putst( "VBAT drive.\r\nMATcore not POW ON.\r\n" );
 		DLCEventLogWrite( _ID1_VBAT_DRIVE,0,0 );
@@ -3025,7 +3056,7 @@ void DLCMatStart( )
 void DLCMatReset( )
 {
 	putst("MATcore RST!\r\n");
-	DLCMatTimerset( 0,TIMER_6000ms );
+	DLCMatTimerset( 0,TIMER_SYSFIN );
 	putst("Go Sleep\r\n");
 	DLCMatGoSleep();											/* Sleep! */
 	DLC_MatState = MATC_STATE_ERR;
@@ -3038,3 +3069,14 @@ void DLCMatSettingClear()
 	putst("The Parameter Deleted!\r\n");
 	NVMCTRL_RowErase( 0x0003FE00 );				/* 保存パラメータ削除 */
 }
+void DLCMatHalt()
+{
+	MatMsgSend( MSGID_SYSFIN );
+}
+int DLCMatOffChk()
+{
+	if( DLC_MatState == MATC_STATE_OFF )
+		return 1;
+	return 0;
+}
+
