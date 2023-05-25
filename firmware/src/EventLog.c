@@ -276,6 +276,9 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_WATCHDOG_START:
 		strcat( str,"WDT    ");
 		break;
+	case _ID1_POWER_OFF:
+		strcat( str,"OFF    ");
+		break;
 	case _ID1_ERROR:
 		strcat( str,"ERR    ");
 		break;
@@ -359,14 +362,27 @@ void DLCEventLogDisplay()
 }
 void DLCMatEventLog(const char *param, char *resp)
 {
-	int				i;
+	int			i,from=0,to;
 #ifdef EVENTLOG_SPI
 	_EventLog	log;
 	uint32_t	printAddress;
 	printAddress = EVENT_LOG_AREA_ADDRESS_START;
+	if( strchr( param,'-' ) ){
+		sscanf( param,"%d-%d",&from,&to );
+//		putst("from=");puthxw( from );
+//		putst(" to=");puthxw( to );
+	}
+	else {
+		if( param[0] )
+			sscanf( param,"%d",&to );
+		else {
+			to = EVENT_LOG_NUMOF_ITEM;
+//			putst(" to=");puthxw( to );
+		}
+	}
 	W25Q128JV_readData(printAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
 	putcrlf();
-	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
+	for( i = from; i < to; i++ ){
 		if( printAddress > EVENT_LOG_AREA_ADDRESS_END )
 			break;
 		if( printAddress < EVENT_LOG_AREA_ADDRESS_START )
@@ -383,7 +399,7 @@ void DLCMatEventLog(const char *param, char *resp)
 	_EventLog		*log;
 	log = (_EventLog*)EVENT_LOG_AREA_ADDRESS_START;
 	putcrlf();
-	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
+	for( i = from; i < to; i++ ){
 		if( (uint)log > EVENT_LOG_AREA_ADDRESS_END )
 			break;
 		if( (uint)log < EVENT_LOG_AREA_ADDRESS_START )
