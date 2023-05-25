@@ -16,3 +16,5 @@ char getch();
 void putcrlf();
 int c_get32b( void );
 char *str2int( char *p,int *k );
+int c_gethxw( int *val );
+int c_gethxs( short *val );
