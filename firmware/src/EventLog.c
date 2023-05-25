@@ -286,7 +286,7 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 		strcat( str,"NOISE  ");
 		break;
 	case _ID1_MANTE_START:
-		strcat( str,"MNT    ");
+		strcat( str,"USB    ");
 		break;
 	case _ID1_CELLACT:
 		strcat( str,"CELL   ");
@@ -295,7 +295,7 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 		strcat( str,"ROM CLR");
 		break;
 	case _ID1_VBAT_DRIVE:
-		strcat( str,"USB   " );
+		strcat( str,"VBAT  " );
 		break;
 	case _ID1_ALERT_STATE:
 		strcat( str,"ALERT " );
