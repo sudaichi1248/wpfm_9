@@ -273,6 +273,9 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_SLEEP:
 		strcat( str,"SLEEP  ");
 		break;
+	case _ID1_WAKE:
+		strcat( str,"WAKE   ");
+		break;
 	case _ID1_WATCHDOG_START:
 		strcat( str,"WDT    ");
 		break;
@@ -290,6 +293,9 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 		break;
 	case _ID1_CELLACT:
 		strcat( str,"CELL   ");
+		break;
+	case _ID1_BATTRY:
+		strcat( str,"BATT   ");
 		break;
 	case _ID1_INIT_ALL:
 		strcat( str,"ROM CLR");
