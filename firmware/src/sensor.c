@@ -247,17 +247,19 @@ int SENSOR_readExternalBatteryVoltage(int externalNo, uint16_t *voltage_p)
         default:
             return (SENSOR_ERR_PARAM);
     }
-    if( DLC_Para.BatCarivFlg == 0 )
+    if( DLC_Para.BatCarivFlg == 0 ){
 	    result = SENSOR_readRawValue() * _SENSOR_dividedRatioOfExternalBattery2 ;
-//    putst("Åô");putdecw( (int)(result *1000));
-	else
+//        putst("Åô");putdecw( (int)(result *1000));putcrlf();
+    }
+	else {
 	    result = SENSOR_readRawValue() * _SENSOR_dividedRatioOfExternalBattery * _SENSOR_conversionFactor;
-//    putch(' ');putdecw( (int)(result *1000));putcrlf();
+//	    putst("Åö");putdecw( (int)(result *1000));putcrlf();
+	}
     *voltage_p = (uint16_t)(result * 1000.0);      // Convert Volt to milli Volt
     DEBUG_UART_printlnFormat("< SENSOR_readExternalBatteryVoltage(%d,-) OK: %.3f", externalNo, result);
     return (SENSOR_ERR_NONE);
 }
-
+#if 0
 int SENSOR_readExternalBatteryVoltageShurink(uint16_t *voltage_p1, uint16_t *voltage_p2)
 {
 	float result1, result2;
@@ -302,7 +304,7 @@ int SENSOR_readExternalBatteryVoltageShurink(uint16_t *voltage_p1, uint16_t *vol
 	}
 	return (SENSOR_ERR_NONE);
 }
-
+#endif
 int SENSOR_turnOnSensorCircuit(int sensorNo, bool sensorPowered)
 {
     DEBUG_UART_printlnFormat("SENSOR_turnOnSensorCircuit(%d,%d)", sensorNo, sensorPowered);

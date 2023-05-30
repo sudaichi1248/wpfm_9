@@ -212,32 +212,3 @@ void WPFM_getTemperature()
         DEBUG_UART_printlnFormat("S5851A_getTemperature() error: %d", stat);
     }
 }
-
-void WPFM_getBatteryValue()
-{
-	int stat = 0;
-	// Read two external battery voltages
-	WPFM_lastBatteryVoltages[0] = WPFM_lastBatteryVoltages[1] = WPFM_MISSING_VALUE_UINT16;
-	SENSOR_readExternalBatteryVoltageShurink(&WPFM_lastBatteryVoltages[0], &WPFM_lastBatteryVoltages[1]);
-	if (DLC_MatBatCnt >= NUM_TIMES_ACTUALLY_BATT) {
-		DBG_PRINT("SENSOR_readExternalBatteryVoltageShurink(): %u/%u", WPFM_lastBatteryVoltages[0], WPFM_lastBatteryVoltages[1]);
-		if (DLC_Para.MeasureLog == 0) {
-			DEBUG_UART_FLUSH(); APP_delay(10);
-		}
-		// Check two batteries and auto switch if nessesary
-		if ((stat = BATTERY_checkAndSwitchBattery()) != BATTERY_ERR_NONE)
-		{
-			if (stat == BATTERY_ERR_HALT)
-			{
-				// Halt due to low voltage in both batteries
-				WPFM_halt("Low voltage in both batteries");
-			}
-		}
-		DBG_PRINT("BATTERY: Status %02Xh, USE #%d/RPL #%d",
-				WPFM_batteryStatus, WPFM_externalBatteryNumberInUse, WPFM_externalBatteryNumberToReplace);
-		if (DLC_Para.MeasureLog == 0) {
-			APP_delay(20);
-		}
-		DLC_MatBatCnt = 0;
-	}
-}
