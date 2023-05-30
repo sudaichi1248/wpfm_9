@@ -101,7 +101,7 @@ int main(void)
     if (TEST_SW_Get() == 0){
 		UTIL_delayMicros(10000);					/* 10ms Wait */
 		if (TEST_SW_Get() == 0){
-#if 0
+#if 1
       		DEBUG_UART_printlnString("## ERASE CHIP ##");
 	        DEBUG_UART_printlnString("## DO NOT POWER OFF ##");
 	        UTIL_startBlinkLED1(0);
@@ -124,8 +124,22 @@ int main(void)
 #endif
 	    }
 	}
+#ifdef BOARD_PROTOTYPE2
+ResetReset:
 	WDT_SetClkCycle(8);	// WDT設定
 	WDT_Enable();
+	if(( PORT_GroupRead( PORT_GROUP_0 ) & 0x8080) == 0 ){						/* PA07と15が同時Lo(スライドSWが真ん中 ) */
+		WDT_Disable();
+        DEBUG_UART_printlnString("## PA07andPA15=Lo HALT ##");
+		nV1GD_Clear();	// PA06 Low
+		UTIL_delayMicros(1000*100);
+		WPFM_sleep();
+		goto ResetReset;
+	}
+#else
+	WDT_SetClkCycle(8);	// WDT設定
+	WDT_Enable();
+#endif
    /* Get current operation mode */
     WPFM_operationMode = UTIL_getPowerModeSW();
 
