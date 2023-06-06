@@ -732,6 +732,22 @@ void MTdisc()
 			DLCFotaNGAndReset();										/* FOTA Ž¸”s‚Å‰^—p‚Ö */
 	}
 }
+void MTdisT()
+{
+	DLC_MatLineIdx = 0;
+	DLCEventLogWrite( _ID1_MAT_TO,0,DLC_MatState );
+	if (DLC_Para.FOTAact != 0) {									/* ‰^—pŽž */
+		if(( DLC_MatState < MATC_STATE_RPT )&&( DLC_MatState != MATC_STATE_SVR ))
+			DLCEventLogWrite( _ID1_CONN_NG,0,DLC_MatState );
+		DLCMatTimerset( 0,TIMER_SYSFIN );
+		putst("Go Sleep\r\n");
+		DLCMatGoSleep();											/* Sleep! */
+		DLC_MatState = MATC_STATE_DISC;
+	}
+	else
+		DLCFotaNGAndReset();										/* FOTA Ž¸”s‚Å‰^—p‚Ö */
+	}
+}
 void MTcls0()
 {
 	DLC_MatLineIdx = 0;
@@ -1079,7 +1095,7 @@ void	 (*MTjmp[18][21])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, MTcls0, MTclsF, ______, ______, ______, ______,______  },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______,______  },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, MTdisc, ______,______  },
-/* TimOut1    12 */{ MTwVer, MTVrT,  MTVer,  MTRapn, MTdisc, MTcls1, MTdisc, MTdisc, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTErr , MTledQ,MTOff1  },
+/* TimOut1    12 */{ MTwVer, MTVrT,  MTVer,  MTRapn, MTdisT, MTcls1, MTdisT, MTdisT, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTErr , MTledQ,MTOff1  },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, MTwake, ______,______  },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
