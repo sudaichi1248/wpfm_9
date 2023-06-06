@@ -40,7 +40,7 @@ void DLCMatConfigDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatReportSnd(),DLCMatPostReptInit();
 int	DLCMatPostReport();
 void MATReportLmtUpDw( int );
-void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatStart(),DLCMatReset();
+void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatStart(),DLCMatReset(),MTcls0(),DLCMatRptLimit();
 void DLCMatServerChange(),DLC_Halt();
 extern	char _Main_version[];
 int DLCMatRecvDisp();
@@ -148,7 +148,7 @@ void IDLEputch( )
 #define		TIMER_12s		12000
 #define		TIMER_15s		15000
 #define		TIMER_20s		20000
-#define		TIMER_HTTP		30000
+#define		TIMER_HTTP		45000
 #define		TIMER_90s		90000
 #define		TIMER_120s		120000
 #define		TIMER_300s		300000
@@ -483,7 +483,6 @@ extern	uint32_t	BatteryValueSum1,BatteryValueSum2;
 
 void MTconn()
 {
-	DLC_MatErr = 0;
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT?\r" );
 	DLCMatTimerset( 0,TIMER_120s );
@@ -670,9 +669,7 @@ void MTrprt()
 	DLCEventLogWrite( _ID1_OPEN_OK,WPFM_ForcedCall,DLC_MatRSRP<<16|DLC_MatRSRQ );
 	switch( DLCMatPostReport() ){													/* Report送信処理 */
 	case 0:
-		DLCMatSend( "AT$DISCONNECT\r" );
-		DLCMatTimerset( 0,TIMER_3000ms );
-		DLC_MatState = MATC_STATE_DISC;
+		MTcls0();
 		break;
 	case 1:
 		DLCMatTimerset( 0,TIMER_7000ms );
@@ -687,9 +684,7 @@ void MTsend()
 {
 	switch( DLCMatPostReport() ){													/* Report送信処理 */
 	case 0:
-		DLCMatSend( "AT$DISCONNECT\r" );
-		DLCMatTimerset( 0,TIMER_3000ms );
-		DLC_MatState = MATC_STATE_DISC;
+		MTcls0();
 		break;
 	case 1:
 		DLCMatTimerset( 0,TIMER_7000ms );
@@ -750,25 +745,35 @@ void MTErr()
 void MTcls1()
 {
 	DLC_MatLineIdx = 0;
+	DLCEventLogWrite( _ID1_MAT_ERR,0,DLC_MatState );
 	if (WPFM_ForcedCall == true) {	// 強制発報
 		UTIL_startBlinkLED1(5);	// LED1 5回点滅
 		DLCMatRtcTimerset(1, 6);
-	}
-	if( DLC_MatState == MATC_STATE_RPT ){	// Report送信で
-		if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
-			MLOG_tailAddressRestore();	// tailAddress戻す
-			MATReportLmtUpDw(0);								/* Report Limit 下げる */
-		}
 	}
 	if( DLC_MatErr++ >= 3 ){
 		DLCMatReset();
 		return;
 	}
-	DLCEventLogWrite( _ID1_ERROR,0x300,1 );
-	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
-	DLCMatSend( "AT$DISCONNECT\r" );
-	DLCMatTimerset( 0,TIMER_3000ms );
-	DLC_MatState = MATC_STATE_DISC;
+	MTcls0();
+}
+/*
+	REPT状態のMatcore ERROR return
+*/
+void MTcls2()
+{
+	DLC_MatLineIdx = 0;
+	DLCEventLogWrite( _ID1_MAT_ERR,0,DLC_MatState );
+	if (WPFM_ForcedCall == true) {	// 強制発報
+		UTIL_startBlinkLED1(5);	// LED1 5回点滅
+		DLCMatRtcTimerset(1, 6);
+	}
+	MATReportLmtUpDw(0);										/* Report Limit 下げる */
+	MLOG_tailAddressRestore();	// tailAddress戻す
+	if( DLC_MatErr++ >= 3 ){
+		DLCMatReset();
+		return;
+	}
+	MTcls0();
 }
 void MTcls3()
 {
@@ -785,10 +790,7 @@ void MTcls3()
 	}
 	else
 		DLCEventLogWrite( _ID1_CONN_NG,0,DLC_MatState );
-	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
-	DLCMatSend( "AT$DISCONNECT\r" );
-	DLCMatTimerset( 0,TIMER_3000ms );
-	DLC_MatState = MATC_STATE_DISC;
+	MTcls0();
 }
 void MTcls4()
 {
@@ -806,15 +808,7 @@ void MTcls4()
 			}
 		}
 	}
-	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
-	DLCMatSend( "AT$DISCONNECT\r" );
-	DLCMatTimerset( 0,TIMER_3000ms );
-	DLC_MatState = MATC_STATE_DISC;
-}
-void MTcls5()
-{
-	DLCEventLogWrite( _ID1_SYS_ERROR,1,0 );
-	__NVIC_SystemReset();
+	MTcls0();
 }
 void MTclsF()	// fota
 {
@@ -869,20 +863,13 @@ void MTFwak()
 }
 void MTwVer()
 {
+	DLCEventLogWrite( _ID1_MAT_TO,0,DLC_MatState );
 	if( DLC_Para.ReportLog ){								/* 運用時はWakeリトライしてダメならリセット */
 		DLCMatWake();
 		return;
 	}
 	putst("MATCore not exist! just keep measuring...\r\n");
 	DLCMatError(2);
-}
-void MTconW()
-{
-	DLC_MatLineIdx = 0;
-	DLCMatSend( "AT$CONNECT\r" );
-	DLCEventLogWrite( _ID1_CONNECT,0,0 );
-	DLCMatTimerset( 0,TIMER_120s );
-	DLC_MatState = MATC_STATE_CONN;
 }
 void MTtoF()	// fota T/O
 {
@@ -1050,6 +1037,7 @@ void MTledQ()
 void MT____()
 {
 	DLC_MatLineIdx = 0;
+	DLCEventLogWrite( _ID1_MAT_ERR,1,DLC_MatState );
 }
 void MTstop()
 {
@@ -1079,14 +1067,14 @@ void	 (*MTjmp[18][21])() = {
 /*					  0         1       2      3      4       5       6       7       8       9       10      11      12      13      14      15      16      17      18     19     20   **/
 /*				  	 INIT    IDLE    IMEI    APN     SVR     WAKE    CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR    OFF   **/
 /* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy, MT____  },
-/* ERROR       1 */{ ______, MTVrT,  MT____, MTcls1, MTcls1, MTcls1, MTcls1, MTcls3, MTcls3, MTcls3, MTcls3, MTcls3, MTcls1, MTcls3, MT____, MT____, MT____, MT____, MTdisc ,MT____,MT____  },
+/* ERROR       1 */{ MTcls1, MTVrT,  MT____, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls2, MT____, MT____, MT____, MT____, MTdisc ,MT____,MT____  },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTsend, ______, ______, ______, ______, ______, ______, ______,______  },
 /* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, ______, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______,______  },
 /* $CONNECT:1  5 */{ ______, ______, ______, ______, ______, ______, ______, MTtime, ______, ______, ______, ______, ______, ______, ______, MTopnF, ______, ______, ______, ______,______  },
 /* $TIME       6 */{ ______, ______, ______, ______, ______, ______, ______, MTrsrp, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* $RSRP       7 */{ ______, ______, ______, ______, ______, ______, ______, MTOpen, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
-/* $OPEN/$WAKE 8 */{ MTRdy,  ______, ______, ______, ______, MTcon1, ______, ______, MTcnfg, ______, MTstst, ______, MTrprt, ______, MTconW, MTwget, ______, ______, ______, ______,______  },
+/* $OPEN/$WAKE 8 */{ MTRdy,  ______, ______, ______, ______, MTcon1, ______, ______, MTcnfg, ______, MTstst, ______, MTrprt, ______, ______, MTwget, ______, ______, ______, ______,______  },
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, MTcls0, MTclsF, ______, ______, ______, ______,______  },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______,______  },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, MTdisc, ______,______  },
@@ -1350,6 +1338,7 @@ void DLCMatPostConfig()
 {
 	char	tmp[48],n,*p;
 	int		i;
+	DLCMatRptLimit();																									/* 23.6.5 追加 */
 	WPFM_readSettingParameter( &config );
 	strcpy( http_tmp,http_config );
 	strcat( http_tmp,"{\"Config\":{" );
@@ -2347,6 +2336,10 @@ int DLCMatRecvDisp()
 			if( DLC_MatLineIdx ){
 				memcpy( DLC_MatLineBuf,q+1,DLC_MatLineIdx );
 				putst("Buf'Remain=");putdecs(DLC_MatLineIdx);putcrlf();
+				if( strstr( (char*)DLC_MatLineBuf,"$CLOSE" )){
+					strcpy( (char*)DLC_MatLineBuf,"$CLOSE\r" );
+					DLC_MatLineIdx = 7;
+				}
 				Dump( (char*)DLC_MatLineBuf,8);putcrlf();
 			}
 			p = strstr( DLC_MatResBuf,"HTTP/1.1 " );
@@ -2354,6 +2347,7 @@ int DLCMatRecvDisp()
 				DLCEventLogWrite( _ID1_HTTP_RES,(p[9]-'0')<<8|(p[10]-'0')<<4|(p[11]-'0'),DLC_MatState );
 			if( (j == 0) && (DLC_MatState == MATC_STATE_RPT) ){	// 残りデータなしでReport送信状態の場合
 				if( strstr( DLC_MatResBuf,"HTTP/1.1 200 OK" )){
+					DLC_MatErr = 0;
 					if( strstr( DLC_MatResBuf,"Connection: close" ) ){	/* ここです */
 putst("@@@@@ wktk1\r\n");
 						if( DLC_Para.Http_Report_Hold == 0xff ){
@@ -2366,6 +2360,8 @@ putst("@@@@@ wktk1\r\n");
 						MATReportLmtUpDw(1);								/* Report Limit数Up */
 					}
 				}
+				else if( strstr( DLC_MatResBuf,"HTTP/1.1 504 " ))			/* Gateway TimeOut */
+					DLC_MatReportLmt = 1001;								/* 24h(NextConfig)まで1000にする */
 				else
 					MATReportLmtUpDw(0);									/* Report Limit数Dw(その他のエラー 504 Gatewa TOなど) */
 			}

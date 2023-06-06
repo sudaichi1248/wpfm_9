@@ -306,6 +306,12 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_ALERT_STATE:
 		strcat( str,"ALERT " );
 		break;
+	case _ID1_MAT_ERR:
+		strcat( str,"MatErr" );
+		break;
+	case _ID1_MAT_TO:
+		strcat( str,"MatTO " );
+		break;
 	case 0:
 		strcat( str,"       ");
 		break;
