@@ -732,6 +732,14 @@ void MTdisc()
 			DLCFotaNGAndReset();										/* FOTA Ž¸”s‚Å‰^—p‚Ö */
 	}
 }
+int MTErr3()
+{
+	if( DLC_MatErr++ >= 3 ){
+		DLCMatReset();
+		return 1;
+	}
+	return 0;
+}
 void MTdisT()
 {
 	DLC_MatLineIdx = 0;
@@ -739,6 +747,8 @@ void MTdisT()
 	if (DLC_Para.FOTAact != 0) {									/* ‰^—pŽž */
 		if(( DLC_MatState < MATC_STATE_RPT )&&( DLC_MatState != MATC_STATE_SVR ))
 			DLCEventLogWrite( _ID1_CONN_NG,0,DLC_MatState );
+		if( MTErr3() )
+			return;
 		DLCMatTimerset( 0,TIMER_SYSFIN );
 		putst("Go Sleep\r\n");
 		DLCMatGoSleep();											/* Sleep! */
@@ -746,7 +756,6 @@ void MTdisT()
 	}
 	else
 		DLCFotaNGAndReset();										/* FOTA Ž¸”s‚Å‰^—p‚Ö */
-	}
 }
 void MTcls0()
 {
@@ -767,10 +776,8 @@ void MTcls1()
 		UTIL_startBlinkLED1(5);	// LED1 5‰ñ“_–Å
 		DLCMatRtcTimerset(1, 6);
 	}
-	if( DLC_MatErr++ >= 3 ){
-		DLCMatReset();
+	if( MTErr3() )
 		return;
-	}
 	MTcls0();
 }
 /*
@@ -786,10 +793,8 @@ void MTcls2()
 	}
 	MATReportLmtUpDw(0);										/* Report Limit ‰º‚°‚é */
 	MLOG_tailAddressRestore();	// tailAddress–ß‚·
-	if( DLC_MatErr++ >= 3 ){
-		DLCMatReset();
+	if( MTErr3() )
 		return;
-	}
 	MTcls0();
 }
 void MTcls3()
