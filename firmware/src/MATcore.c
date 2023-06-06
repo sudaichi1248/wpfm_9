@@ -738,6 +738,7 @@ void MTcls0()
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatSend( "AT$DISCONNECT\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
+	DLC_MatState = MATC_STATE_DISC;
 }
 void MTErr()
 {
