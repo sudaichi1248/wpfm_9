@@ -56,7 +56,7 @@ char	DLC_MatRadioDensty[80];
 char	DLC_MatNUM[32];
 char	DLC_MatIMEI[32];
 int		DLC_MatTmid;
-uchar	DLC_BigState,DLC_Matknd;
+uchar	DLC_BigState,DLC_Matknd,DLC_StackMsg;
 uchar	DLC_MatRetry;
 char	DLC_MatConfigItem[32];
 uchar	DLC_MatTxType;
@@ -751,8 +751,9 @@ void MTdisc()
 		UTIL_startBlinkLED1(5);	// LED1 5回点滅
 		DLCMatRtcTimerset(1, 6);
 	}
-	if( DLC_Matknd ){													/* 発呼要求保持 */
-		DLC_Matknd = 0;
+	if( DLC_StackMsg ){													/* 発呼要求保持 */
+		DLC_Matknd = DLC_StackMsg;
+		DLC_StackMsg = 0;
 		DLCMatSend( "AT$CONNECT\r" );
 		DLCMatTimerset( 0,TIMER_120s );
 		DLCEventLogWrite( _ID1_CONNECT,0,0 );
@@ -780,8 +781,9 @@ void MTRdis()
 	}
 	if( MTErr3() )
 		return;
-	if( DLC_Matknd ){													/* 発呼要求保持 */
-		DLC_Matknd = 0;
+	if( DLC_StackMsg ){													/* 発呼要求保持 */
+		DLC_Matknd = DLC_StackMsg;
+		DLC_StackMsg = 0;
 		DLCMatSend( "AT$CONNECT\r" );
 		DLCMatTimerset( 0,TIMER_120s );
 		DLCEventLogWrite( _ID1_CONNECT,0,0 );
@@ -1028,8 +1030,10 @@ void DLCMatClockGet(uint32_t t,char *s)
 */
 void DLCMatCall(int knd )
 {
-	if( DLC_Matknd )
+	if( DLC_Matknd ){
 		putst("Stacked TheCall..\r\n" );
+		DLC_StackMsg = knd;
+	}
 	switch( knd ){
 	case 1:
 		putst("Constant-CALL!\r\n");									/* Constant */
