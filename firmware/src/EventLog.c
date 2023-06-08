@@ -301,16 +301,19 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 		strcat( str,"ROM CLR");
 		break;
 	case _ID1_VBAT_DRIVE:
-		strcat( str,"VBAT  " );
+		strcat( str,"VBAT   ");
 		break;
 	case _ID1_ALERT_STATE:
-		strcat( str,"ALERT " );
+		strcat( str,"ALERT  ");
 		break;
 	case _ID1_MAT_ERR:
-		strcat( str,"MatErr" );
+		strcat( str,"MatErr ");
 		break;
 	case _ID1_MAT_TO:
-		strcat( str,"MatTO " );
+		strcat( str,"MatTO  ");
+		break;
+	case _ID1_MAT_RESET:
+		strcat( str,"MatRST ");
 		break;
 	case 0:
 		strcat( str,"       ");

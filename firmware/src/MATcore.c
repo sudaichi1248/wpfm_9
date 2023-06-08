@@ -35,10 +35,10 @@ void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatRtcTimeChk();}
 #else
 void _GO_IDLE(){DLCMatState();IDLEputch();}
 #endif
+int	DLCMatPostReport(),MTErr3();
 void Moni();
 void DLCMatConfigDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatReportSnd(),DLCMatPostReptInit();
-int	DLCMatPostReport();
 void MATReportLmtUpDw( int );
 void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatStart(),DLCMatReset(),MTcls0(),DLCMatRptLimit();
 void DLCMatServerChange(),DLC_Halt();
@@ -405,7 +405,7 @@ int	DLCMatCharInt( char *p,char *title )
 void ______(){	DLC_MatLineIdx = 0;};
 void MTRdy()
 {
-	DLC_MatLineIdx = 0;
+	DLC_MatRetry = DLC_MatErr =	DLC_MatLineIdx = 0;
 	DLCMatGoWake();					/* WAKE! */
 	DLCMatSend( "AT$VER\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
@@ -423,7 +423,22 @@ void MTVrT()
 }
 void MTVer()
 {
+	DLC_MatRetry = DLC_MatLineIdx = 0;
+	DLCMatSend( "AT$IMEI\r" );
+	if( strstr( DLC_MatVer,"01.04" ) )
+		;
+	else
+		DLCMatSend( "AT$NUM\r" );
+	DLCMatTimerset( 0,TIMER_5000ms );
+	DLC_MatState = MATC_STATE_IMEI;
+}
+void MTRVer()
+{
 	DLC_MatLineIdx = 0;
+	if( DLC_MatRetry++ > 5 ){
+		DLCMatReset();
+		return;
+	}
 	DLCMatSend( "AT$IMEI\r" );
 	if( strstr( DLC_MatVer,"01.04" ) )
 		;
@@ -434,7 +449,7 @@ void MTVer()
 }
 void MTimei()
 {
-	DLC_MatLineIdx = 0;
+	DLC_MatRetry = DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$SETAPN?\r" );
 	DLCMatTimerset( 0,TIMER_5000ms );
 	DLC_MatState = MATC_STATE_APN;
@@ -442,13 +457,16 @@ void MTimei()
 void MTRapn()
 {
 	DLC_MatLineIdx = 0;
+	if( DLC_MatRetry++ > 5 ){
+		DLCMatReset();
+		return;
+	}
 	DLCMatSend( "AT$SETAPN,soracom.io,sora,sora,PAP\r" );
 	DLCMatTimerset( 0,TIMER_5000ms );
-	DLC_MatState = MATC_STATE_APN;
 }
 void MTapn()
 {
-	DLC_MatLineIdx = 0;
+	DLC_MatRetry = DLC_MatLineIdx = 0;
 	if (DLC_Para.FOTAact != 0) {	// fota 運用時
 		if( strstr( DLC_MatVer,"01.04" ) )
 			strcpy(	DLC_MatNUM,"812000000000000" );
@@ -478,6 +496,27 @@ void MTapn()
 	(DLC_MatNUM[7]-'0')<<28|(DLC_MatNUM[8]-'0')<<24|(DLC_MatNUM[9]-'0')<<20|(DLC_MatNUM[10]-'0')<<16|(DLC_MatNUM[11]-'0')<<12|(DLC_MatNUM[12]-'0')<<8|(DLC_MatNUM[13]-'0')<<4|(DLC_MatNUM[14]-'0') );
 	DLCMatTimerset( 0,TIMER_5000ms );
 	DLC_MatState = MATC_STATE_SVR;
+}
+void MTRsvr()
+{
+	DLC_MatLineIdx = 0;
+	if( DLC_MatRetry++ > 5 ){
+		DLCMatReset();
+		return;
+	}
+	if (DLC_Para.FOTAact != 0) {	// fota 運用時
+		switch( DLC_Para.Server ){
+		case 0:
+			DLCMatSend( "AT$SETSERVER,karugamosoft.ddo.jp,9999\r" );
+			break;
+		default:
+			DLCMatSend( "AT$SETSERVER,beam.soracom.io,8888\r" );
+			break;
+		}
+	} else {	// fota FOTA実行時
+		DLCMatSend( "AT$SETSERVER,harvest-files.soracom.io,80\r" );	// fota soracom harvest指定
+	}
+	DLCMatTimerset( 0,TIMER_5000ms );
 }
 extern	uint32_t	BatteryValueSum1,BatteryValueSum2;
 
@@ -515,6 +554,7 @@ void MTrsrp()
 		;
 	else
 		DLCMatSend( "AT$CELLID\rAT$EARFCN\r" );
+	DLCMatTimerset( 0,TIMER_3000ms );
 	DLCMatSend( "AT$RSRP\rAT$RSRQ\rAT$RSSI\rAT$SINR\r" );
 }
 void MTopnF()	// fota
@@ -732,12 +772,40 @@ void MTdisc()
 			DLCFotaNGAndReset();										/* FOTA 失敗で運用へ */
 	}
 }
+void MTRdis()
+{
+	DLC_MatLineIdx = 0;
+	if (WPFM_ForcedCall == true) {	// 強制発報
+		UTIL_startBlinkLED1(5);	// LED1 5回点滅
+		DLCMatRtcTimerset(1, 6);
+	}
+	if( MTErr3() )
+		return;
+	if( DLC_Matknd ){													/* 発呼要求保持 */
+		DLC_Matknd = 0;
+		DLCMatSend( "AT$CONNECT\r" );
+		DLCMatTimerset( 0,TIMER_120s );
+		DLCEventLogWrite( _ID1_CONNECT,0,0 );
+		DLC_MatState = MATC_STATE_CONN;
+	}
+	else {
+		if (DLC_Para.FOTAact != 0) {									/* 運用時 */
+			DLCMatTimerset( 0,TIMER_SYSFIN );
+			putst("Go Sleep\r\n");
+			DLCMatGoSleep();											/* Sleep! */
+			DLC_MatState = MATC_STATE_DISC;
+		}
+		else
+			DLCFotaNGAndReset();										/* FOTA 失敗で運用へ */
+	}
+}
 int MTErr3()
 {
-	if( DLC_MatErr++ >= 3 ){
+	if( ++DLC_MatErr >= 3 ){
 		DLCMatReset();
 		return 1;
 	}
+	putst("MatErr=");putch(DLC_MatErr+'0');putcrlf();
 	return 0;
 }
 void MTdisT()
@@ -765,8 +833,18 @@ void MTcls0()
 	DLCMatTimerset( 0,TIMER_3000ms );
 	DLC_MatState = MATC_STATE_DISC;
 }
-void MTErr()
+void MTslpO()
 {
+	DLC_MatLineIdx = 0;
+	DLCEventLogWrite( _ID1_MAT_TO,0,DLC_MatState );
+	if (DLC_MatFotaExe == 1) {	// fota
+		DLC_MatFotaExe = 0;
+		DLCFotaGoAndReset();
+	}
+	putst("[Sleep]\r\n");
+	DLCMatTimerClr( 0 );
+	DLCEventLogWrite( _ID1_SLEEP,0,0 );
+	DLC_MatState = MATC_STATE_SLP;
 }
 void MTcls1()
 {
@@ -817,17 +895,15 @@ void MTcls3()
 void MTcls4()
 {
 	DLC_MatLineIdx = 0;
-	if( DLC_MatState == MATC_STATE_RPT ){	// Report送信で
-		if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
-			MLOG_tailAddressRestore();	// tailAddress戻す
-			MATReportLmtUpDw(0);								/* Report Limit 下げる */
-		}
-		else {
-			if( DLC_MatRptMore ){
-				DLC_MatRptMore = 0;
-				MTopn3();
-				return;
-			}
+	if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
+		MLOG_tailAddressRestore();	// tailAddress戻す
+		MATReportLmtUpDw(0);								/* Report Limit 下げる */
+	}
+	else {
+		if( DLC_MatRptMore ){						/* ReportList連続中 */
+			DLC_MatRptMore = 0;
+			MTopn3();								/* 再度OPN */
+			return;
 		}
 	}
 	MTcls0();
@@ -839,8 +915,11 @@ void MTclsF()	// fota
 void MTRSlp()
 {
 	DLC_MatLineIdx = 0;
-	if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11))
+	if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11)){
 		putst("MATcore can't Sleep(ToT)\r\n");
+		if( MTErr3() )
+			return;
+	}
 	else {
 		putst("[Sleep]\r\n");
 	}
@@ -1089,7 +1168,7 @@ void	 (*MTjmp[18][21])() = {
 /*					  0         1       2      3      4       5       6       7       8       9       10      11      12      13      14      15      16      17      18     19     20   **/
 /*				  	 INIT    IDLE    IMEI    APN     SVR     WAKE    CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR    OFF   **/
 /* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy, MT____  },
-/* ERROR       1 */{ MTcls1, MTVrT,  MT____, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls2, MT____, MT____, MT____, MT____, MTdisc ,MT____,MT____  },
+/* ERROR       1 */{ MTcls1, MTVrT,  MTRVer, MTRapn, MTRsvr, MTRdis, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls2, MT____, MT____, MT____, MT____, MTdisc ,MT____,MT____  },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTsend, ______, ______, ______, ______, ______, ______, ______,______  },
 /* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, ______, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______,______  },
@@ -1100,7 +1179,7 @@ void	 (*MTjmp[18][21])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, MTcls0, MTclsF, ______, ______, ______, ______,______  },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______,______  },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, MTdisc, ______,______  },
-/* TimOut1    12 */{ MTwVer, MTVrT,  MTVer,  MTRapn, MTdisT, MTcls1, MTdisT, MTdisT, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTErr , MTledQ,MTOff1  },
+/* TimOut1    12 */{ MTwVer, MTVrT,  MTRVer, MTRapn, MTRsvr, MTRdis, MTdisT, MTdisT, MTcls3, MTopn2, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTslpO, MTledQ,MTOff1  },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, MTwake, ______,______  },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },

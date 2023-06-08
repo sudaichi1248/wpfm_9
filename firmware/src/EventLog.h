@@ -66,3 +66,4 @@ void DLCEventLogClr( int );
 #define		_ID1_ALERT_STATE			0x1100
 #define		_ID1_MAT_ERR				0x2000
 #define		_ID1_MAT_TO					0x2001
+#define		_ID1_MAT_RESET				0x2002
