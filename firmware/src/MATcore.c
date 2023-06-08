@@ -622,7 +622,6 @@ void MTrvTO()
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatSend( "AT$CLOSE\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
-	DLC_MatState = MATC_STATE_RPT;
 }
 void MTdata()
 {
@@ -1179,7 +1178,7 @@ void	 (*MTjmp[18][21])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, MTcls0, MTclsF, ______, ______, ______, ______,______  },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______,______  },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, MTdisc, ______,______  },
-/* TimOut1    12 */{ MTwVer, MTVrT,  MTRVer, MTRapn, MTRsvr, MTRdis, MTdisT, MTdisT, MTcls3, MTopn2, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTslpO, MTledQ,MTOff1  },
+/* TimOut1    12 */{ MTwVer, MTVrT,  MTRVer, MTRapn, MTRsvr, MTRdis, MTdisT, MTdisT, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTslpO, MTledQ,MTOff1  },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, MTwake, ______,______  },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
