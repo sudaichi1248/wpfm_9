@@ -77,8 +77,10 @@ void DLCFotaFinAndReset()
 /*
 	FOTA失敗でリセット
 */
-void DLCFotaNGAndReset()
+void DLCFotaNGAndReset(int state)
 {
+extern	uchar	DLC_Matfact,DLC_MatState;
+	DLCEventLogWrite( _ID1_FOTA_FAIL,DLC_Matfact,DLC_MatState );
 	DLC_Para.FOTAact = 0xFF;													/* FOTA開始フラグ */
 	DLCParaSave();
 	APP_delay(100);

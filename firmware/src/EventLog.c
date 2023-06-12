@@ -240,6 +240,9 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_FOTA_END:
 		strcat( str,"FOTA F ");
 		break;
+	case _ID1_FOTA_FAIL:
+		strcat( str,"FOTAng ");
+		break;
 	case _ID1_ONLINE_UPD_B_START:
 		strcat( str,"Boot更新開始 ");
 		break;
