@@ -56,7 +56,7 @@ char	DLC_MatRadioDensty[80];
 char	DLC_MatNUM[32];
 char	DLC_MatIMEI[32];
 int		DLC_MatTmid;
-uchar	DLC_BigState,DLC_Matknd,DLC_StackMsg;
+uchar	DLC_BigState,DLC_Matknd;
 uchar	DLC_MatRetry;
 char	DLC_MatConfigItem[32];
 uchar	DLC_MatTxType;
@@ -751,9 +751,8 @@ void MTdisc()
 		UTIL_startBlinkLED1(5);	// LED1 5回点滅
 		DLCMatRtcTimerset(1, 6);
 	}
-	if( DLC_StackMsg ){													/* 発呼要求保持 */
-		DLC_Matknd = DLC_StackMsg;
-		DLC_StackMsg = 0;
+	if( DLC_Matknd ){													/* 発呼要求保持 */
+		DLC_Matknd = 0;
 		DLCMatSend( "AT$CONNECT\r" );
 		DLCMatTimerset( 0,TIMER_120s );
 		DLCEventLogWrite( _ID1_CONNECT,0,0 );
@@ -781,9 +780,8 @@ void MTRdis()
 	}
 	if( MTErr3() )
 		return;
-	if( DLC_StackMsg ){													/* 発呼要求保持 */
-		DLC_Matknd = DLC_StackMsg;
-		DLC_StackMsg = 0;
+	if( DLC_Matknd ){													/* 発呼要求保持 */
+		DLC_Matknd = 0;
 		DLCMatSend( "AT$CONNECT\r" );
 		DLCMatTimerset( 0,TIMER_120s );
 		DLCEventLogWrite( _ID1_CONNECT,0,0 );
@@ -909,6 +907,18 @@ void MTcls4()
 	}
 	MTcls0();
 }
+void MTcls5()
+{
+	DLC_MatLineIdx = 0;
+	if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
+		MLOG_tailAddressRestore();	// tailAddress戻す
+		MATReportLmtUpDw(0);								/* Report Limit 下げる */
+	}
+	DLC_MatRptMore = 0;
+	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
+	DLCMatSend( "AT$CLOSE\r" );
+	DLCMatTimerset( 0,TIMER_3000ms );
+}
 void MTclsF()	// fota
 {
 	DLCMatFOTAdataRcvFin();
@@ -1030,10 +1040,8 @@ void DLCMatClockGet(uint32_t t,char *s)
 */
 void DLCMatCall(int knd )
 {
-	if( DLC_Matknd ){
+	if( DLC_Matknd )
 		putst("Stacked TheCall..\r\n" );
-		DLC_StackMsg = knd;
-	}
 	switch( knd ){
 	case 1:
 		putst("Constant-CALL!\r\n");									/* Constant */
@@ -1182,7 +1190,7 @@ void	 (*MTjmp[18][21])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, MTcls0, MTclsF, ______, ______, ______, ______,______  },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______,______  },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, MTdisc, ______,______  },
-/* TimOut1    12 */{ MTwVer, MTVrT,  MTRVer, MTRapn, MTRsvr, MTRdis, MTdisT, MTdisT, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls3, MTRSlp, MTtoF,  ______, ______, MTslpO, MTledQ,MTOff1  },
+/* TimOut1    12 */{ MTwVer, MTVrT,  MTRVer, MTRapn, MTRsvr, MTRdis, MTdisT, MTdisT, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls5, MTRSlp, MTtoF,  ______, ______, MTslpO, MTledQ,MTOff1  },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, MTwake, ______,______  },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
@@ -1723,6 +1731,7 @@ void DLCMatPostReptInit()
 	DLC_MatsendRepOK = false;
 	DLC_MatReportCnt = 0;																			/* httpを作るときのReportのカウンタ */
 	DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
+	DLC_MatRptMore = 0;
 	MLOG_tailAddressBuckUp();
 	DLC_MatExtbyte = 0;
 }
