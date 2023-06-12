@@ -620,8 +620,8 @@ void MTrvTO()
 		DLCMatRtcTimerset(1, 6);
 	}
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
-	DLCMatSend( "AT$CLOSE\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
+	DLCMatSend( "AT$CLOSE\r" );
 }
 void MTdata()
 {
@@ -864,15 +864,13 @@ void MTcls2()
 {
 	DLC_MatLineIdx = 0;
 	DLCEventLogWrite( _ID1_MAT_ERR,0,DLC_MatState );
-	if (WPFM_ForcedCall == true) {	// 強制発報
-		UTIL_startBlinkLED1(5);	// LED1 5回点滅
-		DLCMatRtcTimerset(1, 6);
-	}
 	MATReportLmtUpDw(0);										/* Report Limit 下げる */
 	MLOG_tailAddressRestore();	// tailAddress戻す
 	if( MTErr3() )
 		return;
-	MTcls0();
+	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
+	DLCMatTimerset( 0,TIMER_3000ms );
+	DLCMatSend( "AT$CLOSE\r" );
 }
 void MTcls3()
 {
@@ -910,14 +908,14 @@ void MTcls4()
 void MTcls5()
 {
 	DLC_MatLineIdx = 0;
-	if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
-		MLOG_tailAddressRestore();	// tailAddress戻す
-		MATReportLmtUpDw(0);								/* Report Limit 下げる */
-	}
-	DLC_MatRptMore = 0;
+	DLCEventLogWrite( _ID1_MAT_TO,0,DLC_MatState );
+	MATReportLmtUpDw(0);										/* Report Limit 下げる */
+	MLOG_tailAddressRestore();	// tailAddress戻す
+	if( MTErr3() )
+		return;
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
-	DLCMatSend( "AT$CLOSE\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
+	DLCMatSend( "AT$CLOSE\r" );
 }
 void MTclsF()	// fota
 {
