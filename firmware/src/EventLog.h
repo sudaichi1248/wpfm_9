@@ -45,7 +45,7 @@ void DLCEventLogClr( int );
 #define		_ID1_USB_CMD_OKNG			0x1020
 #define		_ID1_FOTA_START				0x1021
 #define		_ID1_FOTA_END				0x1022
-#define		_ID1_FOTA_FAIL				0x1023
+#define		_ID1_FOTA_FAIL				0x1025
 #define		_ID1_ONLINE_UPD_B_START		0x1023
 #define		_ID1_ONLINE_UPD_B_END		0x1024
 #define		_ID1_CONNECT				0x0110
