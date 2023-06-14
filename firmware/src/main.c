@@ -432,15 +432,14 @@ static void eventLoopOnMeasurementMode(void)
         {
             // タクトスイッチの押下中なので、スリープしない
         }
-       else if( DLCMatIsSleep() ){
+        else if( DLCMatIsSleep() ){
             // USBが接続されていないとき
             WPFM_isInSendingRegularly = false;  // USBケーブルがVEなしで抜かれた時のために
-
             // Fall asleep if there is no work to do
             WPFM_status = WPFM_STATUS_SLEEP;
             WPFM_sleep();       // MCUをスタンバイモードにする
             putch('.');
-            WPFM_status = WPFM_STATUS_IDLE;
+			WPFM_status = WPFM_STATUS_WAIT_COMMAND;				/* 23.6.14 by kasai */
 			if( RTCReadRetry+RTCWriteRetry )
 				DLCEventLogWrite( _ID1_ERROR,0x101,(RTCReadRetry<<16)|RTCWriteRetry);
         }
@@ -548,7 +547,7 @@ static void eventLoopOnNonMeasurementMode(void)
             WPFM_sleep();       // MCUをスタンバイモードにする
             APP_delay(1);
             putch(',');
-            WPFM_status = WPFM_STATUS_IDLE;
+			WPFM_status = WPFM_STATUS_WAIT_COMMAND;				/* 23.6.14 by kasai */
         }
     }
 }
