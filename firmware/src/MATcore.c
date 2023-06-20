@@ -870,7 +870,7 @@ void MTcls2()
 	if( MTErr3() )
 		return;
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
-	DLCMatTimerset( 0,TIMER_3000ms );
+	DLCMatTimerset( 0,TIMER_11s );
 	DLCMatSend( "AT$CLOSE\r" );
 }
 void MTcls3()
@@ -915,7 +915,7 @@ void MTcls5()
 	if( MTErr3() )
 		return;
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
-	DLCMatTimerset( 0,TIMER_3000ms );
+	DLCMatTimerset( 0,TIMER_11s );
 	DLCMatSend( "AT$CLOSE\r" );
 }
 void MTclsF()	// fota
