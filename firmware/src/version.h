@@ -1,2 +1,2 @@
-#define MAIN_VERSION "Ver 00.A3 "
+#define MAIN_VERSION "Ver 00.A4 "
 extern	char 	_Main_version[32];
