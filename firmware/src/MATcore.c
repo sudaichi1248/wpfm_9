@@ -1638,18 +1638,21 @@ void DLCMatReportDisp()
 	int		i;
 	MLOG_T 	log_p;
 	putcrlf();
+	http_tmp[0] = 0;
 	for( i=0;; i++ ){
 		if( i == DLC_REPORT_SND_LMT )
 			break;
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
 		DLCMatClockGet( log_p.timestamp.second,s );
-		sprintf( tmp,"{\"Time\":\"%s\","		,s );									strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Time\":\"%s\","		,s );
+		strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch1\":%.3f,"	,log_p.measuredValues[0] );
 		strcat( http_tmp,tmp );
 		sprintf( tmp,"\"Value_ch2\":%.3f,"	,log_p.measuredValues[1] );
 		strcat( http_tmp,tmp );
-		sprintf( tmp,"\"Alert\":\"%02x\"}"	,log_p.alertStatus  );						strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Alert\":\"%02x\"\r\n"	,log_p.alertStatus  );
+		strcat( http_tmp,tmp );
 	}
 	putst( http_tmp );putcrlf();
 }
@@ -2803,6 +2806,7 @@ void MATRts()
 }
 void DLCMatMlogMenu()
 {
+	extern void MLOG_dump_uart(int to, int from);
 	char    key;
 	RTC_DATETIME dt;
 	int ret=0,num;
@@ -2811,21 +2815,29 @@ void DLCMatMlogMenu()
 		putst("\r\nmlog>");
 		key = toupper( getch() );
 		switch( key ){
-		case 'A':															/* 通知済に変更 */
+		case 'A':															/* 1回測定 */
+			WPFM_measureRegularly(false);
+			break;
+		case 'B':															/* 表示 */
+			MLOG_tailAddressBuckUp();										/* 通知位置をセーブ */
+			DLCMatReportDisp();
+			break;
+		case 'C':															/* 通知済みにする */
 			if ( MLOG_updateLog() != MLOG_ERR_NONE) {	// 
 				putst("write error\r\n");
 			}
 			break;
-		case 'B':
-			DLCMatReportDisp();
+		case 'D':
+			for( int i=0;i<10;i++ )
+				W25Q128JV_eraseSctor(i, true);
 			break;
-		case 'C':
+		case ' ':															/* インデックス値を表示 */
 			MLOG_addressDisp();
 			break;
-		case 'D':
+		case 'E':
 			MLOG_tailAddressRestore();
 			break;
-		case 'E':
+		case 'F':
 			putst("0:input recode num 1:3000 2:30000\r\n");
 			switch( getch() ){
 			case '0':
@@ -2883,6 +2895,9 @@ void DLCMatMlogMenu()
 			RTC_convertToDateTime(_MLOG_tailTime,&dt);
 			sprintf( s,"20%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 			putst(s);putcrlf();
+			break;
+		case 'H':
+			MLOG_dump_uart(0, 30);
 			break;
 		case 0x1b:															/* Exit */
 			return;
