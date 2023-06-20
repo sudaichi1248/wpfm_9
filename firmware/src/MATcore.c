@@ -145,6 +145,7 @@ void IDLEputch( )
 #define		TIMER_SYSFIN	5500
 #define		TIMER_7000ms	7000
 #define		TIMER_10s		10000
+#define		TIMER_11s		11000
 #define		TIMER_12s		12000
 #define		TIMER_15s		15000
 #define		TIMER_20s		20000
@@ -620,7 +621,7 @@ void MTrvTO()
 		DLCMatRtcTimerset(1, 6);
 	}
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
-	DLCMatTimerset( 0,TIMER_3000ms );
+	DLCMatTimerset( 0,TIMER_11s );
 	DLCMatSend( "AT$CLOSE\r" );
 }
 void MTdata()
@@ -2457,11 +2458,12 @@ int DLCMatRecvDisp()
 				Dump( (char*)DLC_MatLineBuf,8);putcrlf();
 			}
 			p = strstr( DLC_MatResBuf,"HTTP/1.1 " );
-			if( p )
+			if( p ){
 				DLCEventLogWrite( _ID1_HTTP_RES,(p[9]-'0')<<8|(p[10]-'0')<<4|(p[11]-'0'),DLC_MatState );
+				DLC_MatErr = 0;
+			}
 			if( (j == 0) && (DLC_MatState == MATC_STATE_RPT) ){	// 残りデータなしでReport送信状態の場合
 				if( strstr( DLC_MatResBuf,"HTTP/1.1 200 OK" )){
-					DLC_MatErr = 0;
 					if( strstr( DLC_MatResBuf,"Connection: close" ) ){	/* ここです */
 putst("@@@@@ wktk1\r\n");
 						if( DLC_Para.Http_Report_Hold == 0xff ){
