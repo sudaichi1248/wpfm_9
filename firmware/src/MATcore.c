@@ -2808,7 +2808,7 @@ void MATRts()
 }
 void DLCMatMlogMenu()
 {
-	extern void MLOG_dump_uart(int to, int from);
+//	extern void MLOG_dump_uart(int to, int from);
 	char    key;
 	RTC_DATETIME dt;
 	int ret=0,num;
@@ -2899,7 +2899,7 @@ void DLCMatMlogMenu()
 			putst(s);putcrlf();
 			break;
 		case 'H':
-			MLOG_dump_uart(0, 30);
+//			MLOG_dump_uart(0, 30);
 			break;
 		case 0x1b:															/* Exit */
 			return;
