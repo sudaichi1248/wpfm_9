@@ -42,6 +42,7 @@ void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatReportSnd(),DLCMatPostReptInit(
 void MATReportLmtUpDw( int );
 void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatStart(),DLCMatReset(),MTcls0(),DLCMatRptLimit();
 void DLCMatServerChange(),DLC_Halt();
+void MLOG_dump_uart(int to, int from);
 extern	char _Main_version[];
 int DLCMatRecvDisp();
 char 	zLogOn=1;
@@ -1657,6 +1658,15 @@ void DLCMatReportDisp()
 	}
 	putst( http_tmp );putcrlf();
 }
+void DLCMatReportThru( int v )
+{
+	int		i;
+	MLOG_T 	log_p;
+	for( i=0;i < v; i++ ){
+		if( MLOG_getLog( &log_p ) < 0 )
+			break;
+	}
+}
 int DLCMatValChk( char c )
 {
 	if( c == '-' )
@@ -2808,10 +2818,9 @@ void MATRts()
 }
 void DLCMatMlogMenu()
 {
-//	extern void MLOG_dump_uart(int to, int from);
 	char    key;
 	RTC_DATETIME dt;
-	int ret=0,num;
+	int ret=0,num,from,to;
 	char s[32];
 	while(1){
 		putst("\r\nmlog>");
@@ -2829,7 +2838,7 @@ void DLCMatMlogMenu()
 				putst("write error\r\n");
 			}
 			break;
-		case 'D':
+		case 'D':															/* Erase only 10pages */
 			for( int i=0;i<10;i++ )
 				W25Q128JV_eraseSctor(i, true);
 			break;
@@ -2899,7 +2908,27 @@ void DLCMatMlogMenu()
 			putst(s);putcrlf();
 			break;
 		case 'H':
-//			MLOG_dump_uart(0, 30);
+			putst("from(Hex)=");
+			if( c_gethxw( &from ))
+				break;
+			putst("to(Hex)=");
+			if( c_gethxw( &to ))
+				break;
+			MLOG_dump_uart(from, to);
+			break;
+		case 'I':
+			putst("Hex=");
+			if( c_gethxw( &num ))
+				break;
+			MLOG_tailAddressBuckUp();										/* 通知位置をセーブ */
+			DLCMatReportThru( num );
+			break;
+		case 'V':															/* DummyLog 3万write */
+			putst("EventLog 30000 DmyWrite\r\n");
+			if( CheckPasswd() ){
+				for(int i=0;i<30000;i++)
+					DLCEventLogWrite( _ID1_FACTORY_TEST,0,0 );
+			}
 			break;
 		case 0x1b:															/* Exit */
 			return;
@@ -2984,19 +3013,10 @@ void DLCMatMain()
 					}
 				}
 				break;
-//			case ' ':
-//				PORT_GroupWrite( PORT_GROUP_1,0x1<<23,-1 );
-//				PORT_GroupWrite( PORT_GROUP_1,0x1<<23,0 );
-//				break;
 			case 'Z':														/* Log全削除 */
-			if( CheckPasswd() )
+				if( CheckPasswd() )
 					DLCEventLogClr(0);
 				break;
-//			case 'W':
-//				puthxw( EVENT_LOG_NUMOF_ITEM );
-//				for(int i = 0; i < 100; i++ )
-//				DLCEventLogWrite( _ID1_CONFIGRET,i,0 );
-//				break;
 			case 'Y':
 				putcrlf();putst("inPORT_GROUP0:1=");
 				puthxw( PORT_GroupRead( PORT_GROUP_0 ));putch(':');
@@ -3104,13 +3124,6 @@ void DLCMatMain()
 			case 'W':												/* RTCタイマー一覧 */
 				if( CheckPasswd() )
 					DLCMATrtcDisp();
-				break;
-			case 'A':												/* DummyLog 3万write */
-				putst("EventLog 30000 DmyWrite\r\n");
-				if( CheckPasswd() ){
-					for(int i=0;i<30000;i++)
-						DLCEventLogWrite( _ID1_FACTORY_TEST,0,0 );
-				}
 				break;
 			default:
 				break;

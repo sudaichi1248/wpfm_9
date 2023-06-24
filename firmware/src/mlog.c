@@ -63,7 +63,7 @@ static uint32_t     _MLOG_tailAddressOnSRAM = 0;        // address of tail log f
 static uint8_t      _MLOG_pageBuffer[W25Q128JV_PAGE_SIZE];  // Working buffer(on SRAM)
 
 static void dumpLog(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p);
-static void dumpLog_USB(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p);
+static void dumpLog_line(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p,char* );
 static uint32_t findLogBySN(uint32_t sn);
 static int _MLOG_getLogOnSRAM(MLOG_T *log_p);
 
@@ -109,14 +109,14 @@ int MLOG_putLog(MLOG_T *log_p, bool specifySN)
     if ((_MLOG_headAddress & 0xfff) == 0)
     {
         // if page number and offset are zero - first log in current sector
-        DBG_PRINT("head=%06Xh", (unsigned int)_MLOG_headAddress);
+//      DBG_PRINT("head=%06Xh", (unsigned int)_MLOG_headAddress);
         uint16_t sectorNo = (_MLOG_headAddress >> 12) & 0x0fff;
-        DBG_PRINT("eraseSector(%04Xh)", (unsigned int)sectorNo);
+//      DBG_PRINT("eraseSector(%04Xh)", (unsigned int)sectorNo);
         if (W25Q128JV_eraseSctor(sectorNo, true) != W25Q128JV_ERR_NONE)
         {
             return (MLOG_ERR_ERASE);
         }
-        DBG_PRINT("eraseSector(%04Xh): done", (unsigned int)sectorNo);
+//      DBG_PRINT("eraseSector(%04Xh): done", (unsigned int)sectorNo);
     }
     uint16_t pageNo = _MLOG_headAddress >> 8;
     uint8_t offset = _MLOG_headAddress & 0xff;
@@ -165,11 +165,12 @@ int MLOG_getLog(MLOG_T *log_p)
     {
         return (MLOG_ERR_EMPTY);
     }
-
+//	putst("tail=");puthxw(_MLOG_tailAddress);putcrlf();
     if (W25Q128JV_readData(_MLOG_tailAddress, (uint8_t *)log_p, MLOG_RECORD_SIZE) != W25Q128JV_ERR_NONE)
     {
         return (MLOG_ERR_READ);
     }
+//    Dump( (char*)log_p,16 );
     MLOG_ID_T mlogID = _MLOG_tailAddress;
     //dumpLog("<", mlogID, log_p);
 
@@ -201,7 +202,7 @@ int MLOG_getLog(MLOG_T *log_p)
         }
     }
     _MLOG_tailAddress = ((uint32_t)pageNo << 8) + offset;
-
+//	putst("TAIL=");puthxw(_MLOG_tailAddress);putcrlf();
     return (mlogID);
 }
 
@@ -236,9 +237,9 @@ void MLOG_tailAddressRestore()
 }
 void MLOG_addressDisp()
 {
-	putst("\r\nMLOG_tailAddress:");puthxw(_MLOG_tailAddress);putcrlf();
-	putst("MLOG_headAddress:");puthxw(_MLOG_headAddress);putcrlf();
-	putst("MLOG_tailAddressBuckUp:");puthxw(_MLOG_tailAddressBuckUp);putcrlf();
+	putst("\r\n通知位置   MLOG_tailAddress:");puthxw(_MLOG_tailAddress);putcrlf();
+	putst("書込み位置 MLOG_headAddress:");puthxw(_MLOG_headAddress);putcrlf();
+	putst("            MLOG_tailBackUp:");puthxw(_MLOG_tailAddressBuckUp);putcrlf();
 }
 
 int MLOG_updateLog()
@@ -246,32 +247,68 @@ int MLOG_updateLog()
 	// backload record flag
 	uint16_t pageNo;
 	uint8_t offset;
-	while (_MLOG_tailAddressBuckUp <= _MLOG_tailAddress) {
+	if(_MLOG_tailAddressBuckUp == _MLOG_headAddress) {
+		putst("NoRecode\r\n");
+		return (MLOG_ERR_NONE);
+	}
+	while (_MLOG_tailAddressBuckUp != _MLOG_headAddress) {
 		pageNo = _MLOG_tailAddressBuckUp >> 8;
 		offset = _MLOG_tailAddressBuckUp & 0xff;
-		if (offset < MLOG_RECORD_SIZE * (MLOG_LOGS_PER_PAGE - 1))
-		{
+		if (offset < MLOG_RECORD_SIZE * (MLOG_LOGS_PER_PAGE - 1)){
 			offset += MLOG_RECORD_SIZE;
 		}
-		else
-		{
+		else{
 			// mark as backloaded
-			offset = W25Q128JV_PAGE_SIZE - 1;   // uploaded flag at last offset in the page
-			uint8_t flag = 0x00;
-			if (W25Q128JV_programPage(pageNo, offset, (uint8_t *)&flag, 1, true) != W25Q128JV_ERR_NONE)
-			{
+			uint16_t Mark;
+			Mark = 0x0000;		/* そのPageは全件通知済み */
+			if (W25Q128JV_programPage(pageNo, W25Q128JV_PAGE_SIZE-2, (uint8_t *)&Mark, 2, true) != W25Q128JV_ERR_NONE){
 				return (MLOG_ERR_PROGRAM_PAGE);
 			}
-			DEBUG_UART_printlnFormat("MARK %04X%02X AS %02Xh", (unsigned int)pageNo, (unsigned int)offset, flag);
-
+			DEBUG_UART_printlnFormat("MARK %06X AS %04Xh ", (unsigned int)(pageNo*256+offset), Mark);
 			// turn the page
 			offset = 0;
-			if (++pageNo > (MLOG_ADDRESS_MLOG_LAST >> 8))
-			{
+			if (++pageNo > (MLOG_ADDRESS_MLOG_LAST >> 8)){
 				pageNo = 0;     // back to top
 			}
 		}
 		_MLOG_tailAddressBuckUp = ((uint32_t)pageNo << 8) + offset;
+	}
+	/* 最終Page処理 */
+	uint16_t Mark=0;
+	switch( offset/MLOG_RECORD_SIZE ){
+	case 0:
+		Mark = 0xffff;
+		break;
+	case 1:
+		Mark = 0xfeff;
+		break;
+	case 2:
+		Mark = 0xfcff;
+		break;
+	case 3:
+		Mark = 0xf8ff;
+		break;
+	case 4:
+		Mark = 0xf0ff;
+		break;
+	case 5:
+		Mark = 0xe0ff;
+		break;
+	case 6:
+		Mark = 0xc0ff;
+		break;
+	case 7:
+		Mark = 0x80ff;
+		break;
+	case 8:
+		Mark = 0x00fe;
+		break;
+	}
+	if( Mark != 0xffff ){
+		if (W25Q128JV_programPage(pageNo, W25Q128JV_PAGE_SIZE-2, (uint8_t *)&Mark, 2, true) != W25Q128JV_ERR_NONE){
+			return (MLOG_ERR_PROGRAM_PAGE);
+		}
+		DEBUG_UART_printlnFormat("MARK %06X AS %04Xh ", (unsigned int)(pageNo*256+offset), Mark);
 	}
 	return (MLOG_ERR_NONE);
 }
@@ -391,174 +428,149 @@ int MLOG_format(void)
 int MLOG_checkLogs(bool oldestOnly)
 {
     DEBUG_UART_printlnFormat(">MLOG_checkLogs(): %lu", SYS_tick);
-
-    uint32_t latestSN = 0, oldestSN = MLOG_MAX_SEQUENTIAL_NUMBER, latestSN2 = 0;
+    uint32_t latestSN = 0, oldestSN = MLOG_MAX_SEQUENTIAL_NUMBER;
     uint32_t latestAddr = 0, oldestAddr = 0, latestAddr2 = 0;
-
-    for (uint32_t blockNo = 0; blockNo < (MLOG_ADDRESS_MLOG_LAST >> 16); blockNo++)
-    {
-        for (uint32_t sectorNo = 0; sectorNo < W25Q128JV_NUM_SECTOR; sectorNo++)
-        {
-            for (uint32_t pageNo = 0; pageNo < W25Q128JV_NUM_PAGE; pageNo++)
-            {
-                uint32_t addr = (blockNo << 16) + (sectorNo << 12) + (pageNo << 8);
-
-                // find head (find the most recent page)
-                uint32_t sn;
-                uint8_t buf[4];
-                if (W25Q128JV_readData(addr, buf, (uint16_t)sizeof(buf)) != W25Q128JV_ERR_NONE)
-                {
-                    return (MLOG_ERR_READ);
-                }
-                memcpy((void *)&sn, (void *)buf, sizeof(sn));
-                if (IS_NOT_USED_SN(sn))
-                {
-                    continue;       // skip unused page
-                }
-                if (sn < oldestSN)
-                {
-                    oldestSN = sn;
-                    oldestAddr = addr;
-                }
-                else if (latestSN < sn)
-                {
-                    latestSN = sn;
-                    latestAddr = addr;
-                }
-                // find tail (find the most recent not-uploaded page)
-                uint8_t flag;   // 0xff: not used or not uploaded/0x00: uploaded this page
-                if (W25Q128JV_readData(addr + (W25Q128JV_PAGE_SIZE-1), &flag, 1) != W25Q128JV_ERR_NONE)
-                {
-                    return (MLOG_ERR_READ);
-                }
-#if 0	// 起動時高速化
-                DEBUG_UART_printlnFormat("READ FLAG %06lX: %02X", addr + (W25Q128JV_PAGE_SIZE-1), flag);
-                APP_delay(20);
+    char	nosn=0;
+	char	once=0;
+	for( uint32_t addr = MLOG_ADDRESS_MLOG_TOP;addr < MLOG_ADDRESS_MLOG_LAST;addr += W25Q128JV_PAGE_SIZE ){
+		uint32_t sn;			
+		uint8_t buf[4];			// find head (find the most recent page)
+		if (W25Q128JV_readData(addr, buf, (uint16_t)sizeof(buf)) != W25Q128JV_ERR_NONE)
+			return (MLOG_ERR_READ);
+		memcpy((void *)&sn, (void *)buf, sizeof(sn));
+		if (IS_NOT_USED_SN(sn)){
+			if( (nosn|once)== 0 ){
+				nosn = 1;
+				latestAddr2 = addr;
+			}
+			continue;       // skip unused page
+		}
+		if (sn < oldestSN){											/* 古いSNを探す */
+			oldestSN = sn;
+			oldestAddr = addr;
+		}
+		if (latestSN < sn){											/* ページ先頭SNの最大を探す 総じて oldestSN(最古)～latestSN(最新) を求める */
+			latestSN = sn;
+			latestAddr = addr;
+		}                // find tail (find the most recent not-uploaded page)
+		uint16_t Mark;   // 0xff: not used or not uploaded/0x00: uploaded this page
+		if (W25Q128JV_readData(addr + (W25Q128JV_PAGE_SIZE-2),(uint8_t*)&Mark, 2) != W25Q128JV_ERR_NONE)
+			return (MLOG_ERR_READ);
+#if 0
+		DEBUG_UART_printlnFormat("Add:Mark=%06lX:%04Xh", addr, Mark);
+		APP_delay(30);
 #endif
-                if (flag == 0x00)
-                {
-                    // when this page was uploaded
-                   latestAddr2 = addr+0x100;      /* 23.4.28 kasai */
-                   if (latestSN2 < sn){
-                        latestSN2 = sn + MLOG_LOGS_PER_PAGE;
-                   }
-                }
-            }
-        }
-        //DEBUG_UART_printFormat("blockNo=%02x ", (unsigned int)blockNo);
-    }
-    if (oldestSN == MLOG_MAX_SEQUENTIAL_NUMBER)
-    {
-        oldestSN = 0;
-        oldestAddr = 0;
-    }
-    if (latestSN == 0)
-    {
-        latestSN = 0;
-        latestAddr = 0;
-    }
-
-    DEBUG_UART_printlnString("\n-- 1st --");
-    DEBUG_UART_printlnFormat("oldestSN=%08lu,oldestAddr=%06Xh", oldestSN, (unsigned int)oldestAddr);
-    DEBUG_UART_printlnFormat("latestSN=%08lu,latestAddr=%06Xh", latestSN, (unsigned int)latestAddr);
-    DEBUG_UART_printlnFormat("latestS2=%08lu,latestAdd2=%06Xh", latestSN2,(unsigned int)latestAddr2);
-    APP_delay(30);
-
-    // latest
-    uint8_t buf[W25Q128JV_PAGE_SIZE];
-    if (W25Q128JV_readData(latestAddr, buf, (uint16_t)W25Q128JV_PAGE_SIZE) == W25Q128JV_ERR_NONE)
-    {
+		if( once == 0 ){											/* 通知済み最新のポジションを見つける(最初に0000以外を見つける) */
+			switch( Mark ){
+			case 0xffff:											/* このPage通知未 */
+				latestAddr2 = addr;
+				once = 1;
+				break;
+			case 0xfeff:											/* 1レコードだけ通知済み */
+				latestAddr2 = addr+MLOG_RECORD_SIZE;
+				once = 1;
+				break;
+			case 0xfcff:											/* 2レコードだけ通知済み */
+				latestAddr2 = addr+MLOG_RECORD_SIZE*2;
+				once = 1;
+				break;
+			case 0xf8ff:											/* 3レコードだけ通知済み */
+				latestAddr2 = addr+MLOG_RECORD_SIZE*3;
+				once = 1;
+				break;
+			case 0xf0ff:											/* 4レコードだけ通知済み */
+				latestAddr2 = addr+MLOG_RECORD_SIZE*4;
+				once = 1;
+				break;
+			case 0xe0ff:											/* 5レコードだけ通知済み */
+				latestAddr2 = addr+MLOG_RECORD_SIZE*5;
+				once = 1;
+				break;
+			case 0xc0ff:											/* 6レコードだけ通知済み */
+				latestAddr2 = addr+MLOG_RECORD_SIZE*6;
+				once = 1;
+				break;
+			case 0x80ff:											/* 7レコードだけ通知済み */
+				latestAddr2 = addr+MLOG_RECORD_SIZE*7;
+				once = 1;
+				break;
+			case 0x00fe:											/* 8レコードだけ通知済み */
+				latestAddr2 = addr+MLOG_RECORD_SIZE*8;
+				once = 1;
+				break;
+			}
+		}
+		switch( Mark ){
+		case 0x00ff:												/* 古いマーク(1byte時代) */
+		case 0x0000:												/* 当ページは満杯 */
+			once = 0;												/* 1周してたときのため途中で0があったらクリアしとく*/
+			break;
+		}
+	}
+	if (oldestSN == MLOG_MAX_SEQUENTIAL_NUMBER){
+		oldestSN = 0;
+		oldestAddr = 0;
+	}
+	if (latestSN == 0){
+		latestSN = 0;
+		latestAddr = 0;
+	}
+	DEBUG_UART_printlnString("\n-- 1st --");
+	DEBUG_UART_printlnFormat("oldestSN=%08lu,oldestAddr=%06Xh", oldestSN, (unsigned int)oldestAddr);
+	DEBUG_UART_printlnFormat("latestSN=%08lu,latestAddr=%06Xh", latestSN, (unsigned int)latestAddr);
+	DEBUG_UART_printlnFormat("latestAdd2=%06Xh", (unsigned int)latestAddr2);
+	APP_delay(30);
+	uint8_t buf[W25Q128JV_PAGE_SIZE];
+	if (W25Q128JV_readData(latestAddr, buf, (uint16_t)W25Q128JV_PAGE_SIZE) == W25Q128JV_ERR_NONE){
         bool found = false;
         MLOG_T *p = (MLOG_T *)buf;
-        for (uint32_t addr = latestAddr; addr < latestAddr + (MLOG_RECORD_SIZE * MLOG_LOGS_PER_PAGE); addr += MLOG_RECORD_SIZE, p++)
-        {
-            if (IS_NOT_USED_SN(p->sequentialNumber))
-            {
+        for (uint32_t addr = latestAddr; addr < latestAddr + (MLOG_RECORD_SIZE * MLOG_LOGS_PER_PAGE); addr += MLOG_RECORD_SIZE, p++){
+            if (IS_NOT_USED_SN(p->sequentialNumber)){
                 DEBUG_UART_printlnFormat(">>> addr=%06lXh", addr);
-                if (latestAddr < MLOG_ADDRESS_MLOG_TOP + MLOG_RECORD_SIZE)
-                {
-                    latestAddr = 0;
-                    //latestSN = ((MLOG_T *)buf)->sequentialNumber;
-                    latestSN = 0;
-                }
-                else
-                {
-                    latestAddr = addr - MLOG_RECORD_SIZE;
-                }
+                latestAddr = addr;
                 found = true;
                 break;
             }
             latestSN = p->sequentialNumber;
         }
-        if (! found)
-        {
-            latestAddr += MLOG_RECORD_SIZE * (MLOG_LOGS_PER_PAGE - 1);
-            //latestSN = (p + (MLOG_LOGS_PER_PAGE - 1))->sequentialNumber;
-        }
-    }
-    else
-    {
-        return (MLOG_ERR_READ);
-    }
-
+		if (!found){									/* Pageの先頭である */
+			latestAddr += W25Q128JV_PAGE_SIZE;			/* Next Page */
+			if( latestAddr > MLOG_ADDRESS_MLOG_LAST )	/* 1周したらTOPへ */
+				latestAddr = MLOG_ADDRESS_MLOG_TOP;
+		}
+	}
+	else {
+		return (MLOG_ERR_READ);
+	}
     DEBUG_UART_printlnString("\n-- 2nd --");
     DEBUG_UART_printlnFormat("oldestSN=%08lu,oldestAddr=%06Xh", oldestSN, (unsigned int)oldestAddr);
     DEBUG_UART_printlnFormat("latestSN=%08lu,latestAddr=%06Xh", latestSN, (unsigned int)latestAddr);
-    DEBUG_UART_printlnFormat("latestS2=%08lu,latestAdd2=%06Xh", latestSN2, (unsigned int)latestAddr2);
+    APP_delay(20);
+    DEBUG_UART_printlnFormat("latestAdd2=%06Xh", (unsigned int)latestAddr2);
     APP_delay(30);
-
     _MLOG_lastSequentialNumber = latestSN;
     _MLOG_oldestSequentialNumber = oldestSN;
-    DEBUG_UART_printlnFormat("_MLOG_lastSequentialNumber=%lu", _MLOG_lastSequentialNumber);
-    DEBUG_UART_printlnFormat("_MLOG_oldestSequentialNumber=%lu", _MLOG_oldestSequentialNumber);
+    DEBUG_UART_printlnFormat("_lastSNr=%lu", _MLOG_lastSequentialNumber);
+    DEBUG_UART_printlnFormat("_oldestSN=%lu", _MLOG_oldestSequentialNumber);
     APP_delay(20);
 
     // set oldest page
     _MLOG_oldestAddress = oldestAddr;
     _MLOG_latestAddress = latestAddr;
 
-    if (! oldestOnly)
-    {
-        // set tail pointer
-        if (latestAddr2 == 0 && latestAddr < MLOG_ADDRESS_MLOG_TOP + MLOG_RECORD_SIZE)
-        {
-            _MLOG_tailAddress = 0;
-        }
-        else if (latestAddr2 == latestAddr)
-        {
-            _MLOG_tailAddress = latestAddr2;
-        }
-        else
-        {
-            // latestAddr2 += W25Q128JV_PAGE_SIZE;  // remove @R0.5
-            if (latestAddr2 >= (MLOG_ADDRESS_MLOG_LAST & 0xffff00))
-            {
-                latestAddr2 = 0;
-            }
+	if (! oldestOnly){      // set tail pointer
+		if (latestAddr2 == 0 && latestAddr < MLOG_ADDRESS_MLOG_TOP + MLOG_RECORD_SIZE){
+			_MLOG_tailAddress = 0;
+		}
+		else if (latestAddr2 == latestAddr){
+			_MLOG_tailAddress = latestAddr2;
+		}
+		else {
             _MLOG_tailAddress = latestAddr2;
         }
         DEBUG_UART_printlnFormat("_MLOG_tailAddress=%06Xh", (unsigned int)_MLOG_tailAddress);
         APP_delay(20);
-
-        // set head pointer for next use
-        uint16_t pageNo = latestAddr >> 8;
-        uint8_t offset = latestAddr & 0xff;
-        if (latestAddr > 0)
-        {
-            if (offset < MLOG_RECORD_SIZE * (MLOG_LOGS_PER_PAGE - 1))
-            {
-                offset += MLOG_RECORD_SIZE;
-            }
-            else
-            {
-                offset = 0;
-                if (++pageNo > (MLOG_ADDRESS_MLOG_LAST >> 8))
-                {
-                    pageNo = 0;     // back to top
-                }
-            }
-        }
-        _MLOG_headAddress = ((uint32_t)pageNo << 8) + offset;
+       _MLOG_headAddress = latestAddr;
         DEBUG_UART_printlnFormat("_MLOG_headAddress=%06Xh", (unsigned int)_MLOG_headAddress);
     }
 
@@ -648,100 +660,87 @@ int MLOG_putLogOnSRAM(MLOG_T *log_p)
 
     return ((int)mlogID);       // return mlog ID when succeed
 }
-#if 0
-void MLOG_dump(void)
+void MLOG_dump_uart(int from, int to)
 {
-    DEBUG_UART_printlnString("--->");
-
-    for (uint32_t blockNo = 0; blockNo < ((MLOG_ADDRESS_MLOG_LAST + 1) >> 16); blockNo++)
-    {
-		for (uint32_t sectorNo = 0; sectorNo < W25Q128JV_NUM_SECTOR; sectorNo++)
-        {
-            for (uint32_t pageNo = 0; pageNo < W25Q128JV_NUM_PAGE; pageNo++)
-            {
-                uint32_t addr = (blockNo << 16) + (sectorNo << 12) + (pageNo << 8);
-                if (W25Q128JV_readData(addr, _MLOG_pageBuffer, (uint16_t)sizeof(_MLOG_pageBuffer)) != W25Q128JV_ERR_NONE)
-                {
-                    DEBUG_UART_printlnFormat("Page read failed: %04lX", pageNo);
-                    continue;
-                }
-                for (int n = 0; n < MLOG_LOGS_PER_PAGE; n++)
-                {
-                    MLOG_ID_T mlogId = (uint32_t)addr + (MLOG_RECORD_SIZE * n);
-                    MLOG_T *mlp = (MLOG_T *)_MLOG_pageBuffer + n;
-                    if (IS_NOT_USED_SN(mlp->sequentialNumber))
-                    {
-                        // Unused entry
-                        DEBUG_UART_printlnFormat("%06lX: -", mlogId);
-                        DEBUG_UART_FLUSH(); APP_delay(1);
-                    }
-                    else
-                    {
-                        // Used entry
-                        dumpLog("", mlogId, mlp);
-                    }
-                }
-                // output page mark
-                DEBUG_UART_printlnFormat("%04lX: PAGE MARK %02Xh", (blockNo << 4) + pageNo, _MLOG_pageBuffer[W25Q128JV_PAGE_SIZE - 1]);
-            }
-        }
-    }
-
-    DEBUG_UART_printlnString("<---");
-}
-#endif
-void MLOG_dump_USB(const char *param, char *resp)
-{
-	if (WPFM_operationMode == WPFM_OPERATION_MODE_MEASUREMENT) {
-		sprintf(resp, "NG:mode not allowed.\r\n");	// 測定モードではNG
-		APP_printUSB(resp);
-		APP_delay(10);
-	} else {
-		APP_printUSB("--->\r\n");
-		APP_delay(10);
-
-		for (uint32_t blockNo = 0; blockNo < ((MLOG_ADDRESS_MLOG_LAST + 1) >> 16); blockNo++)
-		{
-			for (uint32_t sectorNo = 0; sectorNo < W25Q128JV_NUM_SECTOR; sectorNo++)
-			{
-				for (uint32_t pageNo = 0; pageNo < W25Q128JV_NUM_PAGE; pageNo++)
-				{
-					uint32_t addr = (blockNo << 16) + (sectorNo << 12) + (pageNo << 8);
-					if (W25Q128JV_readData(addr, _MLOG_pageBuffer, (uint16_t)sizeof(_MLOG_pageBuffer)) != W25Q128JV_ERR_NONE)
-					{
-						sprintf(resp, "Page read failed: %04lX\r\n", pageNo);
-						APP_printUSB(resp);
-						APP_delay(2);
-						continue;
-					}
-					for (int n = 0; n < MLOG_LOGS_PER_PAGE; n++)
-					{
-						MLOG_ID_T mlogId = (uint32_t)addr + (MLOG_RECORD_SIZE * n);
-						MLOG_T *mlp = (MLOG_T *)_MLOG_pageBuffer + n;
-						if (IS_NOT_USED_SN(mlp->sequentialNumber))
-						{
-							// Unused entry
-							sprintf(resp, "%06lX: -\r\n", mlogId);
-							APP_printUSB(resp);
-							APP_delay(2);
-						}
-						else
-						{
-							// Used entry
-							dumpLog_USB("", mlogId, mlp);
-						}
-					}
-					// output page mark
-					sprintf(resp, "%04lX: PAGE MARK %02Xh\r\n", (blockNo << 4) + pageNo, _MLOG_pageBuffer[W25Q128JV_PAGE_SIZE - 1]);
-					APP_printUSB(resp);
-					APP_delay(2);
-				}
+	int		addr;
+	char	resp[80];
+	extern	void DLC_delay( int );
+	putst("\r\n[START]\r\n");
+	resp[0] = 0;
+	DLC_delay(10);
+	for( addr = from; addr < to; addr += W25Q128JV_PAGE_SIZE ){
+		if (W25Q128JV_readData(addr, _MLOG_pageBuffer, (uint16_t)sizeof(_MLOG_pageBuffer)) != W25Q128JV_ERR_NONE){
+			putst("Read Err\r\n");
+			APP_delay(2);
+			continue;
+		}
+		for (int n = 0; n < MLOG_LOGS_PER_PAGE; n++){
+			MLOG_ID_T mlogId = (uint32_t)addr + (MLOG_RECORD_SIZE * n);
+			MLOG_T *mlp = (MLOG_T *)_MLOG_pageBuffer + n;
+			if (IS_NOT_USED_SN(mlp->sequentialNumber)){		// Unused entry
+				sprintf(resp, "%06lX: -\r\n", mlogId);
+				putst(resp);
+				DLC_delay(2);
+			}
+			else {
+				dumpLog_line("", mlogId, mlp,resp);
+				putst(resp);
+				DLC_delay(100);
 			}
 		}
-
-		APP_printUSB("<---\r\n");
-		APP_delay(10);
+		// output page mark
+		uint16_t *Mark;
+		Mark = (uint16_t*)&_MLOG_pageBuffer[W25Q128JV_PAGE_SIZE - 2];
+		sprintf(resp, "MARK %04Xh\r\n", *Mark );
+		putst(resp);
+		DLC_delay(2);
 	}
+	putst("[END]\r\n");
+	APP_delay(10);
+}
+void MLOG_dump_USB(const char *param, char *resp)
+{
+	int		from=0,to,addr;
+	char	line[80];
+	APP_printUSB("[START]\r\n");
+	APP_delay(10);
+	if( strchr( param,'-' ) ){
+		sscanf( param,"%x-%x",&from,&to );
+	}
+	else {
+		if( param[0] )
+			sscanf( param,"%x",&to );
+		else
+			to = MLOG_ADDRESS_MLOG_LAST;
+	}
+	for( addr = from; addr < to; addr += W25Q128JV_PAGE_SIZE ){
+		if (W25Q128JV_readData(addr, _MLOG_pageBuffer, (uint16_t)sizeof(_MLOG_pageBuffer)) != W25Q128JV_ERR_NONE){
+			APP_printUSB(resp);
+			APP_delay(2);
+			continue;
+		}
+		for (int n = 0; n < MLOG_LOGS_PER_PAGE; n++){
+			MLOG_ID_T mlogId = (uint32_t)addr + (MLOG_RECORD_SIZE * n);
+			MLOG_T *mlp = (MLOG_T *)_MLOG_pageBuffer + n;
+			if (IS_NOT_USED_SN(mlp->sequentialNumber)){				// Unused entry
+				sprintf(resp, "%06lX: -\r\n", mlogId);
+				APP_printUSB(resp);
+				APP_delay(2);
+			}
+			else {
+				dumpLog_line("", mlogId, mlp,line);
+				APP_printUSB(line);
+			}
+		}
+		// output page mark
+		uint16_t *Mark;
+		Mark = (uint16_t*)&_MLOG_pageBuffer[W25Q128JV_PAGE_SIZE - 2];
+		sprintf(resp, "MARK %04Xh\r\n", *Mark );
+		APP_printUSB(resp);
+		APP_delay(2);
+	}
+	APP_printUSB("[END]\r\n");
+	APP_delay(10);
 }
 
 int MLOG_getStatus(MLOG_STATUS_T *stat_p)
@@ -793,27 +792,22 @@ static void dumpLog(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p)
 }
 void DLCMatClockGet(uint32_t,char*);
 
-static void dumpLog_USB(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p)
+static void dumpLog_line(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p,char *line)
 {
-#ifdef DEBUG_UART
-    char line[80];
-    char	s[32];
+	char	s[32];
 	DLCMatClockGet(log_p->timestamp.second,s );
-   snprintf(line, sizeof(line),
-            "%s%06X: %08u,%s.%03u,%.3f/%.3f,%u/%u,%d,%02Xh,%02Xh\r\n",
-            prefix,
-            (unsigned int)mlogId,
-            (unsigned int)log_p->sequentialNumber,s,
-            (unsigned int)log_p->timestamp.mSecond,
-            log_p->measuredValues[0], log_p->measuredValues[1],
-            (unsigned int)log_p->batteryVoltages[0], (unsigned int)log_p->batteryVoltages[1],
-            (int)log_p->temperatureOnBoard,
-            (unsigned int)log_p->alertStatus,
-            (unsigned int)log_p->batteryStatus
-    );
-    APP_printUSB(line);
-    APP_delay(10);
-#endif // DEBUG_UART
+	snprintf(line, 80,
+        "%s%06X: %08u,%s.%03u,%.3f/%.3f,%u/%u,%d,%02Xh,%02Xh\r\n",
+        prefix,
+        (unsigned int)mlogId,
+        (unsigned int)log_p->sequentialNumber,s,
+        (unsigned int)log_p->timestamp.mSecond,
+        log_p->measuredValues[0], log_p->measuredValues[1],
+        (unsigned int)log_p->batteryVoltages[0], (unsigned int)log_p->batteryVoltages[1],
+        (int)log_p->temperatureOnBoard,
+        (unsigned int)log_p->alertStatus,
+        (unsigned int)log_p->batteryStatus
+	);
 }
 
 static uint32_t findLogBySN(uint32_t sn)
@@ -887,14 +881,14 @@ int MLOG_putLogtest(MLOG_T *log_p, bool specifySN)
     if ((_MLOG_headAddress & 0xfff) == 0)
     {
         // if page number and offset are zero - first log in current sector
-        DEBUG_UART_printlnFormat("head=%06Xh", (unsigned int)_MLOG_headAddress);
+//      DEBUG_UART_printlnFormat("head=%06Xh", (unsigned int)_MLOG_headAddress);
         uint16_t sectorNo = (_MLOG_headAddress >> 12) & 0x0fff;
-        DEBUG_UART_printlnFormat("eraseSector(%04Xh)", (unsigned int)sectorNo);
+//      DEBUG_UART_printlnFormat("eraseSector(%04Xh)", (unsigned int)sectorNo);
         if (W25Q128JV_eraseSctor(sectorNo, true) != W25Q128JV_ERR_NONE)
         {
             return (MLOG_ERR_ERASE);
         }
-        DEBUG_UART_printlnFormat("eraseSector(%04Xh): done", (unsigned int)sectorNo);
+//      DEBUG_UART_printlnFormat("eraseSector(%04Xh): done", (unsigned int)sectorNo);
     }
     uint16_t pageNo = _MLOG_headAddress >> 8;
     uint8_t offset = _MLOG_headAddress & 0xff;

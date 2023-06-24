@@ -273,7 +273,6 @@ int c_gethxw( int *val )
 	while(1){
 		c = getch() ;
 		if ((( '0' <= c )&&( c <= '9' ))||(( 'A' <= c)&&( c <= 'F'))||(( 'a' <= c)&&( c <= 'f'))){
-			putch( c ) ;
 			c = inhex( c );
 			*val = ( *val << 4 ) + c ;
 			flg = 1;
@@ -286,6 +285,7 @@ int c_gethxw( int *val )
 			case 0x0d:	
 				if ( flg == 0 )	/* ‰½‚à“ü—Í‚µ‚È‚¢‚ÅƒŠƒ^[ƒ“ */
 					return( GET_BLANK );
+				putcrlf();
 				return( GET_OK );
 			default:
 				return( GET_BLANK );
@@ -305,7 +305,6 @@ int c_gethxs( short *val )
 	while(1){
 		c = getch() ;
 		if ((( '0' <= c )&&( c <= '9' ))||(( 'A' <= c)&&( c <= 'F'))||(( 'a' <= c)&&( c <= 'f'))){
-			putch( c ) ;
 			c = inhex( c );
 			*val = ( *val << 4 ) + c ;
 			flg = 1;
