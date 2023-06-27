@@ -506,18 +506,10 @@ void MTRsvr()
 		DLCMatReset();
 		return;
 	}
-	if (DLC_Para.FOTAact != 0) {	// fota 運用時
-		switch( DLC_Para.Server ){
-		case 0:
-			DLCMatSend( "AT$SETSERVER,karugamosoft.ddo.jp,9999\r" );
-			break;
-		default:
-			DLCMatSend( "AT$SETSERVER,beam.soracom.io,8888\r" );
-			break;
-		}
-	} else {	// fota FOTA実行時
-		DLCMatSend( "AT$SETSERVER,harvest-files.soracom.io,80\r" );	// fota soracom harvest指定
-	}
+	if (DLC_Para.FOTAact != 0)									// 運用時のサーバー
+		DLCMatSend( "AT$SETSERVER,beam.soracom.io,8888\r" );
+	else
+		DLCMatSend( "AT$SETSERVER,harvest-files.soracom.io,80\r" );	// FOTA時のサーバー soracom harvest指定
 	DLCMatTimerset( 0,TIMER_5000ms );
 }
 extern	uint32_t	BatteryValueSum1,BatteryValueSum2;
