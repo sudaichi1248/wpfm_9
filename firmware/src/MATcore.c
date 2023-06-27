@@ -2472,18 +2472,19 @@ int DLCMatRecvDisp()
 				DLCEventLogWrite( _ID1_HTTP_RES,(p[9]-'0')<<8|(p[10]-'0')<<4|(p[11]-'0'),DLC_MatState );
 				DLC_MatErr = 0;
 			}
-			if( (j == 0) && (DLC_MatState == MATC_STATE_RPT) ){	// 残りデータなしでReport送信状態の場合
+			if( (j == 0) && (DLC_MatState == MATC_STATE_RPT) ){				// 残りデータなしでReport送信状態の場合
 				if( strstr( DLC_MatResBuf,"HTTP/1.1 200 OK" )){
-					if( strstr( DLC_MatResBuf,"Connection: close" ) ){	/* ここです */
-putst("@@@@@ wktk1\r\n");
-						if( DLC_Para.Http_Report_Hold == 0xff ){
-							if ( MLOG_updateLog() != MLOG_ERR_NONE) {	// log FLAGを通知済に変更
-								putst("write error\r\n");
-							}
-							DLCEventLogWrite( _ID1_HTTP_OK,0,0 );
-							DLC_MatsendRepOK = true;
+					if( strstr( DLC_MatResBuf,"Connection: close" ) ){
+						putst("@mlog Hold OK\r\n");
+						if ( MLOG_updateLog() != MLOG_ERR_NONE) {			// log FLAGを通知済に変更
+							putst("write error\r\n");
+							DLCEventLogWrite( _ID1_HTTP_OK,-1,0 );
 						}
-						MATReportLmtUpDw(1);								/* Report Limit数Up */
+						else {
+							DLCEventLogWrite( _ID1_HTTP_OK,0,0 );
+							MATReportLmtUpDw(1);								/* Report Limit数Up */
+						}
+						DLC_MatsendRepOK = true;
 					}
 				}
 				else if( strstr( DLC_MatResBuf,"HTTP/1.1 504 " ))			/* Gateway TimeOut */
