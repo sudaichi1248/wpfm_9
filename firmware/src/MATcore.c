@@ -154,7 +154,14 @@ void IDLEputch( )
 #define		TIMER_90s		90000
 #define		TIMER_120s		120000
 #define		TIMER_300s		300000
-#define		TIMER_NUM		8	// 0:all over timer,1:,2:push sw timer,3:retry timer,4:FOTA timer,5:FOTA allover timer
+#define		TIMER_NUM		8							/* Maxタイマー数 8 */
+#define	_TMID_0_MAT_SEQ				0					/* Matcreシーケンスタイマー */
+#define	_TMID_1_BAT_SCAN			1					/* 電池電圧計測間隔タイマー */
+#define	_TMID_2_PUSH_SW				2					/* Pushスイッチチャタリング監視タイマー */
+#define	_TMID_3_RCV_RETRY			3					/* AT$RECVリトライタイマー*/
+#define	_TMID_4_RCV_RETRY_ByFOTA	4					/* AT$RECVリトライタイマー FOTA用 */
+#define	_TMID_5_FOTA_ALLOVER		5					/* FOTAオールオーバータイマー */
+#define	_TMID_6_LED_500ms			6					/* 起動後計測時500msLEDタイマー */
 struct {
 	int		cnt;
 	uchar	TO;
@@ -469,7 +476,7 @@ void MTRapn()
 void MTapn()
 {
 	DLC_MatRetry = DLC_MatLineIdx = 0;
-	if (DLC_Para.FOTAact != 0) {	// fota 運用時
+	if (DLC_Para.FOTAact != 0) {		//  運用時
 		if( strstr( DLC_MatVer,"01.04" ) )
 			strcpy(	DLC_MatNUM,"812000000000000" );
 		else{
@@ -489,7 +496,7 @@ void MTapn()
 			DLCMatSend( "AT$SETSERVER,beam.soracom.io,8888\r" );
 			break;
 		}
-	} else {	// fota FOTA実行時
+	} else {							//  FOTA時
 		DLCMatSend( "AT$SETSERVER,harvest-files.soracom.io,80\r" );	// fota soracom harvest指定
 		DLC_Matknd = 3;	// fota FOTA発呼
 	}
@@ -521,11 +528,11 @@ void MTconn()
 	DLCMatTimerset( 0,TIMER_120s );
 	BatteryValueSum1 = BatteryValueSum2 = 0;
 	DLC_MatBatCnt = 0;
-	DLCMatTimerset( 1,TIMER_1000ms );
-	if (DLC_Para.FOTAact != 0) {	// fota 運用時
+	DLCMatTimerset( _TMID_1_BAT_SCAN,TIMER_1000ms );
+	if (DLC_Para.FOTAact != 0) {		//  運用時
 		DLC_MatState = MATC_STATE_COND;
-	} else {	//  FOTA実行時
-		DLC_MatState = MATC_STATE_FOTA;	// fota FOTA stateへ
+	} else {							//  FOTA時
+		DLC_MatState = MATC_STATE_FOTA;	
 	}
 }
 void MTtime()
@@ -595,8 +602,8 @@ void MTwget()	// fota
 {
 	DLC_MatLineIdx = 0;
 	DLCMatWgetFile();
-	DLCMatTimerset( 4,TIMER_15s );
-	DLCMatTimerset( 5,TIMER_300s );
+	DLCMatTimerset( _TMID_4_RCV_RETRY_ByFOTA,	TIMER_15s );
+	DLCMatTimerset( _TMID_5_FOTA_ALLOVER,		TIMER_300s );
 	DLC_MatFotaAlloverTO = false;
 }
 /*
@@ -643,7 +650,7 @@ void MTfirm()	// fota
 	int	rt;
 	if (DLC_MatFotaWriteNG == false) {	/* 書込みNGなし */
 		DLC_MatFotaTOcnt = 0;
-		DLCMatTimerset( 4,TIMER_5000ms);
+		DLCMatTimerset( _TMID_4_RCV_RETRY_ByFOTA,TIMER_5000ms);
 	}
 	rt = DLCMatRecvWriteFota();			/* 内部Flashへ受信データ書込み処理 */
 	putst("RecvRet=");puthxs( rt );putcrlf();
@@ -984,7 +991,7 @@ void MTtoF()	// fota T/O
 	} else {
 		if (DLC_MatFotaTOcnt < 3) {
 			DLC_MatFotaTOcnt++;
-			DLCMatTimerset( 4,TIMER_5000ms);
+			DLCMatTimerset( _TMID_4_RCV_RETRY_ByFOTA,TIMER_5000ms);
 			DLCMatSend( "AT$RECV,1024\r" );
 			putst("Retry(*o*)\r\n");
 		} else {
@@ -1167,6 +1174,21 @@ void MTOff2()
 	DLCEventLogWrite( _ID1_POWER_OFF,2,0 );
 	DLC_Halt();
 }
+/*
+	起動時 LED1を5回500ms点ける処理
+*/
+void DLCMatLed1Proc( char flg )
+{
+	if( flg == 0 ){
+		GPIOEXP_clear(0);							/* LED1 On */
+		DLCMatTimerset( _TMID_6_LED_500ms,500 );	/* 500ms */
+		putst("LED1=On\r\n");
+	}
+	if( flg == 1 ){
+		GPIOEXP_set(0);								/* LED1 Off */
+		putst("LED1=Off\r\n");
+	}
+}
 void	 (*MTjmp[18][21])() = {
 /*					  0         1       2      3      4       5       6       7       8       9       10      11      12      13      14      15      16      17      18     19     20   **/
 /*				  	 INIT    IDLE    IMEI    APN     SVR     WAKE    CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR    OFF   **/
@@ -1309,8 +1331,8 @@ void DLCMatState()
 			DLC_MatLineIdx = 0;
 			zLogOn = 0;
 			DLCMatSend( "AT$RECV,1024\r" );
-			if (DLC_Para.FOTAact != 0) {	// fota 運用時
-				DLCMatTimerset( 3,TIMER_7000ms);
+			if (DLC_Para.FOTAact != 0) {					//  運用時
+				DLCMatTimerset( _TMID_3_RCV_RETRY,TIMER_7000ms);
 			}
 		}
 	}
@@ -1346,17 +1368,19 @@ void DLCMatState()
 		}
 	}
 	if( DLC_Matfact == 0xff ){
-		if( DLCMatTmChk( 0 ) )
+		if( DLCMatTmChk( _TMID_6_LED_500ms ))
+			DLCMatLed1Proc(1);								/* LED1停止 */
+		if( DLCMatTmChk( _TMID_0_MAT_SEQ ) )
 			DLC_Matfact = MATC_FACT_TO1;
-		else if( DLCMatTmChk( 1 ) )
+		else if( DLCMatTmChk( _TMID_1_BAT_SCAN ) )
 			DLC_Matfact = MATC_FACT_TO2;
-		else if( DLCMatTmChk( 3 ) ){
+		else if( DLCMatTmChk( _TMID_3_RCV_RETRY ) ){
 			DLCMatSend( "AT$RECV,1024\r" );
 			putst("Retry(ToT)\r\n");
 		}
-		else if( DLCMatTmChk( 4 ) )
+		else if( DLCMatTmChk( _TMID_4_RCV_RETRY_ByFOTA ) )
 			DLC_Matfact = MATC_FACT_TO1;
-		else if( DLCMatTmChk( 5 ) ) {
+		else if( DLCMatTmChk( _TMID_5_FOTA_ALLOVER ) ) {
 			DLC_MatFotaAlloverTO = true;
 			DLC_Matfact = MATC_FACT_TO1;
 		}

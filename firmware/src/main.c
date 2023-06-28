@@ -46,7 +46,7 @@
 #include "Moni.h"
 #include "DLCpara.h"
 #include "Eventlog.h"
-void	DLCMatMain(),DLCMatHalt();
+void	DLCMatMain(),DLCMatHalt(),DLCMatLed1Proc();
 int		DLCMatIsSleep(),DLCMatOffChk();
 
 extern int		RTCReadRetry;
@@ -338,7 +338,7 @@ static void eventLoopOnMeasurementMode(void)
 				} else {
 					if (WPFM_ForcedCall == false) {	// 強制発報でない
 		                // 定期計測の最初の5回だけLED1を500mS点灯させる
-		                UTIL_LED1_ONESHOT();
+		                DLCMatLed1Proc(0);			/* LED1開始 */
 	                }
 				}
             }
