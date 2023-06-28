@@ -1690,8 +1690,9 @@ void DLCMatReportSnd()
 		}
 		else
 			DLC_MatReportFin = 1;
-		sprintf( tmp,"{\"Time\":\"%s\","		,s );									strcat( http_tmp,tmp );
-		sprintf( tmp,"\"Value_ch1\":%.3f,"	,log_p.measuredValues[0] );
+		sprintf( tmp,"{\"Time\":\"%s\",",s );
+		strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Value_ch1\":%.3f,",log_p.measuredValues[0] );
 		if( DLCMatValChk( tmp[12] )){
 			DLCEventLogWrite( _ID1_ERROR,0x11,(tmp[12]<<24)|(tmp[13]<<16)|(tmp[14]<<8)|tmp[15] );
 			putst("Strange1=");Dump( &tmp[12],8 );
@@ -1700,7 +1701,7 @@ void DLCMatReportSnd()
 		else
 			old1 = log_p.measuredValues[0];
 		strcat( http_tmp,tmp );
-		sprintf( tmp,"\"Value_ch2\":%.3f,"	,log_p.measuredValues[1] );
+		sprintf( tmp,"\"Value_ch2\":%.3f,",log_p.measuredValues[1] );
 		if( DLCMatValChk( tmp[12] )){
 			DLCEventLogWrite( _ID1_ERROR,0x12,(tmp[12]<<24)|(tmp[13]<<16)|(tmp[14]<<8)|tmp[15] );
 			putst("Strange1=");Dump( &tmp[12],8 );
@@ -1709,7 +1710,8 @@ void DLCMatReportSnd()
 		else
 			old2 = log_p.measuredValues[1];
 		strcat( http_tmp,tmp );
-		sprintf( tmp,"\"Alert\":\"%02x\"}"	,log_p.alertStatus  );						strcat( http_tmp,tmp );
+		sprintf( tmp,"\"Alert\":\"%02x\"}",log_p.alertStatus  );
+		strcat( http_tmp,tmp );
 	}
 	if ( DLC_MatReportCnt == DLC_MatReportMax ){													/* 最後のList */
 		if( DLC_MatReportMax)
@@ -1755,7 +1757,7 @@ int DLCMatPostReport()
 	for( i=0; DLC_MatReportMax < DLC_MatReportLmt; DLC_MatReportMax++,i++ ){			/* Lengthを求めるためにmlogを仮走査 */
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
-		sprintf( tmp,"%.3f"	,log_p.measuredValues[0] );												/* #.### 以外のレングス増え分を求める */
+		sprintf( tmp,"%.3f"	,log_p.measuredValues[0] );									/* #.### 以外のレングス増え分を求める */
 		if( DLCMatValChk( tmp[0] ))
 			;
 		else
@@ -1767,7 +1769,7 @@ int DLCMatPostReport()
 			DLC_MatExtbyte += (strlen( tmp )-5);
 		if( log_p.alertStatus )
 			TxTypeIsAll0 = 1;
-		if( i == 300 )
+		if( i == 300 )																	/* 300件毎にタスクの占有権を解放させる(計測を走らせるため) */
 			return 2;
 	}
 	putst("extbyte=");putdecs( DLC_MatExtbyte );putcrlf();
@@ -1823,7 +1825,7 @@ int DLCMatPostReport()
 		}
 		putcrlf();
 	}
-	DLCEventLogWrite( _ID1_REPORT,0,DLC_MatReportMax );
+	DLCEventLogWrite( _ID1_REPORT,log_p.timestamp.second,DLC_MatReportMax );
 	p = strstr( http_tmp,"{\"Report\"" );
 	if( DLC_MatReportMax ){
 		q = strstr( http_tmp,":[" );
