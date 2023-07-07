@@ -31,9 +31,26 @@ static uint32_t alertStatusFormat(uint8_t alertStatus);
 
 void SMPIF_getStatus(const char *param, char *resp)
 {
+	int	rt;
     DEBUG_UART_printlnFormat("MLOG_getStatus() START: %lu", SYS_tick);
     MLOG_STATUS_T mlogStatus;
-    MLOG_getStatus(&mlogStatus);
+    rt = MLOG_getStatus(&mlogStatus);
+    if( rt == MLOG_ERR_READ ){
+        sprintf(resp, "%c003NG203%c", SMPIF_STX, SMPIF_ETX);
+	    APP_printUSB(resp);
+	    APP_delay(10);
+	    SMPIF_dumpMessage("RESP", resp);
+	    APP_delay(10);
+        return;
+	}
+    else if( rt == MLOG_ERR_EMPTY ){
+        sprintf(resp, "%c000OK%c", SMPIF_STX, SMPIF_ETX);
+	    APP_printUSB(resp);
+	    APP_delay(10);
+	    SMPIF_dumpMessage("RESP", resp);
+	    APP_delay(10);
+        return;
+	}
     DEBUG_UART_printlnFormat("MLOG_getStatus() END: %lu", SYS_tick);
     WPFM_measureRegularly(true);
 
@@ -97,7 +114,6 @@ void SMPIF_getData(const char *param, char *resp)
         if (! makeDatetimeString(mlog.timestamp.second, datetime))
         {
             APP_delay(20);
-
             // flash-memory log was broken.
             sprintf(resp, "%c003NG901%c", SMPIF_STX, SMPIF_ETX);
             failed = true;
@@ -136,15 +152,12 @@ void SMPIF_getData(const char *param, char *resp)
 
         sequentialNumber = mlog.sequentialNumber + 1;
     }
-    if (failed)
-    {
-        // Bad date&time or Get error
+    if (failed){
+		// Bad date&time or Get error
         DEBUG_UART_printlnString("--ERROR: bad date&time"); APP_delay(10);
-
         sprintf(resp, "%c003NG901%c", SMPIF_STX, SMPIF_ETX);
         APP_printUSB(resp);
         APP_delay(10);
-
         SMPIF_dumpMessage("RESP", resp);
         APP_delay(10);
     }
@@ -178,15 +191,23 @@ void SMPIF_getData(const char *param, char *resp)
     }
     else
     {
-        // Bad date&time or Get error
-        DEBUG_UART_printlnFormat("--ERROR: %d", stat); APP_delay(20);
+		if( stat == MLOG_ERR_EMPTY ){
+	        sprintf(resp, "%c000OK%c", SMPIF_STX, SMPIF_ETX);
+		    APP_printUSB(resp);
+		    APP_delay(10);
+		    SMPIF_dumpMessage("RESP", resp);
+		    APP_delay(10);
+		}
+		else {// Bad date&time or Get error
+	        DEBUG_UART_printlnFormat("--ERROR: %d", stat); APP_delay(20);
 
-        sprintf(resp, "%c003NG203%c", SMPIF_STX, SMPIF_ETX);
-        APP_printUSB(resp);
-        APP_delay(10);
+	        sprintf(resp, "%c003NG203%c", SMPIF_STX, SMPIF_ETX);
+	        APP_printUSB(resp);
+	        APP_delay(10);
 
-        SMPIF_dumpMessage("RESP", resp);
-        APP_delay(10);
+	        SMPIF_dumpMessage("RESP", resp);
+	        APP_delay(10);
+	    }
     }
 }
 
