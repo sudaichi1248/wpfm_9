@@ -157,6 +157,10 @@ void WPFM_initializeApplication(void)
 #else
 	SENSOR_readExternalBatteryVoltageShurink(&WPFM_lastBatteryVoltages[0], &WPFM_lastBatteryVoltages[1]);
 #endif
+	DLCEventLogWrite( _ID1_BATTRY,WPFM_lastBatteryVoltages[0],WPFM_lastBatteryVoltages[1] );
+	char	tmp[64];
+	sprintf( tmp,"“d’r1=%.3f  2=%.3f",(float)WPFM_lastBatteryVoltages[0]/1000,(float)WPFM_lastBatteryVoltages[1]/1000 );
+	putst( tmp );
 //    if (voltage > WPFM_settingParameter.lowThresholdVoltage)
 	if (WPFM_lastBatteryVoltages[0] > WPFM_settingParameter.lowThresholdVoltage)
     {
@@ -338,37 +342,10 @@ void WPFM_onPressed(uintptr_t p)
             case WPFM_TACTSW_STATUS_PRESSED:
                 break;
         }
-#if _DAIKOKU_ORG
-       TC5_TimerStart();
-#else
-		DLCMatTimerset( 2,20 );
-#endif
+		DLCMatTimerset( 2,20 );				/* 20msƒ`ƒƒƒ^ƒŠƒ“ƒO–hŽ~ */
         WPFM_tactSwStatus = WPFM_TACTSW_STATUS_PRESSING;
         WPFM_lastButtonPressedTime = SYS_tick;
     }
-#if 0
-    else
-    {
-		putst("Push-\r\n");
-        // on Released (LOW -> HIGH Edge)
-        switch (WPFM_tactSwStatus)
-        {
-            case WPFM_TACTSW_STATUS_PRESSING:
-            case WPFM_TACTSW_STATUS_RELEASING:
-                return;     // ignore
-            case WPFM_TACTSW_STATUS_NORMAL:
-            case WPFM_TACTSW_STATUS_PRESSED:
-                break;
-        }
-#if _DAIKOKU_ORG
-       TC5_TimerStart();
-#else
-		DLCMatTimerset( 2,20 );
-#endif
-        WPFM_tactSwStatus = WPFM_TACTSW_STATUS_RELEASING;
-        WPFM_lastButtonReleasedTime = SYS_tick;
-    }
-#endif
 }
 
 /*******************************************************************************
