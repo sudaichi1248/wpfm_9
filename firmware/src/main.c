@@ -452,14 +452,15 @@ static void eventLoopOnNonMeasurementMode(void)
 	while (true){
 		SYS_Tasks();
 		DLCMatMain();
-		if (WPFM_wasButtonPressed){									/* ボタン処理 */
-			if (TEST_SW_Get()){ 									/* ボタン離した */
+		if (WPFM_wasButtonPressed){															/* ボタン押し状態 */
+		    if (TEST_SW_Get() && (WPFM_tactSwStatus == WPFM_TACTSW_STATUS_PRESSED)){		/* ボタン離した */
 				DEBUG_UART_printlnFormat("SHORT PRESSED: %u %u", (unsigned int)WPFM_lastButtonReleasedTime, (unsigned int)WPFM_lastButtonPressedTime);
-				if (WPFM_isVbatDrive == true){						/* VBAT駆動は通信不可 */
+				if (WPFM_isVbatDrive == true){												/* VBAT駆動は通信不可 */
 					DEBUG_UART_printlnString("Can not call because VBAT drive.");
 				}
 				else 
-					WPFM_uploadOneShot(false);						/* 強制発報 */
+					WPFM_uploadOneShot(false);												/* 強制発報 */
+				WPFM_tactSwStatus = WPFM_TACTSW_STATUS_RELEASING;
 			}
             if ((SYS_tick-WPFM_lastButtonPressedTime) >=  WPFM_LONG_PRESSED_TIME ){
 			    if (TEST_SW_Get()==0){				                /* 押されたまま */
