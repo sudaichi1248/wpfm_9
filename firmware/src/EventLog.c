@@ -210,6 +210,9 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_MAT_VERSION:
 		strcat( str,"MATVer ");
 		break;
+	case _ID1_PUSH_SW:
+		strcat( str,"PUSH   ");
+		break;
 	case _ID1_OPEN_OK:
 		strcat( str,"OPEN   ");
 		break;

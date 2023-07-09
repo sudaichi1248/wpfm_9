@@ -33,6 +33,7 @@ void DLCEventLogClr( int );
 #define		_ID1_SYS_ERROR				0x0003
 #define		_ID1_POWER_OFF				0x0004
 #define		_ID1_MAT_VERSION			0x0008
+#define		_ID1_PUSH_SW				0x0050
 #define		_ID1_OPEN_OK				0x0100
 #define		_ID1_FACTORY_TEST			0x1000
 #define		_ID1_FLASH_ERROR_W			0x1010

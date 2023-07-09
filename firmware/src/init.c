@@ -22,6 +22,7 @@
 #include "DLCpara.h"
 #include "Eventlog.h"
 void DLCMatTimerset();
+int	DLCMatTmChk();
 void DLCMatErrorSleep();
 #ifdef ADD_FUNCTION
 bool DLCMatWatchAlertPause();
@@ -329,12 +330,9 @@ void WPFM_onAlarm(void)
 
 void WPFM_onPressed(uintptr_t p)
 {
-    if (TEST_SW_Get() == 0)
-    {
+	if (TEST_SW_Get() == 0){					/* スイッチ押し */
 		putst("Push+\r\n");
-        // on Pressed (HIGH -> LOW Edge)
-        switch (WPFM_tactSwStatus)
-        {
+		switch (WPFM_tactSwStatus){
             case WPFM_TACTSW_STATUS_PRESSING:
             case WPFM_TACTSW_STATUS_RELEASING:
                 return;     // ignore
@@ -342,12 +340,33 @@ void WPFM_onPressed(uintptr_t p)
             case WPFM_TACTSW_STATUS_PRESSED:
                 break;
         }
-		DLCMatTimerset( 2,20 );				/* 20msチャタリング防止 */
+		DLCMatTimerset( 2,20 );				/* 20msチャタリング防止(APP_Tasks()にTO処理あり) */
         WPFM_tactSwStatus = WPFM_TACTSW_STATUS_PRESSING;
         WPFM_lastButtonPressedTime = SYS_tick;
     }
 }
-
+void WPFM_PushSwProc()
+{
+	if( DLCMatTmChk(2)) {
+		putst("PushSw chatteringTO!\r\n");
+		if (TEST_SW_Get() == 0){					/* スイッチ押し */
+	        switch (WPFM_tactSwStatus)
+	        {
+	            case WPFM_TACTSW_STATUS_PRESSING:
+	                WPFM_tactSwStatus = WPFM_TACTSW_STATUS_PRESSED;
+	                WPFM_wasButtonPressed = true;
+					DLCEventLogWrite( _ID1_PUSH_SW,0,0 );
+	                break;
+	            case WPFM_TACTSW_STATUS_RELEASING:
+	                break;
+	            default:
+	                break;
+	        }
+	    }
+	    else
+	        WPFM_tactSwStatus = WPFM_TACTSW_STATUS_NORMAL;
+	}
+}
 /*******************************************************************************
   Function:
     int WPFM_reboot(void)

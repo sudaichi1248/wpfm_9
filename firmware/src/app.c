@@ -59,7 +59,7 @@
 #include "app.h"
 #include "wpfm.h"
 #include "Moni.h"
-int DLCMatTmChk();
+int WPFM_PushSwProc();
 // *****************************************************************************
 // *****************************************************************************
 // Section: Symbol Definitions
@@ -544,20 +544,7 @@ void APP_Tasks(void)
             break;
     }
     // Tact switch handling @add
-	if( DLCMatTmChk(2)) {
-		putst("PushSw chatteringTO!\r\n");
-        switch (WPFM_tactSwStatus)
-        {
-            case WPFM_TACTSW_STATUS_PRESSING:
-                WPFM_tactSwStatus = WPFM_TACTSW_STATUS_PRESSED;
-                WPFM_wasButtonPressed = true;
-                break;
-            case WPFM_TACTSW_STATUS_RELEASING:
-                break;
-            default:
-                break;
-        }
-    }
+    WPFM_PushSwProc();
 }
 
 /******************************************************************************
