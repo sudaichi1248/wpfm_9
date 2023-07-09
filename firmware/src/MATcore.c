@@ -161,7 +161,7 @@ void IDLEputch( )
 #define	_TMID_3_RCV_RETRY			3					/* AT$RECVリトライタイマー*/
 #define	_TMID_4_RCV_RETRY_ByFOTA	4					/* AT$RECVリトライタイマー FOTA用 */
 #define	_TMID_5_FOTA_ALLOVER		5					/* FOTAオールオーバータイマー */
-#define	_TMID_6_LED_500ms			6					/* 起動後計測時500msLEDタイマー */
+#define	_TMID_6_LED_500ms			6					/* 起動後計測の500msLEDタイマー */
 struct {
 	int		cnt;
 	uchar	TO;
@@ -169,7 +169,7 @@ struct {
 #ifdef VER_DELTA_5
 #define		RTCTIMER_24hs		3600*24
 #endif
-#define		RTC_TIMER_NUM		5	// 0:alertTimeout,1:LED1 6s Timer,2:24h Config send
+#define		RTC_TIMER_NUM		6	// 0:AlertTimeout,1:LED1_6s_Timer, 2:Every24h/Config send 3:Every1h/Clock Adjust 4:60s/ForceCall 5:1hour/ConstRetry
 #define		RTCTIMER_1h			3600
 #define		DLCMatGoSleep()		PORT_GroupWrite(PORT_GROUP_1,0x1<<10,0)
 #define		DLCMatGoWake()		PORT_GroupWrite(PORT_GROUP_1,0x1<<10,-1)
@@ -260,6 +260,27 @@ void DLCMATrtcDisp()
 	putcrlf();
 	for(int i=0;i<RTC_TIMER_NUM;i++ ){
 		puthxb( i );putch(':');putdecw( DLC_MatRtcTimer[i].cnt );putch(' ');puthxb( DLC_MatRtcTimer[i].TO  );putcrlf();
+	}
+}
+/*
+	定期通信が6時間毎以上の場合、1時間毎リトライを２回行う
+*/
+#define		_6hour		(6*60*60)
+#define		_1hour		(60*60)
+char	DLC_ConstCallRetry;
+void DLCMatConstCallRetry()
+{
+	if( WPFM_settingParameter.communicationInterval >= _6hour ){
+		putst("6時間毎の定期通信失敗 ");
+		puthxb( ++DLC_ConstCallRetry );
+		putst("回目 " );
+		if( ++DLC_ConstCallRetry < 3 ){
+			DLCMatRtcTimerset( 5,_1hour );
+		}
+		else {
+			putst("CLR\r\n");
+			DLC_ConstCallRetry = 0;
+		}
 	}
 }
 /*
@@ -962,7 +983,7 @@ void MTcon1()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$CONNECT\r" );
-	DLCEventLogWrite( _ID1_WAKE,0,0 );
+	DLCEventLogWrite( _ID1_WAKE,DLC_Matknd,0 );
 	DLCMatTimerset( 0,TIMER_120s );
 	DLC_MatState = MATC_STATE_CONN;
 }
@@ -1047,8 +1068,8 @@ void DLCMatCall(int knd )
 		break;
 	case 2:	
 		putst("Push-CALL!\r\n");										/* Push */
-		DLC_Matknd = knd;
-		break;
+		DLCMatRtcTimerset(4, 60);										/* 60秒後の通信 */
+		return;
 	case 3:
 		putst("Alert-CALL!\r\n");										/* Alert */
 		DLC_Matknd = knd;
@@ -1130,7 +1151,7 @@ void MTBatt()
 	case 3:
 		WPFM_lastBatteryVoltages[0] = ( DLC_MatVolt[0][0] + DLC_MatVolt[0][1] + DLC_MatVolt[0][2] )/3;
 		WPFM_lastBatteryVoltages[1] = ( DLC_MatVolt[1][0] + DLC_MatVolt[1][1] + DLC_MatVolt[1][2] )/3;
-		DLCEventLogWrite( _ID1_BATTRY,0,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
+		DLCEventLogWrite( _ID1_BATTRY,WPFM_lastBatteryVoltages[0],WPFM_lastBatteryVoltages[1] );
 		break;
 	}
 }
@@ -1175,7 +1196,7 @@ void MTOff2()
 	DLC_Halt();
 }
 /*
-	起動時 LED1を5回500ms点ける処理
+	起動直後の測定で LED1を5回500ms点ける処理
 */
 void DLCMatLed1Proc( char flg )
 {
@@ -2136,7 +2157,7 @@ void DLCMatRtcTimeChk()
 {
 	if (DLCMatRtcChk(0)) {	// AlertTime T/O?
 		WPFM_cancelAlert();
-putst("\r\nAlertTime T/O");putcrlf();
+		putst("\r\nAlertTime T/O");putcrlf();
 	}
 	if (DLCMatRtcChk(1)) {	// LED1 6s T/O?
 		UTIL_LED1_OFF();	// LED1 消灯
@@ -2145,7 +2166,7 @@ putst("\r\nAlertTime T/O");putcrlf();
 	}
 #ifdef VER_DELTA_5
 	if (DLCMatRtcChk(2)) {	// 24h Config send T/O?
-putst("\r\n$$$$$ Config send T/O");putcrlf();
+		putst("\r\n$$$$$ Config send T/O");putcrlf();
 		WPFM_doConfigPost = true;
 		DLCMatRtcTimerset(2, RTCTIMER_24hs);	// 24h Config send
 	}
@@ -2154,12 +2175,19 @@ putst("\r\n$$$$$ Config send T/O");putcrlf();
 		DLC_NeedTimeAdjust = 0;
 		DLCMatRtcTimerset( 3,RTCTIMER_1h );
 	}
+	if (DLCMatRtcChk(4)) {						/* 強制発報遅延1分タイマー */
+		DLC_Matknd = 2;
+		MatMsgSend( MSGID_WAKEUP );
+	}
+	if (DLCMatRtcChk(5)) {						/* 定期通信リトライ1hタイマー */
+		MatMsgSend( MSGID_WAKEUP );
+	}
 }
 void DLCMatAlertTimeClr()
 {
 	if (DLC_MatRtcTimer[0].cnt != 0) {	// AlertTime起動中?
 		DLCMatTtcTimerClr(0);
-putst("\r\nAlertTime clear");putcrlf();
+		putst("\r\nAlertTime clear");putcrlf();
 	}
 }
 #endif
@@ -3281,4 +3309,3 @@ int DLCMatOffChk()
 		return 1;
 	return 0;
 }
-

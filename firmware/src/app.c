@@ -272,6 +272,8 @@ void APP_USBDeviceEventHandler
 
                 /* Mark that the device is now configured */
                 appData.isConfigured = true;
+				WPFM_isInSendingRegularly = false;  // USBƒP[ƒuƒ‹‚ªVE‚È‚µ‚Å”²‚©‚ê‚½‚Ì‚½‚ß‚É
+				putst("USB! ");
             }
 
             break;

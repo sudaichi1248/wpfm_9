@@ -17,87 +17,24 @@ void DLCMatCall(int);
 #ifdef ADD_FUNCTION
 void DLCMatAlertTimeStart();
 #endif
-
+/*
+	’èŠú’ÊM
+*/
 void WPFM_uploadRegularly(void)
 {
-    /*
-     *  Communication processing is described here -- BEGIN --
-     ***/
-
     DLCMatCall(1);
-
-    /*
-     *  -- END --
-     ***/
 }
-
 /*
-*   Upload logged date only once
+*   ‹­§”­•ñ
 */
 void WPFM_uploadOneShot(bool unsentOrEmpty)
 {
 	WPFM_ForcedCall = true;
 	UTIL_startBlinkLED1(5);	// LED1 5‰ñ“_–Å
-    // Wake up MATcore
     DLCMatCall(2);
-#if 0
-    APP_delay(10);
-
-    if (unsentOrEmpty)
-    {
-        // Send all unuploaded data
-        /*
-         *  Communication processing is described here -- BEGIN --
-         ***/
-
-        UTIL_LED1_ON();
-
-        DEBUG_UART_printlnFormat("-- UPLOAD UNSENT MLOG(%u) --", (unsigned int)MLOG_countUploadableLog());
-        int stat;
-        MLOG_T mlog;
-        while ((stat = MLOG_getLog(&mlog)) >= MLOG_ERR_NONE)
-        {
-            static char _line[100];
-            RTC_DATETIME dt;
-            RTC_convertToDateTime(mlog.timestamp.second, &dt);
-            snprintf(_line, sizeof(_line)-1,
-                    "[MLOG %06Xh/%08u] %04d/%02d/%02d %02d:%02d:%02d.%03d,%.3f,%.3f,%u,%u,%.1f,%02Xh,%02Xh",
-                    (unsigned int)stat, (unsigned int)mlog.sequentialNumber,
-                    (int)(dt.year + 2000), (int)dt.month, (int)dt.day, (int)dt.hour, (int)dt.minute, (int)dt.second, mlog.timestamp.mSecond,
-                    mlog.measuredValues[0], mlog.measuredValues[1],
-                    (unsigned int)mlog.batteryVoltages[0], (unsigned int)mlog.batteryVoltages[1], (float)mlog.temperatureOnBoard / 10.0,
-                    mlog.alertStatus, mlog.batteryStatus);
-            DEBUG_UART_printlnString(_line);
-            DEBUG_UART_FLUSH();
-        }
-
-        if (stat != MLOG_ERR_EMPTY)
-        {
-            DEBUG_UART_printlnFormat("MLOG_getLog() NG: %d", stat);
-        }
-
-        DEBUG_UART_printlnFormat("-- DONE --");
-
-        UTIL_LED1_OFF();
-
-        /*
-         *  -- END --
-         ***/
-    }
-    else
-    {
-        // Send empty data fot test
-        DEBUG_UART_printlnString("WPFM_uploadOneShot() upload empty data.");
-    }
-
-    // Sleep MATcore
-    APP_delay(10);
-   RF_INT_IN_Clear();    // INT_IN low to sleep
-#endif
 }
-
 /*
-*   Notificate alert immediately
+*   Œx•ñ”­•ñ
 */
 void WPFM_notifyAlert(void)
 {

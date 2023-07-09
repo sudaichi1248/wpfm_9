@@ -256,22 +256,19 @@ static void eventLoopOnMeasurementMode(void)
 {
 	APP_delay(20);
 	SlideSwProc();
-    while (true)
-    {
-        SYS_Tasks();
-	    DLCMatMain();
-        // タクトスイッチが押下されたどうかをチェックする
-        if (WPFM_wasButtonPressed)
-        {
-            if ((SYS_tick-WPFM_lastButtonPressedTime) >=  WPFM_LONG_PRESSED_TIME ){
-			    if (TEST_SW_Get()){	                // ボタン押されてない
-	                DEBUG_UART_printlnString(">>SHORT PRSD");
-	                WPFM_uploadOneShot(true);       // 未送信のログデータをアップロード
-	            }
-	            else {				                // 押されたまま
-	                DEBUG_UART_printlnString(">>LONG PRSD");
-	                if (WPFM_isBeingReplacedBattery)
-	                {
+    while (true){
+		SYS_Tasks();
+		DLCMatMain();
+		if (WPFM_wasButtonPressed){															/* ボタン押し状態 */
+		    if (TEST_SW_Get() && (WPFM_tactSwStatus == WPFM_TACTSW_STATUS_PRESSED)){		/* ボタン離した */
+				DEBUG_UART_printlnString(">>SHORT PRSD");
+				WPFM_uploadOneShot(true);													/* 強制発報 */
+				WPFM_tactSwStatus = WPFM_TACTSW_STATUS_RELEASING;
+			}
+			if ((SYS_tick-WPFM_lastButtonPressedTime) >=  WPFM_LONG_PRESSED_TIME ){			/* 5秒以上 */
+			    if (TEST_SW_Get()==0){				              							/* 押されたまま */
+					DEBUG_UART_printlnString(">>LONG PRSD");		
+					if (WPFM_isBeingReplacedBattery){										/* 電池交換 */
 						DLCEventLogWrite( _ID1_CELLACT,0xfe,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
 	                    // 電池交換を終了する
 	                    DEBUG_UART_printFormat("END REPLACE(#%d)", WPFM_externalBatteryNumberToReplace);
@@ -434,7 +431,6 @@ static void eventLoopOnMeasurementMode(void)
         }
         else if( DLCMatIsSleep() ){
             // USBが接続されていないとき
-            WPFM_isInSendingRegularly = false;  // USBケーブルがVEなしで抜かれた時のために
             // Fall asleep if there is no work to do
             WPFM_status = WPFM_STATUS_SLEEP;
             WPFM_sleep();       // MCUをスタンバイモードにする
@@ -453,31 +449,23 @@ static void eventLoopOnNonMeasurementMode(void)
 	DLCEventLogWrite( _ID1_MANTE_START,0,0 );
 	APP_delay(20);
 	SlideSwProc();
-    while (true)
-    {
-        SYS_Tasks();
-	    DLCMatMain();
-
-        // タクトスイッチが押下されたどうかをチェックする
-        if (WPFM_wasButtonPressed)
-        {
+	while (true){
+		SYS_Tasks();
+		DLCMatMain();
+		if (WPFM_wasButtonPressed){									/* ボタン処理 */
+			if (TEST_SW_Get()){ 									/* ボタン離した */
+				DEBUG_UART_printlnFormat("SHORT PRESSED: %u %u", (unsigned int)WPFM_lastButtonReleasedTime, (unsigned int)WPFM_lastButtonPressedTime);
+				if (WPFM_isVbatDrive == true){						/* VBAT駆動は通信不可 */
+					DEBUG_UART_printlnString("Can not call because VBAT drive.");
+				}
+				else 
+					WPFM_uploadOneShot(false);						/* 強制発報 */
+			}
             if ((SYS_tick-WPFM_lastButtonPressedTime) >=  WPFM_LONG_PRESSED_TIME ){
-			    if (TEST_SW_Get()){ 	                // ボタン押されてない
-	                DEBUG_UART_printlnFormat("SHORT PRESSED: %u %u", (unsigned int)WPFM_lastButtonReleasedTime, (unsigned int)WPFM_lastButtonPressedTime);
-					if (WPFM_isVbatDrive == true) {	// VBAT駆動?
-						DEBUG_UART_printlnString("Can not call because VBAT drive.");
-					} else {	// VBAT駆動
-		                WPFM_uploadOneShot(false);      // 空のデータをアップロード
-					}
-	            }
-	            else
-	            {
-	                // 長押しされたとき
+			    if (TEST_SW_Get()==0){				                /* 押されたまま */
 	                DEBUG_UART_printlnFormat("LONG PRESSED: %u %u", (unsigned int)WPFM_lastButtonReleasedTime, (unsigned int)WPFM_lastButtonPressedTime);
 	                // 非測定モードの時は電池交換を許容しないので、何もしない
-
-	                // デバッグ用
-#if 0
+#if 0	                // デバッグ用
 	                WDT_Disable();
 	                MLOG_dump();        // FOR DEBUG! @remove
 	                MLOG_checkLogs(false);
@@ -488,7 +476,6 @@ static void eventLoopOnNonMeasurementMode(void)
                 WPFM_tactSwStatus = WPFM_TACTSW_STATUS_NORMAL;
 			}
         }
-
         if (WPFM_isConnectingUSB)
         {
             if (WPFM_isInSendingRegularly)
@@ -540,7 +527,6 @@ static void eventLoopOnNonMeasurementMode(void)
         }
         else if( DLCMatIsSleep() ){
             // USBが接続されていないとき
-            WPFM_isInSendingRegularly = false;  // USBケーブルがVEなしで抜かれた時のために
             // Fall asleep if there is no work to do
             WPFM_status = WPFM_STATUS_SLEEP;
             APP_delay(1);
