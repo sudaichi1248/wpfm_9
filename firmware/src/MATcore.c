@@ -168,8 +168,9 @@ struct {
 } DLC_MatTimer[TIMER_NUM];
 #ifdef VER_DELTA_5
 #define		RTCTIMER_24hs		3600*24
+char		DLC_Every24h;
 #endif
-#define		RTC_TIMER_NUM		6	// 0:AlertTimeout,1:LED1_6s_Timer, 2:Every24h/Config send 3:Every1h/Clock Adjust 4:60s/ForceCall 5:1hour/ConstRetry
+#define		RTC_TIMER_NUM		8	// 0:AlertTimeout,1:LED1_6s_Timer, 2:Every24h/Config send 3:Every1h/Clock Adjust 4:60s/ForceCall 5:1hour/ConstRetry
 #define		RTCTIMER_1h			3600
 #define		DLCMatGoSleep()		PORT_GroupWrite(PORT_GROUP_1,0x1<<10,0)
 #define		DLCMatGoWake()		PORT_GroupWrite(PORT_GROUP_1,0x1<<10,-1)
@@ -689,6 +690,11 @@ void MTfirm()	// fota
 void MTopn2()
 {
 	DLC_MatLineIdx = 0;
+	if( DLC_Every24h ){
+		DLC_Every24h = 0;
+		MTcls0();
+		return;
+	}
 	if ((WPFM_ForcedCall == true) && (DLC_ForcedCallOK == false)) {	// 強制発報かつサーバ応答なし
 		UTIL_startBlinkLED1(5);	// LED1 5回点滅
 		DLCMatRtcTimerset(1, 6);
@@ -925,6 +931,12 @@ void MTcls4()
 			return;
 		}
 	}
+	if( DLC_Every24h ){
+		DLCMatSend( "AT$OPEN\r" );
+		DLCMatTimerset( 0,TIMER_15s );
+		DLC_MatState = MATC_STATE_OPN1;
+		return;
+	}
 	MTcls0();
 }
 void MTcls5()
@@ -1065,6 +1077,7 @@ void DLCMatCall(int knd )
 	switch( knd ){
 	case 1:
 		putst("Constant-CALL!\r\n");									/* Constant */
+		DLCMatConstCallRetry();
 		break;
 	case 2:	
 		putst("Push-CALL!\r\n");										/* Push */
@@ -2167,8 +2180,8 @@ void DLCMatRtcTimeChk()
 #ifdef VER_DELTA_5
 	if (DLCMatRtcChk(2)) {	// 24h Config send T/O?
 		putst("\r\n$$$$$ Config send T/O");putcrlf();
-		WPFM_doConfigPost = true;
-		DLCMatRtcTimerset(2, RTCTIMER_24hs);	// 24h Config send
+		DLC_Every24h = 1;
+		DLCMatRtcTimerset(2, RTCTIMER_24hs);	// Next 24h Config send
 	}
 #endif
 	if (DLCMatRtcChk(3)) {						/* 時刻補正用 1hタイマー */
@@ -2197,6 +2210,7 @@ void DLCMatConfigRet()
 	WPFM_readSettingParameter( &config );
 	if (strstr(DLC_MatResBuf, "\"Change\":true")) {
 putst("\r\ncoco3\r\n");
+		DLC_Every24h = 0;
 #if 0
 		config_p = strstr(DLC_MatResBuf, "LoggerSerialNo");
 		if (config_p) {
@@ -2530,6 +2544,7 @@ int DLCMatRecvDisp()
 							DLCEventLogWrite( _ID1_HTTP_OK,0,0 );
 							MATReportLmtUpDw(1);								/* Report Limit数Up */
 						}
+						DLCMatTimerClr( 6 );									/* 定期通信6時間毎時のリトライタイマークリア */
 						DLC_MatsendRepOK = true;
 					}
 				}
@@ -3164,10 +3179,10 @@ void DLCMatMain()
 					DLCMatMlogMenu();
 				break;
 			case 'J':												/* Config送信有無 */
-				putst("Post Config\r\n");
+				putst("24h->30s\r\n");
 				if( CheckPasswd() )
-					WPFM_doConfigPost = true;
-				break;
+					DLCMatRtcTimerset(2, 30);						// Next 24h Config send
+				break;			
 			case 'W':												/* RTCタイマー一覧 */
 				if( CheckPasswd() )
 					DLCMATrtcDisp();
