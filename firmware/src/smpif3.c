@@ -18,7 +18,7 @@
 #include "smpif.h"
 #include "EventLog.h"
 #include "Moni.h"
-
+int	DLCMatValChk();
 /*
 *   Symbols
 */
@@ -95,7 +95,7 @@ int ISINFNAN( float a )
 {
 	char	tmp[16];
 	sprintf( tmp,"%.3f",a );
-	if((tmp[0] >= '0')&&(tmp[0] <= '9'))
+	if( DLCMatValChk( tmp[0] )==0)
 		return 1;
 	putst("š");putst( tmp );putcrlf();
 	DLCEventLogWrite( _ID1_ERROR,0x13,(tmp[0]<<24)|(tmp[1]<<16)|(tmp[2]<<8)|tmp[3] );
