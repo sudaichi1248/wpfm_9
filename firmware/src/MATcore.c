@@ -273,10 +273,10 @@ char	DLC_ConstCallRetry;
 void DLCMatConstCallRetry()
 {
 	if( WPFM_settingParameter.communicationInterval >= _6hour ){
-		putst("6時間毎の定期通信失敗 ");
+		putst("6時間毎の定期通信リトライタイマー開始 ");
 		puthxb( ++DLC_ConstCallRetry );
 		putst("回目 " );
-		if( ++DLC_ConstCallRetry < 3 ){
+		if( DLC_ConstCallRetry < 3 ){
 			DLCMatRtcTimerset( 5,_1hour );
 		}
 		else {
@@ -2200,6 +2200,7 @@ void DLCMatRtcTimeChk()
 		MatMsgSend( MSGID_WAKEUP );
 	}
 	if (DLCMatRtcChk(5)) {						/* 定期通信リトライ1hタイマー */
+		DLCMatConstCallRetry();
 		MatMsgSend( MSGID_WAKEUP );
 	}
 }
@@ -2551,7 +2552,7 @@ int DLCMatRecvDisp()
 							DLCEventLogWrite( _ID1_HTTP_OK,0,0 );
 							MATReportLmtUpDw(1);								/* Report Limit数Up */
 						}
-						DLCMatTimerClr( 6 );									/* 定期通信6時間毎時のリトライタイマークリア */
+						DLCMatTtcTimerClr( 5 );									/* 定期通信6時間毎時のリトライタイマークリア */
 						DLC_MatsendRepOK = true;
 					}
 				}
@@ -3108,7 +3109,7 @@ void DLCMatMain()
 				break;
 			case 'K':
 				if( CheckPasswd() )
-					DLCMatCall( 2 );
+					DLCMatCall( 1 );
 				break;
 			case 'R':
 				if( CheckPasswd() )
@@ -3191,8 +3192,13 @@ void DLCMatMain()
 					DLCMatRtcTimerset(2, 30);						// Next 24h Config send
 				break;			
 			case 'W':												/* RTCタイマー一覧 */
-				if( CheckPasswd() )
+				if( CheckPasswd() ){
 					DLCMATrtcDisp();
+					putst("強制TO num->");
+					key = getch();
+					if( key >= 0 && key <= '9' )
+						DLCMatRtcTimerset( key-'0',3 );
+				}
 				break;
 			case 'S':												/* 電池交換シーケンステスト */
 				if( CheckPasswd() ){

@@ -253,7 +253,7 @@ int SENSOR_readExternalBatteryVoltage(int externalNo, uint16_t *voltage_p)
     }
 	else {
 	    result = SENSOR_readRawValue() * _SENSOR_dividedRatioOfExternalBattery * _SENSOR_conversionFactor;
-	    putst("Vlot=");putdecw( (int)(result *1000));putcrlf();
+	    putst("V.=");putdech( (int)(result *1000));putcrlf();
 	}
     *voltage_p = (uint16_t)(result * 1000.0);      // Convert Volt to milli Volt
     DEBUG_UART_printlnFormat("< SENSOR_readExternalBatteryVoltage(%d,-) OK: %.3f", externalNo, result);
