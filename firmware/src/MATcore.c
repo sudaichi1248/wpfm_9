@@ -15,6 +15,7 @@
 #include "mlog.h"
 #include "util.h"
 #include "wpfm.h"
+#include "battery.h"
 #include "sensor.h"
 #include "DLCpara.h"
 #include "Eventlog.h"
@@ -1081,7 +1082,11 @@ void DLCMatCall(int knd )
 		break;
 	case 2:	
 		putst("Push-CALL!\r\n");										/* Push */
+#ifdef BOARD_PROTOTYPE2
 		DLCMatRtcTimerset(4, 60);										/* 60秒後の通信 */
+#else
+		DLCMatRtcTimerset(4, 1);										/* 1秒後の通信 */
+#endif
 		return;
 	case 3:
 		putst("Alert-CALL!\r\n");										/* Alert */
@@ -1165,6 +1170,8 @@ void MTBatt()
 		WPFM_lastBatteryVoltages[0] = ( DLC_MatVolt[0][0] + DLC_MatVolt[0][1] + DLC_MatVolt[0][2] )/3;
 		WPFM_lastBatteryVoltages[1] = ( DLC_MatVolt[1][0] + DLC_MatVolt[1][1] + DLC_MatVolt[1][2] )/3;
 		DLCEventLogWrite( _ID1_BATTRY,WPFM_lastBatteryVoltages[0],WPFM_lastBatteryVoltages[1] );
+		BATTERY_checkAndSwitchBattery();
+		DLC_MatBatCnt = 0;
 		break;
 	}
 }
@@ -1243,7 +1250,7 @@ void	 (*MTjmp[18][21])() = {
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* $SLEEP     16 */{ MTFwak, ______, ______, ______, ______, ______, ______, ______, ______, MTslep, MTslep, MTslep, MTslep, MTslep, ______, ______, ______, ______, MTslep, MTledQ,MTOff2  },
-/* TimeOut2   17 */{ MTtim2, ______, ______, ______, ______, ______, MTBatt, MTBatt, MTBatt, ______, ______, ______, MTBatt, MTBatt, ______, ______, ______, ______, ______, MTtim2,MTtim2  },
+/* TimeOut2   17 */{ MTtim2, ______, ______, ______, ______, ______, MTBatt, MTBatt, MTBatt, ______, ______, ______, MTBatt, MTBatt, MTBatt, ______, ______, ______, ______, MTBatt,MTtim2  },
 							};
 void DLCMatState()
 {
@@ -3186,6 +3193,11 @@ void DLCMatMain()
 			case 'W':												/* RTCタイマー一覧 */
 				if( CheckPasswd() )
 					DLCMATrtcDisp();
+				break;
+			case 'S':												/* 電池交換シーケンステスト */
+				if( CheckPasswd() ){
+					MTBatt();
+				}
 				break;
 			default:
 				break;
