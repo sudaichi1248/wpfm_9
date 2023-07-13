@@ -344,15 +344,10 @@ static void eventLoopOnMeasurementMode(void)
 
             if (WPFM_isInSendingRegularly)
             {
-                SMPIF_sendRegularly();      // 定期受信を実行する
-#ifdef DEBUG_ADD_LF
-                APP_printlnUSB("");         // デバッグ用に改行を入れる
-#endif
+                SMPIF_sendRegularly();      // VRレスポンス
             }
-
             WPFM_doMeasure = false;
         }
-
         // アラート警報するかどうかチェックする(また、電池交換中は定期通信を行わない)
         if ((WPFM_doNotifies[0] || WPFM_doNotifies[1]) && ! WPFM_isBeingReplacedBattery)
         {
@@ -485,14 +480,10 @@ static void eventLoopOnNonMeasurementMode(void)
                 if (WPFM_doMeasure)
                 {
                     WPFM_measureRegularly(true);
-                    SMPIF_sendRegularly();       // 定期受信を実行する
-#ifdef DEBUG_ADD_LF
-                    APP_printlnUSB("");         // デバッグ用に改行を入れる（
-#endif
+                    SMPIF_sendRegularly();       // VRレスポンス
                     WPFM_doMeasure = false;
                 }
             }
-
             // Smarthone I/F processing
             int stat = 0;
             switch (WPFM_status)

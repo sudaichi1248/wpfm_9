@@ -273,9 +273,8 @@ void APP_USBDeviceEventHandler
                 /* Mark that the device is now configured */
                 appData.isConfigured = true;
 				WPFM_isInSendingRegularly = false;  // USBÉPÅ[ÉuÉãÇ™VEÇ»ÇµÇ≈î≤Ç©ÇÍÇΩéûÇÃÇΩÇﬂÇ…
-				putst("USB! ");
+				putst("+USB ");
             }
-
             break;
 
         case USB_DEVICE_EVENT_POWER_DETECTED:
@@ -291,8 +290,9 @@ void APP_USBDeviceEventHandler
             /* VBUS is not available. We can detach the device */
             USB_DEVICE_Detach(appData.deviceHandle);
             appData.isConfigured = false;
-            WPFM_isConnectingUSB = false;    // @add
-
+ 	        WPFM_isInSendingRegularly = false;
+ 	        WPFM_isConnectingUSB = false;    // @add
+			putst("-USB ");
             break;
 
         case USB_DEVICE_EVENT_SUSPENDED:
