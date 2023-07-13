@@ -27,7 +27,9 @@ void	DLCMatRptLimit();
 void DLCParaRead()
 {
 	NVMCTRL_Read( (uint32_t *)&DLC_Para,sizeof( DLC_Para ),DLC_PARAMETER_ADDRESS );
+#ifdef BOARD_PROTOTYPE2
 	DLC_Para.BatCarivFlg = 0;
+#endif
 }
 void DLCParaSave()
 {
