@@ -151,6 +151,7 @@ void IDLEputch( )
 #define		TIMER_12s		12000
 #define		TIMER_15s		15000
 #define		TIMER_20s		20000
+#define		TIMER_OPN		32000
 #define		TIMER_HTTP		45000
 #define		TIMER_90s		90000
 #define		TIMER_120s		120000
@@ -585,7 +586,7 @@ void MTopnF()	// fota
 {
 	DLC_MatLineIdx = 0;
 	DLCMatSend( "AT$OPEN\r" );
-	DLCMatTimerset( 0,TIMER_15s );
+	DLCMatTimerset( 0,TIMER_OPN );
 }
 void MTOpen()
 {
@@ -593,7 +594,7 @@ void MTOpen()
 	DLC_MatLineIdx = 0;
 	DLCEventLogWrite( _ID1_CONNECT,0,0 );
 	DLCMatSend( "AT$OPEN\r" );
-	DLCMatTimerset( 0,TIMER_15s );
+	DLCMatTimerset( 0,TIMER_OPN );
 #ifdef VER_DELTA_5
 	if (WPFM_doConfigPost == true) {
 		WPFM_doConfigPost = false;
@@ -646,6 +647,7 @@ void MTrvTO()
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatTimerset( 0,TIMER_11s );
 	DLCMatSend( "AT$CLOSE\r" );
+	DLC_MatState = MATC_STATE_DISC;
 }
 void MTdata()
 {
@@ -918,6 +920,10 @@ void MTcls3()
 		DLCEventLogWrite( _ID1_CONN_NG,0,DLC_MatState );
 	MTcls0();
 }
+/*
+	ReportのCLOSE受け
+	24hフラグONならConfig送信
+*/
 void MTcls4()
 {
 	DLC_MatLineIdx = 0;
@@ -934,7 +940,7 @@ void MTcls4()
 	}
 	if( DLC_Every24h ){
 		DLCMatSend( "AT$OPEN\r" );
-		DLCMatTimerset( 0,TIMER_15s );
+		DLCMatTimerset( 0,TIMER_OPN );
 		DLC_MatState = MATC_STATE_OPN1;
 		return;
 	}
@@ -951,6 +957,7 @@ void MTcls5()
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatTimerset( 0,TIMER_11s );
 	DLCMatSend( "AT$CLOSE\r" );
+	DLC_MatState = MATC_STATE_DISC;
 }
 void MTclsF()	// fota
 {
@@ -1170,6 +1177,9 @@ void MTBatt()
 		WPFM_lastBatteryVoltages[0] = ( DLC_MatVolt[0][0] + DLC_MatVolt[0][1] + DLC_MatVolt[0][2] )/3;
 		WPFM_lastBatteryVoltages[1] = ( DLC_MatVolt[1][0] + DLC_MatVolt[1][1] + DLC_MatVolt[1][2] )/3;
 		DLCEventLogWrite( _ID1_BATTRY,WPFM_lastBatteryVoltages[0],WPFM_lastBatteryVoltages[1] );
+		char	tmp[64];
+		sprintf( tmp,"電池1=%.3f  2=%.3f",(float)WPFM_lastBatteryVoltages[0]/1000,(float)WPFM_lastBatteryVoltages[1]/1000 );
+		putst( tmp );
 		BATTERY_checkAndSwitchBattery();
 		DLC_MatBatCnt = 0;
 		break;
@@ -1242,10 +1252,10 @@ void	 (*MTjmp[18][21])() = {
 /* $TIME       6 */{ ______, ______, ______, ______, ______, ______, ______, MTrsrp, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* $RSRP       7 */{ ______, ______, ______, ______, ______, ______, ______, MTOpen, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* $OPEN/$WAKE 8 */{ MTRdy,  ______, ______, ______, ______, MTcon1, ______, ______, MTcnfg, ______, MTstst, ______, MTrprt, ______, ______, MTwget, ______, ______, ______, ______,______  },
-/* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, ______, MTcls4, MTcls0, MTclsF, ______, ______, ______, ______,______  },
+/* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, MTcls3, MTcls4, MTcls0, MTclsF, ______, ______, ______, ______,______  },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______,______  },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, MTdisc, ______,______  },
-/* TimOut1    12 */{ MTwVer, MTVrT,  MTRVer, MTRapn, MTRsvr, MTRdis, MTdisT, MTdisT, MTcls3, MTrvTO, MTcls3, MTrvTO, MTcls3, MTcls5, MTRSlp, MTtoF,  ______, ______, MTslpO, MTledQ,MTOff1  },
+/* TimOut1    12 */{ MTwVer, MTVrT,  MTRVer, MTRapn, MTRsvr, MTRdis, MTdisT, MTdisT, MTcls3, MTrvTO, MTcls3, MTrvTO, MTrvTO, MTcls5, MTRSlp, MTtoF,  ______, ______, MTslpO, MTledQ,MTOff1  },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, MTwake, ______,______  },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
@@ -1347,10 +1357,15 @@ void DLCMatState()
 				dt2.second = (p[21]-'0')*10 + (p[22]-'0');
 				if( DLC_NeedTimeAdjust == 0 ){
 					DLC_NeedTimeAdjust = 1;
-//				if( memcmp( &dt2,&dt1,sizeof(RTC_DATETIME)) ){	/* 差分あり */
 					RTC_setDateTime( dt2 );						/* RTC更新 */
 					putst("Time Adjust!\r\n");
-					WPFM_setNextCommunicateAlarm();				/* 時刻をセットしなおしたので、次回通信予約 */
+					if( memcmp( &dt2,&dt1,sizeof(RTC_DATETIME)-2) ){/* 差分あり */
+						WPFM_setNextCommunicateAlarm();			/* 時刻をセットしなおしたので、次回通信予約 */
+						putst("Reschedule!\r\n");
+						Dump( (char*)&dt1,sizeof(RTC_DATETIME) );
+						Dump( (char*)&dt2,sizeof(RTC_DATETIME) );
+						DLCEventLogWrite( _ID1_TIME,*((uint*)&dt1),*((uint*)&dt2) );
+					}
 				}
 			}
 		}

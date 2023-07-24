@@ -321,6 +321,9 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_MAT_RESET:
 		strcat( str,"MatRST ");
 		break;
+	case _ID1_TIME:
+		strcat( str,"TIME   ");
+		break;
 	case 0:
 		strcat( str,"       ");
 		break;
