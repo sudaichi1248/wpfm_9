@@ -829,7 +829,8 @@ static void dumpLog_line(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p,cha
 static uint32_t findLogBySN(uint32_t sn)
 {
 	DEBUG_UART_printlnFormat("> findLogBySN(%ld)", sn); APP_delay(10);
-
+	if( sn > _MLOG_lastSequentialNumber )
+		return (BAD_MLOG_ADDRESS);     // Not found
 	for( uint addr = 0; addr < MLOG_ADDRESS_MLOG_LAST; addr += W25Q128JV_PAGE_SIZE ){
 		if (W25Q128JV_readData(addr, _MLOG_pageBuffer, (uint16_t)sizeof(_MLOG_pageBuffer)) != W25Q128JV_ERR_NONE){
 			DEBUG_UART_printlnFormat("Page read failed:%06Xh", addr);
