@@ -122,13 +122,13 @@ void SMPIF_setOperationalCondition(const char *param, char *resp)
         switch (stat)
         {
             case SMPIF_ERR_BAD_PARAMETER:
-                strcat(resp, "101");
+                strcat(resp, "102");
                 break;
 			case SMPIF_ERR_DISAPPROVAL_MODE:
 				strcat(resp, "200");
 				break;
             default:
-                strcat(resp, "102");
+                strcat(resp, "101");
                 break;
         }
         char etx[2] = { SMPIF_ETX, '\0' };

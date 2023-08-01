@@ -400,12 +400,21 @@ static void eventLoopOnMeasurementMode(void)
                     {
                         WPFM_status = WPFM_STATUS_PROCESSING_COMMAND;
                     }
+                    else if((stat <= MLOG_ERR_NOT_EXIST )&&(stat >= SMPIF_ERR_FLASH_BROKEN )){
+						char	resp[32];
+						stat *= -1;
+						sprintf(resp, "%c003NG%03d%c", SMPIF_STX,stat, SMPIF_ETX);
+						APP_printUSB(resp);
+						APP_delay(10);
+						SMPIF_dumpMessage("RESP", resp);
+						APP_delay(10);
+					}
                     else if (stat != SMPIF_ERR_NO_MESSAGE)
                     {
                         // stay in WPFM_STATUS_WAIT_COMMAND
                         DEBUG_UART_printlnFormat("SMPIF_readMessage() error: %d", stat);
                     }
-                    break;
+                   break;
                 case WPFM_STATUS_PROCESSING_COMMAND:
                     if ((stat = SMPIF_handleMessage()) == SMPIF_ERR_NONE)
                     {
@@ -493,6 +502,15 @@ static void eventLoopOnNonMeasurementMode(void)
                     {
                         WPFM_status = WPFM_STATUS_PROCESSING_COMMAND;
                     }
+                    else if((stat <= MLOG_ERR_NOT_EXIST )&&(stat >= SMPIF_ERR_FLASH_BROKEN )){
+						char	resp[32];
+						stat *= -1;
+						sprintf(resp, "%c003NG%03d%c", SMPIF_STX,stat, SMPIF_ETX);
+						APP_printUSB(resp);
+						APP_delay(10);
+						SMPIF_dumpMessage("RESP", resp);
+						APP_delay(10);
+					}
                     else if (stat != SMPIF_ERR_NO_MESSAGE)
                     {
                         // stay in WPFM_STATUS_WAIT_COMMAND
