@@ -64,7 +64,7 @@ static SMPIF_COMMAND_TABLE _SMPIF_commandTables[] =
         { "M0", DLCMatVersion },
         { "M1", DLCMatUpdateGo },
         { "M2", DLCMatFotaGo },
-        { "M3", DLCMatServerChange },
+        { "M3", DLCMatmlogBroke },
         { "M4", DLCMatEventLog },
         { "M5", DLCMatRepotLogChange },
         { "M6", DLCMatBatCarivChange },

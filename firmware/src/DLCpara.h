@@ -21,7 +21,7 @@ void DLCFotaNGAndReset();
 void DLCMatVersion();
 void DLCMatUpdateGo();
 void DLCMatFotaGo();
-void DLCMatServerChange();
+void DLCMatmlogBroke();
 void DLCMatEventLog(const char *param, char *resp);
 void DLCMatRepotLogChange();
 void DLCMatMeasureLogChange();

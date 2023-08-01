@@ -42,7 +42,7 @@ void DLCMatConfigDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatReportSnd(),DLCMatPostReptInit();
 void MATReportLmtUpDw( int );
 void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatStart(),DLCMatReset(),MTcls0(),DLCMatRptLimit();
-void DLCMatServerChange(),DLC_Halt();
+void DLC_Halt();
 void MLOG_dump_uart(int to, int from);
 extern	char _Main_version[];
 int DLCMatRecvDisp();
@@ -2852,7 +2852,6 @@ void DLCMatTest()
 			DLCMatSend( "AT$OPEN\r" );
 			break;
 		case 'S':
-			DLCMatServerChange();
 			break;
 		case 'U':
 #if 1
@@ -3262,27 +3261,11 @@ void DLCMatVersion()
 	APP_writeUSB( (uint8_t const*)VerPrint(),30 );
 }
 /*
-	USBからのUPDATEコマンド
-*/
-void DLCMatUpdateGo()
-{
-	DLCsumBreakAndReset();
-}
-/*
 	USBからのFOTA開始コマンド
 */
 void DLCMatFotaGo()
 {
 	DLCFotaGoAndReset();
-}
-void DLCMatServerChange()
-{
-	DLC_Para.Server ^= 0xff;
-	if( DLC_Para.Server == 0 )
-		putst( "karugamosoft.ddo.jp,9999\r" );
-	else
-		putst( "beam.soracom.io,8888\r" );
-	DLCParaSave();
 }
 void DLCMatError( int no )
 {
@@ -3338,14 +3321,6 @@ void DLCMatReset( )
 	putst("Go Sleep\r\n");
 	DLCMatGoSleep();											/* Sleep! */
 	DLC_MatState = MATC_STATE_ERR;
-}
-/*
-	ROM設定のクリアT
-*/
-void DLCMatSettingClear()
-{
-	putst("The Parameter Deleted!\r\n");
-	NVMCTRL_RowErase( 0x0003FE00 );				/* 保存パラメータ削除 */
 }
 void DLCMatHalt()
 {

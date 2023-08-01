@@ -88,7 +88,7 @@ extern	uchar	DLC_Matfact,DLC_MatState;
 	APP_delay(100);
 	__NVIC_SystemReset();														/* 装置リセット */
 }
-void DLCMatParaRes( char *resp )
+void DLCMatUSBOK( char *resp )
 {
 	resp[0] = 0x02;
 	resp[1] = '0';
@@ -100,6 +100,38 @@ void DLCMatParaRes( char *resp )
 	resp[7] = 0x00;
 	APP_printUSB(resp);
 }
+void DLCMatUSBNG( char *resp )
+{
+	resp[0] = 0x02;
+	resp[1] = '0';
+	resp[2] = '0';
+	resp[3] = '3';
+	resp[4] = 'N';
+	resp[5] = 'G';
+	resp[6] = '2';
+	resp[7] = '0';
+	resp[8] = '0';
+	resp[9] = 0x03;
+	resp[10] = 0x00;
+	APP_printUSB(resp);
+}
+/*
+	USBからのUPDATEコマンド
+*/
+void DLCMatUpdateGo(const char *param, char *resp)
+{
+    if (WPFM_operationMode == WPFM_OPERATION_MODE_NON_MEASUREMENT)
+		DLCsumBreakAndReset();
+	else
+		DLCMatUSBNG( resp );
+}
+void DLCMatmlogBroke( const char *param, char *resp)
+{
+	if (WPFM_operationMode == WPFM_OPERATION_MODE_NON_MEASUREMENT)
+		DLCMatUSBOK( resp );
+	else
+		DLCMatUSBNG( resp );
+}
 void DLCMatRepotLogChange(const char *param, char *resp)
 {
 	DLC_Para.ReportLog ^= 0xff;
@@ -108,7 +140,7 @@ void DLCMatRepotLogChange(const char *param, char *resp)
 	else
 		putst( "ReportLog=Off\r" );
 	DLCParaSave();
-	DLCMatParaRes( resp );
+	DLCMatUSBOK( resp );
 }
 void DLCMatMeasureLogChange(const char *param, char *resp)
 {
@@ -118,7 +150,7 @@ void DLCMatMeasureLogChange(const char *param, char *resp)
 	else
 		putst( "MeasureLog=Off\r" );
 	DLCParaSave();
-	DLCMatParaRes( resp );
+	DLCMatUSBOK( resp );
 }
 void DLCMatDebugCmdChange(const char *param, char *resp)
 {
@@ -128,16 +160,33 @@ void DLCMatDebugCmdChange(const char *param, char *resp)
 	else
 		putst( "DebugCmd=Off\r" );
 	DLCParaSave();
-	DLCMatParaRes( resp );
+	DLCMatUSBOK( resp );
 }
 void DLCMatBatCarivChange(const char *param, char *resp)
 {
+    if (WPFM_operationMode != WPFM_OPERATION_MODE_NON_MEASUREMENT){
+		DLCMatUSBNG( resp );
+		return;
+	}
 	if( param[0] == '0' )
 		DLC_Para.BatCarivFlg = 0;
 	else
 		DLC_Para.BatCarivFlg = 0xff;
 	DLCParaSave();
-	DLCMatParaRes( resp );
+	DLCMatUSBOK( resp );
+}
+/*
+	ROM設定のクリアT
+*/
+void DLCMatSettingClear(const char *p, char *resp)
+{
+    if (WPFM_operationMode != WPFM_OPERATION_MODE_NON_MEASUREMENT){
+		DLCMatUSBNG( resp );
+		return;
+	}
+	putst("The Parameter Deleted!\r\n");
+	NVMCTRL_RowErase( 0x0003FE00 );				/* 保存パラメータ削除 */
+	DLCMatUSBOK( resp );
 }
 void DLCMatSetClock(const char *p, char *resp)
 {
@@ -150,7 +199,7 @@ void DLCMatSetClock(const char *p, char *resp)
 	dt.second = (p[10]-'0')*10 + (p[11]-'0');
 	RTC_setDateTime( dt );
 	putst("時刻補正!\r\n");
-	DLCMatParaRes( resp );
+	DLCMatUSBOK( resp );
 }
 void DLCMatGetClock(const char *param, char *resp)
 {
@@ -177,30 +226,35 @@ void DLCMatGetClock(const char *param, char *resp)
 	resp[18] = 0x03;
 	resp[19] = 0x00;
 	APP_printUSB(resp);
-	DLCMatParaRes( resp );
+	DLCMatUSBOK( resp );
 }
 void DLCMatReportLmt(const char *p, char *resp)
 {
+	if (WPFM_operationMode != WPFM_OPERATION_MODE_NON_MEASUREMENT){
+		DLCMatUSBNG( resp );
+		return;
+	}
 	DLC_Para.Http_Report_max = ((p[0]-'0')*10000)+((p[1]-'0')*1000)+((p[2]-'0')*100)+((p[3]-'0')*10)+p[4]-'0';
 	putst("ReportLmt=");putdech( DLC_Para.Http_Report_max );putcrlf();
 	DLCParaSave();
 	DLCMatRptLimit();
-	DLCMatParaRes( resp );
+	DLCMatUSBOK( resp );
 }
 void DLCMatReportFlg(const char *param, char *resp)
 {
-	DLC_Para.Http_Report_Hold ^= 0xff;
-	if( DLC_Para.Http_Report_Hold == 0 )
-		putst( "Report Debug\n\r" );
+	if (WPFM_operationMode == WPFM_OPERATION_MODE_NON_MEASUREMENT)
+		DLCMatUSBOK( resp );
 	else
-		putst( "Report Normal\n\r" );
-	DLCParaSave();
-	DLCMatParaRes( resp );
+		DLCMatUSBNG( resp );
 }
 void DLCMatEventLogClr(const char *param, char *resp)
 {
+	if (WPFM_operationMode != WPFM_OPERATION_MODE_NON_MEASUREMENT){
+		DLCMatUSBNG( resp );
+		return;
+	}
 	DLCEventLogClr(0);
-	DLCMatParaRes( resp );
+	DLCMatUSBOK( resp );
 }
 void DLCMatCPower(const char *param, char *resp)
 {
@@ -208,5 +262,5 @@ void DLCMatCPower(const char *param, char *resp)
 		PORT_GroupWrite( PORT_GROUP_0,0x1<<12,-1 );		/* ON */
 	else
 		PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );		/* OFF */
-	DLCMatParaRes( resp );
+	DLCMatUSBOK( resp );
 }
