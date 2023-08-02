@@ -36,7 +36,7 @@ void SMPIF_getStatus(const char *param, char *resp)
     MLOG_STATUS_T mlogStatus;
     rt = MLOG_getStatus(&mlogStatus);
     if( rt == MLOG_ERR_READ ){
-        sprintf(resp, "%c003NG203%c", SMPIF_STX, SMPIF_ETX);
+        sprintf(resp, "%c003NG900%c", SMPIF_STX, SMPIF_ETX);
 	    APP_printUSB(resp);
 	    APP_delay(10);
 	    SMPIF_dumpMessage("RESP", resp);
@@ -198,6 +198,13 @@ void SMPIF_getData(const char *param, char *resp)
 		    SMPIF_dumpMessage("RESP", resp);
 		    APP_delay(10);
 		}
+		else if( stat == MLOG_ERR_READ ){
+	        sprintf(resp, "%c003NG900%c", SMPIF_STX, SMPIF_ETX);
+	        APP_printUSB(resp);
+	        APP_delay(10);
+	        SMPIF_dumpMessage("RESP", resp);
+	        APP_delay(10);
+		}
 		else {// Bad date&time or Get error
 	        DEBUG_UART_printlnFormat("--ERROR: %d", stat); APP_delay(20);
 
@@ -250,7 +257,8 @@ static bool makeDatetimeString(uint32_t epochTime, char datetime[])
     sprintf(datetime, "%04u%02u%02u%02u%02u%02u",
             (dt.year + 2000), dt.month, dt.day, dt.hour, dt.minute, dt.second
     );
-
+	if( dt.year == 70 )
+        return (false);     // error!
     return (true);      // okey!
 }
 

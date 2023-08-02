@@ -75,12 +75,13 @@ void SMPIF_setCallibrationValues(const char *param, char *resp)
         if (! WPFM_writeSettingParameter(&WPFM_settingParameter))
         {
             DEBUG_UART_printlnString("WPFM_writeSettingParameter(): ERROR");
-        }
-
-        WPFM_readSettingParameter(&work);
-        WPFM_dumpSettingParameter(&work);
-
-        sprintf(resp, "%c000OK%c", SMPIF_STX, SMPIF_ETX);
+	       	sprintf(resp, "%c003NG900%c", SMPIF_STX,SMPIF_ETX);
+		}
+		else {
+			WPFM_readSettingParameter(&work);
+			WPFM_dumpSettingParameter(&work);
+			sprintf(resp, "%c000OK%c", SMPIF_STX, SMPIF_ETX);
+		}
     }
     else
     {

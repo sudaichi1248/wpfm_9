@@ -273,9 +273,11 @@ int W25Q128JV_readUniqueID(uint8_t uid[])
 
     return (W25Q128JV_ERR_NONE);
 }
-
+char	zzSpiFlashErr;
 int W25Q128JV_readData(uint32_t addr, uint8_t *buf, uint16_t length)
 {
+	if ( zzSpiFlashErr )
+        return (W25Q128JV_ERR_SPI);
     if (length > W25Q128JV_MAX_READ_SIZE)
         return (W25Q128JV_ERR_SIZE);
 

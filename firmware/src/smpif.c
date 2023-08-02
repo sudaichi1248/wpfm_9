@@ -71,7 +71,7 @@ static SMPIF_COMMAND_TABLE _SMPIF_commandTables[] =
         { "M7", DLCMatSettingClear },
         { "M8", DLCMatEventLogClr },
         { "M9", DLCMatReportLmt },
-        { "MA", DLCMatReportFlg },
+        { "MA", DLCMatErr900 },
         { "MB", DLCMatMeasureLogChange },
         { "MC", DLCMatDebugCmdChange },
         { "MD", DLCMatCPower },
