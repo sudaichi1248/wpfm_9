@@ -127,8 +127,12 @@ void DLCMatUpdateGo(const char *param, char *resp)
 }
 void DLCMatmlogBroke( const char *param, char *resp)
 {
-	if (WPFM_operationMode == WPFM_OPERATION_MODE_NON_MEASUREMENT)
+	if (WPFM_operationMode == WPFM_OPERATION_MODE_NON_MEASUREMENT){
+		char	buff[256];
+		memset( buff,0,256 );
+    	W25Q128JV_programPage(0, 0,  (uint8_t*)buff, 256, true);
 		DLCMatUSBOK( resp );
+	}
 	else
 		DLCMatUSBNG( resp );
 }
@@ -240,10 +244,13 @@ void DLCMatReportLmt(const char *p, char *resp)
 	DLCMatRptLimit();
 	DLCMatUSBOK( resp );
 }
-void DLCMatReportFlg(const char *param, char *resp)
+void DLCMatErr900(const char *param, char *resp)
 {
-	if (WPFM_operationMode == WPFM_OPERATION_MODE_NON_MEASUREMENT)
+	extern char zzSpiFlashErr;
+	if (WPFM_operationMode == WPFM_OPERATION_MODE_NON_MEASUREMENT){
+		zzSpiFlashErr = 1;
 		DLCMatUSBOK( resp );
+	}
 	else
 		DLCMatUSBNG( resp );
 }

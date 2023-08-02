@@ -31,6 +31,6 @@ void DLCMatSettingClear();
 void DLCMatSetClock();
 void DLCMatGetClock();
 void DLCMatReportLmt(const char *param, char *resp);
-void DLCMatReportFlg();
+void DLCMatErr900();
 void DLCMatEventLogClr();
 void DLCMatCPower(const char *param, char *resp);
