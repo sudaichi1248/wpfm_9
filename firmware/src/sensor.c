@@ -33,13 +33,15 @@ uint32_t	BatteryValueSum1 = 0, BatteryValueSum2 = 0;
 const static float _SENSOR_conversionFactor                = 0.000990000;      // Conversion to voltage factor [V/LSB]
 const static float _SENSOR_dividedRatioOfExternalBattery   = 880.0 / 200.0;    // Voltage division ratio: (R1) Corresponded to battery voltage change to 12V
 const static float _SENSOR_dividedRatioOfExternalBattery2     = 0.005750; // Voltage division ratio: (R1) Corresponded to battery voltage change to 12V by kamimoto
-
 #ifndef SENSOR_SHURINK
 int SENSOR_readSensorOutput(int sensorNo, float *result_p)
 {
     DEBUG_UART_printlnFormat("> SENSOR_readSensorOutput(%d,-)", sensorNo);
     *result_p = WPFM_MISSING_VALUE_FLOAT;
-
+#ifdef _TESTTEST
+	static uint16_t TestVal = 100;
+	static char		TestDir;
+#endif
     int sensorIndex;
     switch (sensorNo)
     {
@@ -56,25 +58,25 @@ int SENSOR_readSensorOutput(int sensorNo, float *result_p)
     }
     int sensorKind = WPFM_settingParameter.sensorKinds[sensorIndex];
     DEBUG_UART_printlnFormat("sensorIndex=%d,sensorKind=%d", sensorIndex, sensorKind);
-
     int sensorKindIndex = sensorKind - 1;
     uint16_t rawValue;
     float slope = 0.0, result = 0.0;
+    float loLmt,calb1,calb2;
     WPFM_SETTING_PARAMETER *p = &WPFM_settingParameter;
     switch (sensorKind)
     {
         case SENSOR_KIND_NOT_PRESENT:
             // specified sensor is not exist.
             return (SENSOR_ERR_NOT_EXIST);
-
         case SENSOR_KIND_1_3V:
         case SENSOR_KIND_1_5V:
+        case SENSOR_KIND_4_20MA:
             // (1) read raw value using ADC
             rawValue = SENSOR_readRawValue();
             // (2) calculate slope
             slope = ((float)(p->upperLimits[sensorIndex]) - (float)(p->lowerLimits[sensorIndex]))
                     / ((float)(p->calibrationUpperValues[sensorIndex][sensorKindIndex]) - (float)(p->calibrationLowerValues[sensorIndex][sensorKindIndex]));
-#ifdef DEBUG_DETAIL
+#ifdef DEBUG_DETAIL1
             DEBUG_UART_printlnFormat("slope=%f", slope);
             DEBUG_UART_printlnFormat("upperLimit=%.3f", (float)p->upperLimits[sensorIndex]); APP_delay(10);
             DEBUG_UART_printlnFormat("lowerLimit=%.3f", (float)p->lowerLimits[sensorIndex]); APP_delay(10);
@@ -87,18 +89,42 @@ int SENSOR_readSensorOutput(int sensorNo, float *result_p)
             break;
 
         case SENSOR_KIND_0_20MA:
-        case SENSOR_KIND_4_20MA:
             // (1) read raw value using ADC
-            rawValue = SENSOR_readRawValue();
+#ifndef _TESTTEST
+            rawValue = SENSOR_readRawValue();															/* AD生値 */
+#else
+            rawValue = TestVal;																			/* AD生値 */
+			APP_delay(200);DEBUG_UART_printlnFormat("\nTestVal=%d", TestVal );APP_delay(20);
+			if( TestDir )
+	            TestVal += 5;
+            else
+    	        TestVal -= 5;
+    	    if( TestVal == 0 ){
+    	    	TestDir = 1;
+    	    }
+    	    if( TestVal > 4000 ){
+    	    	TestDir = 0;
+    	    }
+#endif
+            loLmt = 0.4;																				/* 下限値 */
+            calb1 = p->calibrationUpperValues[sensorIndex][sensorKindIndex];							/* キャリブレーション値上 */
+            calb2 = p->calibrationLowerValues[sensorIndex][sensorKindIndex];							/* キャリブレーション値下 */
             // (2) calculate slope
-            slope = ((float)(p->upperLimits[sensorIndex]) - (float)(p->lowerLimits[sensorIndex]))
-                    / ((float)(p->calibrationUpperValues[sensorIndex][sensorKindIndex]) - (float)(p->calibrationLowerValues[sensorIndex][sensorKindIndex]));
-            DEBUG_UART_printlnFormat("slope=%.3f", slope);
+            if( rawValue >= calb2 )
+	            slope = ( (float)p->upperLimits[sensorIndex] - loLmt) / ( (float)calb1 - (float)calb2 );
+	        else
+	        	slope = loLmt/calb2;
+#ifdef DEBUG_DETAIL
+            DEBUG_UART_printlnFormat("slope=%f", slope);APP_delay(20);
+            DEBUG_UART_printlnFormat("upLmt=%.3f", (float)p->upperLimits[sensorIndex]); APP_delay(10);
+            DEBUG_UART_printlnFormat("loLmt=%.3f", loLmt); APP_delay(10);
+            DEBUG_UART_printlnFormat("calib1=%.3f", calb1); APP_delay(10);
+            DEBUG_UART_printlnFormat("calib2=%.3f", calb2); APP_delay(10);
+#endif // DEBUG_DETAIL
             // (3) calculate measured value
-            result = slope * (float)(rawValue - p->calibrationLowerValues[sensorIndex][sensorKindIndex]) + (float)(p->lowerLimits[sensorIndex]);
+            result = slope * (float)(rawValue - p->calibrationLowerValues[sensorIndex][sensorKindIndex]) + loLmt;
             DEBUG_UART_printlnFormat("result=%.3f", result);
             break;
-
         default:
             return (SENSOR_ERR_PARAM);
     }
