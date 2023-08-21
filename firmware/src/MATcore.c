@@ -1490,8 +1490,8 @@ void DLCMatConfigDefault()
 	config.alertLowerLimits[0][0]  			= 0.25;
 	config.alertEnableKinds[0][1][1]  		= 1;
 	config.alertLowerLimits[0][1] 			= 0.15;
-	strcpy( config.Measure_ch1,"êÖà≥" );
-	strcpy( config.MeaKind_ch1,"MPa" );
+	strcpy( config.Measure_ch1,"MPa" );
+	strcpy( config.MeaKind_ch1,"êÖà≥" );
 	config.alertChatteringTimes[0] 			= 100;
 	config.alertEnableKinds[1][0][1]		= 1;
 	config.alertUpperLimits[1][1]			= -25;
@@ -1501,8 +1501,8 @@ void DLCMatConfigDefault()
 	config.alertLowerLimits[1][0]			= 0;
 	config.alertEnableKinds[1][1][1] 		= 1;
 	config.alertLowerLimits[1][1]			= -10;
-	strcpy( config.Measure_ch2,"ó¨ó " );
-	strcpy( config.MeaKind_ch2,"m^3/hour" );
+	strcpy( config.Measure_ch2,"m^3/hour" );
+	strcpy( config.MeaKind_ch2,"ó¨ó " );
 	config.alertChatteringTimes[1] 			= 1;
 	config.alertChatteringKind				= 1;
 	strcpy( config.AlertPause,"2040-01-01 09:00:01" );
