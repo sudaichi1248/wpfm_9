@@ -33,32 +33,28 @@
 */
 int BATTERY_checkAndSwitchBattery(void)
 {
+	char	LoNow[2];
     // Check both batteries for low voltage.
-    for (int batteryIndex = 0; batteryIndex < 2; batteryIndex++)
-    {
-        if (WPFM_lastBatteryVoltages[batteryIndex] < WPFM_settingParameter.lowThresholdVoltage)
-        {
+    for (int batteryIndex = 0; batteryIndex < 2; batteryIndex++){
+        if (WPFM_lastBatteryVoltages[batteryIndex] < WPFM_settingParameter.lowThresholdVoltage){
             DBG_PRINT("Battery #%d low.", batteryIndex + 1);
-            if (WPFM_timesBelowTheThresholds[batteryIndex] > 0)
-            {
-                WPFM_timesBelowTheThresholds[batteryIndex] += 1;   // count up if continuously
+            LoNow[batteryIndex] = 1;
+            if (WPFM_timesBelowTheThresholds[batteryIndex] > 0){
+                WPFM_timesBelowTheThresholds[batteryIndex]++;   // count up if continuously
             }
-            else
-            {
+            else {
                 WPFM_timesBelowTheThresholds[batteryIndex] = 1;
             }
         }
-        else
-        {
+        else {
             //uint16_t mask = (batteryIndex == 0) ? MLOG_BAT_STATUS_BAT1_LOW_VOLTAGE : MLOG_BAT_STATUS_BAT2_LOW_VOLTAGE;
             //WPFM_batteryStatus &= ~mask;
+            LoNow[batteryIndex] = 0;
             WPFM_timesBelowTheThresholds[batteryIndex] = 0;     // reset counter
         }
     }
-
     // Set in-use flag to WPFM_batteryStatus
-    switch (WPFM_externalBatteryNumberInUse)
-    {
+    switch (WPFM_externalBatteryNumberInUse){
         case 1:
             WPFM_batteryStatus &= ~MLOG_BAT_STATUS_BAT2_IN_USE;
             WPFM_batteryStatus |= MLOG_BAT_STATUS_BAT1_IN_USE;
@@ -71,77 +67,72 @@ int BATTERY_checkAndSwitchBattery(void)
             DEBUG_UART_printlnFormat("WPFM_externalBatteryNumberInUse is bad: %d", WPFM_externalBatteryNumberInUse);
             break;
     }
-
+    DBG_PRINT("WPFM_batteryStatus %02X\n", WPFM_batteryStatus);
     // Switch batteries if necessary.
     uint16_t batteryStatus = WPFM_batteryStatus;
-    if (WPFM_timesBelowTheThresholds[0] >= WPFM_settingParameter.timesLessThresholdVoltage)
-    {
+    if (WPFM_timesBelowTheThresholds[0] >= WPFM_settingParameter.timesLessThresholdVoltage){
         // external battery #1 is low
         WPFM_externalBatteryNumberToReplace = 1;
         batteryStatus |= MLOG_BAT_STATUS_BAT1_LOW_VOLTAGE;
-
-        if (batteryStatus & MLOG_BAT_STATUS_BAT2_LOW_VOLTAGE)
-        {
-            // external battery #2 is low too
-            WPFM_batteryStatus = batteryStatus;
-            return (BATTERY_ERR_HALT);      // It will be stopped by caller
-        }
-
-        if (WPFM_batteryStatus & MLOG_BAT_STATUS_BAT1_IN_USE)
-        {
-            // Switch battery #1 -> battery #2
-            batteryStatus &= ~MLOG_BAT_STATUS_BAT1_IN_USE;
-            batteryStatus |= MLOG_BAT_STATUS_BAT2_IN_USE;
-            WPFM_externalBatteryNumberToReplace = 1;
-            // First, attach external battery #2
-            EXT2_OFF_Clear();
-            APP_delay(300);     // wait a little
-            // Second, detach external battery #1
-            EXT1_OFF_Set();
-            // Current uising battery # is 2
-            WPFM_externalBatteryNumberInUse = 2;
-			if (DLC_Para.MeasureLog == 0) {
-	            DEBUG_UART_printlnString("Exchange Battery #1 -> #2");
-			}
-			DLCEventLogWrite( _ID1_CELLACT,batteryStatus,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
-        }
-
-        WPFM_batteryStatus = batteryStatus;
+		if( LoNow[1] == 0 ){															/* Added 23.8.21 直前がLoである場合は切替ない */
+			if (batteryStatus & MLOG_BAT_STATUS_BAT2_LOW_VOLTAGE){
+	            // external battery #2 is low too
+	            WPFM_batteryStatus = batteryStatus;
+	            return (BATTERY_ERR_HALT);      // It will be stopped by caller
+	        }
+	        if (WPFM_batteryStatus & MLOG_BAT_STATUS_BAT1_IN_USE){
+	            // Switch battery #1 -> battery #2
+	            batteryStatus &= ~MLOG_BAT_STATUS_BAT1_IN_USE;
+	            batteryStatus |= MLOG_BAT_STATUS_BAT2_IN_USE;
+	            WPFM_externalBatteryNumberToReplace = 1;
+	            // First, attach external battery #2
+	            EXT2_OFF_Clear();
+	            APP_delay(300);     // wait a little
+	            // Second, detach external battery #1
+	            EXT1_OFF_Set();
+	            // Current uising battery # is 2
+	            WPFM_externalBatteryNumberInUse = 2;
+				if (DLC_Para.MeasureLog == 0) {
+		            DEBUG_UART_printlnString("Exchange Battery #1 -> #2");
+				}
+				DLCEventLogWrite( _ID1_CELLACT,batteryStatus,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
+	        }
+	        WPFM_batteryStatus = batteryStatus;
+	    }
+	    else
+	    	putst("\r\nCannot Switch(#2 Lo)\r\n");
     }
-
-    if (WPFM_timesBelowTheThresholds[1] >= WPFM_settingParameter.timesLessThresholdVoltage)
-    {
+    if (WPFM_timesBelowTheThresholds[1] >= WPFM_settingParameter.timesLessThresholdVoltage) {
         // external battery #2 is low
         WPFM_externalBatteryNumberToReplace = 2;
         batteryStatus |= MLOG_BAT_STATUS_BAT2_LOW_VOLTAGE;
-
-        if (batteryStatus & MLOG_BAT_STATUS_BAT1_LOW_VOLTAGE)
-        {
-            // external battery #1 is low too
-            WPFM_batteryStatus = batteryStatus;
-            return (BATTERY_ERR_HALT);      // It will be stopped by caller
+		if( LoNow[0] == 0 ){															/* Added 23.8.21 直前がLoである場合は切替ない */
+	        if (batteryStatus & MLOG_BAT_STATUS_BAT1_LOW_VOLTAGE){
+	            // external battery #1 is low too
+	            WPFM_batteryStatus = batteryStatus;
+	            return (BATTERY_ERR_HALT);      // It will be stopped by caller
+	        }
+	        if (WPFM_batteryStatus & MLOG_BAT_STATUS_BAT2_IN_USE){
+	            // Switch batter #2 -> battery #1
+	            batteryStatus &= ~MLOG_BAT_STATUS_BAT2_IN_USE;
+	            batteryStatus |= MLOG_BAT_STATUS_BAT1_IN_USE;
+	            WPFM_externalBatteryNumberToReplace = 2;
+	            // First, attach external battery #1
+	            EXT1_OFF_Clear();
+	            APP_delay(300);     // wait a little
+	            // Second, detach external battery #2
+	            EXT2_OFF_Set();
+	            // Current uising battery # is 1
+	            WPFM_externalBatteryNumberInUse = 1;
+				if (DLC_Para.MeasureLog == 0) {
+		            DEBUG_UART_printlnString("Exchange Battery #2 -> #1");
+				}
+				DLCEventLogWrite( _ID1_CELLACT,batteryStatus,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
+	        }
+	        WPFM_batteryStatus = batteryStatus;
         }
-
-        if (WPFM_batteryStatus & MLOG_BAT_STATUS_BAT2_IN_USE)
-        {
-            // Switch batter #2 -> battery #1
-            batteryStatus &= ~MLOG_BAT_STATUS_BAT2_IN_USE;
-            batteryStatus |= MLOG_BAT_STATUS_BAT1_IN_USE;
-            WPFM_externalBatteryNumberToReplace = 2;
-            // First, attach external battery #1
-            EXT1_OFF_Clear();
-            APP_delay(300);     // wait a little
-            // Second, detach external battery #2
-            EXT2_OFF_Set();
-            // Current uising battery # is 1
-            WPFM_externalBatteryNumberInUse = 1;
-			if (DLC_Para.MeasureLog == 0) {
-	            DEBUG_UART_printlnString("Exchange Battery #2 -> #1");
-			}
-			DLCEventLogWrite( _ID1_CELLACT,batteryStatus,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
-        }
-
-        WPFM_batteryStatus = batteryStatus;
+	    else
+	    	putst("\r\nCannot Switch(#1 Lo)\r\n");
     }
 
     return (BATTERY_ERR_NONE);
