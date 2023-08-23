@@ -537,7 +537,7 @@ void WPFM_updateCommunicationInterval(uint32_t interval)
   Remarks:
 
  */
-
+uint32_t	DLC_now;
 bool WPFM_setNextCommunicateAlarm(void)
 {
     // Adjust and set next alarm
@@ -568,7 +568,7 @@ bool WPFM_setNextCommunicateAlarm(void)
         DEBUG_UART_printlnFormat("RTC_setAlarm() NG: %d", stat);
         return (false);     // Failed
     }
-
+	DLC_now = RTC_now;
     return (true);      // Okey
 }
 
