@@ -1963,10 +1963,25 @@ void DLCMatSTRParamSet(char *config_p)
 		DLC_MatConfigItem[0] = 0;
 	}
 }
+void DLCcommunicationIntervalChange()
+{
+	extern uint32_t	DLC_now;
+	if( config.communicationInterval != WPFM_communicationInterval ){
+		putst("COM:Interval Change!" );putdecw( WPFM_communicationInterval );putst("->");putdecw( config.communicationInterval );putcrlf();
+	    uint32_t nextTime = DLC_now + config.communicationInterval;
+	    uint32_t minutesLater = ((nextTime - RTC_now) + 59) / 60;
+	    int stat;
+	    if ((stat = RTC_setAlarm(minutesLater, WPFM_onAlarm)) != RTC_ERR_NONE){
+	        puts("RTC_setAlarm Err\r\n");
+	    }
+		DLCMatConstCallRetry();
+	}
+}
 void DLCMatReflectionConfig()
 {
 	WPFM_settingParameter.measurementInterval = config.measurementInterval;
 	WPFM_settingParameter.communicationInterval = config.communicationInterval;
+	DLCcommunicationIntervalChange();											/* í êMä‘äuïœçXèàóù 23.8.23 */
 	WPFM_settingParameter.measurementIntervalOnAlert = config.measurementIntervalOnAlert;
 	WPFM_settingParameter.communicationIntervalOnAlert = config.communicationIntervalOnAlert;
 
