@@ -274,9 +274,9 @@ char	DLC_ConstCallRetry;
 void DLCMatConstCallRetry()
 {
 	if( WPFM_settingParameter.communicationInterval >= _6hour ){
-		putst("6時間毎の定期通信リトライタイマー開始 ");
+		putst("6hr>=ConstantCall.(Resurved 1hr x 3:");
 		puthxb( ++DLC_ConstCallRetry );
-		putst("回目 " );
+		putst(" time!" );
 		if( DLC_ConstCallRetry < 3 ){
 			DLCMatRtcTimerset( 5,_1hour );
 		}
@@ -1974,7 +1974,6 @@ void DLCcommunicationIntervalChange()
 	    if ((stat = RTC_setAlarm(minutesLater, WPFM_onAlarm)) != RTC_ERR_NONE){
 	        puts("RTC_setAlarm Err\r\n");
 	    }
-		DLCMatConstCallRetry();
 	}
 }
 void DLCMatReflectionConfig()
@@ -2583,6 +2582,7 @@ int DLCMatRecvDisp()
 							MATReportLmtUpDw(1);								/* Report Limit数Up */
 						}
 						DLCMatTtcTimerClr( 5 );									/* 定期通信6時間毎時のリトライタイマークリア */
+						DLC_ConstCallRetry = 0;
 						DLC_MatsendRepOK = true;
 					}
 				}
