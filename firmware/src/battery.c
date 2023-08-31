@@ -99,8 +99,10 @@ int BATTERY_checkAndSwitchBattery(void)
 	        }
 	        WPFM_batteryStatus = batteryStatus;
 	    }
-	    else
+	    else {
 	    	putst("\r\nCannot Switch(#2 Lo)\r\n");
+            return (BATTERY_ERR_HALT);      // It will be stopped by caller
+		}
     }
     if (WPFM_timesBelowTheThresholds[1] >= WPFM_settingParameter.timesLessThresholdVoltage) {
         // external battery #2 is low
@@ -131,8 +133,10 @@ int BATTERY_checkAndSwitchBattery(void)
 	        }
 	        WPFM_batteryStatus = batteryStatus;
         }
-	    else
+	    else {
 	    	putst("\r\nCannot Switch(#1 Lo)\r\n");
+	        return (BATTERY_ERR_HALT);      // It will be stopped by caller
+		}
     }
 
     return (BATTERY_ERR_NONE);

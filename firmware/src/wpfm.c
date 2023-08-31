@@ -35,7 +35,7 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     // Serial number
     12345678,
     // Operational condition
-    10,                     // measurement interval on normal[sec]
+    60,                     // measurement interval on normal[sec]
     300,                    // communication interval on normal[sec]
     4,                      // measurement interval on alert[sec]
     60,                     // communication interval on alert[sec]
@@ -58,12 +58,12 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     // Calibration
     { { 1793, 2996, 4070, 4060 }, { 1793, 2995, 4070, 4060 } },     // calibration upper values[LSB]
     { { 566, 566,  30,  40 }, { 566, 566,  20,  40  } },                // calibration lower values[LSB]
-    2400,                       // lowThresholdVoltage[mV]
-    5,                          // timesLessThresholdVoltage
+    8000,                       // lowThresholdVoltage[mV]
+    3,                          // timesLessThresholdVoltage
     300,                        // maximumBatteryExchangeTime[sec]
-    "水圧", "MPa",              // Measure_ch1, MeaKind_ch1
-    "流量", "m3/h",             // Measure_ch2, MeaKind_ch2
-    "2040-01-01 09:00:01"      // AlertPause
+    "MPa","水圧",               // Measure_ch1, MeaKind_ch1
+    "m3/h","流量",              // Measure_ch2, MeaKind_ch2
+    "2099-01-01 09:00:01"      // AlertPause
 };
 volatile uint32_t WPFM_measurementInterval;     // Current measurement interval[Sec]
 uint32_t WPFM_communicationInterval;            // Current communication interval[Sec]
