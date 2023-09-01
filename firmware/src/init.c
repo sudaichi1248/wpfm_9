@@ -24,6 +24,7 @@
 void DLCMatTimerset();
 int	DLCMatTmChk();
 void DLCMatErrorSleep();
+void DLC_Halt();
 #ifdef ADD_FUNCTION
 bool DLCMatWatchAlertPause();
 #endif
@@ -152,58 +153,6 @@ void WPFM_initializeApplication(void)
     // Control external batteries
 //    uint16_t voltage = 0;
 //    SENSOR_readExternalBatteryVoltage(1, &voltage);
-#if 1
-	SENSOR_readExternalBatteryVoltage(1, &WPFM_lastBatteryVoltages[0]);
-	SENSOR_readExternalBatteryVoltage(2, &WPFM_lastBatteryVoltages[1]);
-#else
-	SENSOR_readExternalBatteryVoltageShurink(&WPFM_lastBatteryVoltages[0], &WPFM_lastBatteryVoltages[1]);
-#endif
-	DLCEventLogWrite( _ID1_BATTRY,WPFM_lastBatteryVoltages[0],WPFM_lastBatteryVoltages[1] );
-	char	tmp[64];
-	sprintf( tmp,"“d’r1=%.3f  2=%.3f",(float)WPFM_lastBatteryVoltages[0]/1000,(float)WPFM_lastBatteryVoltages[1]/1000 );
-	putst( tmp );
-//    if (voltage > WPFM_settingParameter.lowThresholdVoltage)
-	if (WPFM_lastBatteryVoltages[0] > WPFM_settingParameter.lowThresholdVoltage)
-    {
-        // Use Battery #1, detach Battery #2
-        WPFM_externalBatteryNumberInUse = 1;
-        WPFM_batteryStatus = MLOG_BAT_STATUS_BAT1_IN_USE | MLOG_BAT_STATUS_BAT2_NOT_USE;
-		DLCEventLogWrite( _ID1_POWER_START,cause,0 );
-        EXT2_OFF_Set();         // detach battery #2
-    }
-    else
-    {
-        // Use Battery #2, detach Battery #1
-//        SENSOR_readExternalBatteryVoltage(2, &voltage);
-//        if (voltage > WPFM_settingParameter.lowThresholdVoltage)
-		if (WPFM_lastBatteryVoltages[1] > WPFM_settingParameter.lowThresholdVoltage)
-        {
-            WPFM_externalBatteryNumberInUse = 2;
-            WPFM_batteryStatus = MLOG_BAT_STATUS_BAT2_IN_USE | MLOG_BAT_STATUS_BAT1_NOT_USE;
-			DLCEventLogWrite( _ID1_POWER_START,cause,1 );
-            EXT1_OFF_Set();     // detach battery #1
-        }
-        else
-        {
-            // Both batteries are low voltage, blink ext1-led and ext2-led until the battery is replaced and reset.
-			// ‚±‚±‚ÍVBAT‹ì“®
-putst("##### VBAT drive\r\n");
-#if 1
-			WPFM_isVbatDrive = true;	// VBAT‹ì“®
-#else
- #if 1
-		        WPFM_externalBatteryNumberInUse = 1;
-		        WPFM_batteryStatus = MLOG_BAT_STATUS_BAT1_IN_USE | MLOG_BAT_STATUS_BAT2_NOT_USE;
-		        EXT2_OFF_Set();         // detach battery #2
-				DLCEventLogWrite( _ID1_POWER_START,cause,3 );
- #else
-	            UTIL_startBlinkEXT1AND2LED();
-	            while (true)
-	                ;           // Stop here
- #endif
-#endif
-        }
-    }
 
     //- Initialize RTC
     int stat;
@@ -218,7 +167,38 @@ putst("##### VBAT drive\r\n");
         dt.minute = 0;
         dt.second = 0;
         RTC_setDateTime(dt);
+    }	SENSOR_readExternalBatteryVoltage(1, &WPFM_lastBatteryVoltages[0]);
+	SENSOR_readExternalBatteryVoltage(2, &WPFM_lastBatteryVoltages[1]);
+	DLCEventLogWrite( _ID1_BATTRY,WPFM_lastBatteryVoltages[0],WPFM_lastBatteryVoltages[1] );
+	char	tmp[64];
+	sprintf( tmp,"Cell(%.3f,%.3f)\n",(float)WPFM_lastBatteryVoltages[0]/1000,(float)WPFM_lastBatteryVoltages[1]/1000 );
+	putst( tmp );
+	if (WPFM_lastBatteryVoltages[0] > WPFM_settingParameter.lowThresholdVoltage){			/* Cell-1 Hi */
+        // Use Battery #1, detach Battery #2
+        WPFM_externalBatteryNumberInUse = 1;
+        WPFM_batteryStatus = MLOG_BAT_STATUS_BAT1_IN_USE | MLOG_BAT_STATUS_BAT2_NOT_USE;
+		DLCEventLogWrite( _ID1_POWER_START,cause,0 );
+        EXT2_OFF_Set();         // detach battery #2
     }
+    else {
+		if (WPFM_lastBatteryVoltages[1] > WPFM_settingParameter.lowThresholdVoltage){		/* Cell-2 Hi */
+            WPFM_externalBatteryNumberInUse = 2;
+            WPFM_batteryStatus = MLOG_BAT_STATUS_BAT2_IN_USE | MLOG_BAT_STATUS_BAT1_NOT_USE;
+			DLCEventLogWrite( _ID1_POWER_START,cause,1 );
+            EXT1_OFF_Set();     // detach battery #1
+        }
+        else {																				/* Both Lo */
+            // Both batteries are low voltage, blink ext1-led and ext2-led until the battery is replaced and reset.
+			// ‚±‚±‚ÍVBAT‹ì“®(USB“dŒ¹)‚Æ”»’f‚·‚é
+			if( WPFM_isConnectingUSB == true ){
+				putst("##### VBAT drive\r\n");
+				WPFM_isVbatDrive = true;													// VBAT‹ì“®
+			}
+			else
+				DLC_Halt();
+        }
+    }
+
     if ((stat = RTC_setTimeUpdateInterrupt(RTC_TIMEUPDATE_SECOND, WPFM_onTimeupdate)) != RTC_ERR_NONE)
     {
         DEBUG_UART_printlnFormat("RTC_setTimeUpdateInterrupt() ERROR: %d", stat);

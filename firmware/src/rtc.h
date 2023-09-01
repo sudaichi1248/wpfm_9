@@ -55,7 +55,7 @@ extern int RTC_setTimeUpdateInterrupt(RTC_TIMEUPDATE_TYPE which, RTC_HANDLER han
 extern int RTC_setAlarm(uint32_t minutesLater, RTC_HANDLER handler);
 extern int RTC_writeNVRAM(uint8_t data);
 extern int RTC_readNVRAM(uint8_t *data_p);
-
+extern void RTCstop();
 /*
 *   Variables
 */

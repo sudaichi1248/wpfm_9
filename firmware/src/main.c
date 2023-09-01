@@ -73,19 +73,19 @@ int	DLCSlideSw()
 	uint32_t	sw;
 	sw = PORT_GroupRead( PORT_GROUP_0 );
 	sw &= 0x8080;
-	if( sw == 0 )
-//	if(( sw == 0 )||( sw = 0x8080 ))				/* PA07と15が同時Lo(スライドSWが真ん中or同時Hi ) */
+	if( sw == 0 )									/* PA07と15が同時Lo(スライドSWが真ん中 ) */
 		return	1;
 	return 0;
 }
 void DLC_Halt()
 {
 	DLCEventLogWrite( _ID1_POWER_OFF,0,1 );
-	PORT_GroupWrite( PORT_GROUP_0,0x1<<6,0 );		/* DCDC Lo */
-	if( DLCSlideSw() == 0 ){						/* Swが変わった */
+	PORT_GroupWrite( PORT_GROUP_0,0x1<<6,0 );								/* DCDC Lo */
+	if( UTIL_getPowerModeSW() != WPFM_operationMode){						/* Swが変わった */
 		DLCEventLogWrite( _ID1_POWER_OFF,0,2 );
 		WPFM_reboot();								// 変更されていた時は、リブートして新しい動作モードで処理を開始する
 	}
+	RTCstop();
 	WDT_Disable();
 	WPFM_sleep();
 	__NVIC_SystemReset();
@@ -128,7 +128,7 @@ int main(void)
 ResetReset:
 	WDT_SetClkCycle(8);	// WDT設定
 	WDT_Enable();
-	if(( PORT_GroupRead( PORT_GROUP_0 ) & 0x8080) == 0 ){						/* PA07と15が同時Lo(スライドSWが真ん中 ) */
+	if( UTIL_getPowerModeSW() == WPFM_POWEROFF_MODE ){						/* PA07と15が同時Lo(スライドSWが真ん中 ) */
 		WDT_Disable();
         DEBUG_UART_printlnString("## PA07andPA15=Lo HALT ##");
 		nV1GD_Clear();	// PA06 Low
@@ -245,7 +245,7 @@ void SlideSwProc()
 	}
 #endif
 	if (UTIL_getPowerModeSW() != WPFM_operationMode){								// スライドスイッチの設定が変更されたか否かをチェックする
-		DLCEventLogWrite( _ID1_POWER_OFF,0,2 );
+		DLCEventLogWrite( _ID1_POWER_OFF,0,3 );
 		WPFM_reboot();																// 変更されていた時は、リブートして新しい動作モードで処理を開始する
 	}
 }

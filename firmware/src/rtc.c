@@ -608,3 +608,11 @@ void _RTC_handlerBClr()
         }
     }
 }
+/*
+	RTC‚ğ’èŠú‚ÆƒAƒ‰[ƒ€‚ğ~‚ß‚é
+*/
+void RTCstop()
+{
+	_RTC_writeRegister(RTC_REGISTER_CONTROL1, 0);   // all:0
+	_RTC_writeRegister(RTC_REGISTER_CONTROL2, 0);   // all:0
+}

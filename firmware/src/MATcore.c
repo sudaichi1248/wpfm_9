@@ -42,7 +42,7 @@ void DLCMatConfigDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatReportSnd(),DLCMatPostReptInit();
 void MATReportLmtUpDw( int );
 void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatStart(),DLCMatReset(),MTcls0(),DLCMatRptLimit();
-void DLC_Halt();
+void DLC_Halt(),DLCMatHalt();
 void MLOG_dump_uart(int to, int from);
 extern	char _Main_version[];
 int DLCMatRecvDisp();
@@ -1180,7 +1180,9 @@ void MTBatt()
 		char	tmp[64];
 		sprintf( tmp,"“d’r1=%.3f  2=%.3f",(float)WPFM_lastBatteryVoltages[0]/1000,(float)WPFM_lastBatteryVoltages[1]/1000 );
 		putst( tmp );
-		BATTERY_checkAndSwitchBattery();
+		if( BATTERY_checkAndSwitchBattery() == BATTERY_ERR_HALT )
+			WPFM_halt(0);
+//			DLCMatHalt();
 		DLC_MatBatCnt = 0;
 		break;
 	}
@@ -1204,7 +1206,7 @@ void MT____()
 void MTstop()
 {
 	DLC_MatState = MATC_STATE_OFF;
-	if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11)){
+	if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11)){							/* WAKE’† */
 		DLCMatTimerset( 0,TIMER_SYSFIN );
 		DLCMatGoSleep();
 		DLCEventLogWrite( _ID1_ERROR,0x400,0 );
@@ -3207,9 +3209,8 @@ void DLCMatMain()
 				}
 				break;
 			case 0x01:												/* CTRL+A  ‹­§Halt*/
-				if( CheckPasswd() ){
-					WPFM_halt("TEST");
-				}
+				if( CheckPasswd() )
+					WPFM_halt(0);
 				break;
 			case 'Q':												/* mlogƒƒjƒ…[ */
 				if( CheckPasswd() )
@@ -3294,7 +3295,20 @@ void DLCMatErrorSleep()
 	putst("MATcore Sleep(BatteryError)\r\n");
 	DLCMatTimerClr( 0 );
 	DLCMatGoSleep();
-	UTIL_delayMicros(1000*6000);								/* 6s */
+	for(int i=0;i<6000;i++){
+		if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11))
+			UTIL_delayMicros(1000);								/* 1ms */
+		else
+			break;
+	}
+	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );					/* OFF */
+	RTCstop();
+	W25Q128JV_powerDown();
+	DLC_MatState = MATC_STATE_ERR;
+}
+void DLCMatForceOff()
+{
+	putst(" MatForceOff\r\n");
 	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,0 );					/* OFF */
 	DLC_MatState = MATC_STATE_ERR;
 }
@@ -3339,6 +3353,7 @@ void DLCMatReset( )
 }
 void DLCMatHalt()
 {
+	DLC_MatState = MATC_STATE_ERR;
 	MatMsgSend( MSGID_SYSFIN );
 }
 int DLCMatOffChk()
