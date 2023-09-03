@@ -50,6 +50,7 @@
  uint32_t     _MLOG_headAddress    = 0;           // address of head log (point next address)
  uint32_t     _MLOG_tailAddress    = 0;           // address of tail log for upload
 static uint32_t     _MLOG_tailAddressBuckUp    = 0;
+static uint32_t     _MLOG_ReportList  = 0;				// RepostListÇÃç≈å„îˆ
 static uint32_t     _MLOG_oldestAddress  = 0;           // oldest log address in chip
 static uint32_t     _MLOG_latestAddress  = 0;           // latest log address in chip
 static uint32_t     _MLOG_lastSequentialNumber = 0;     // last sequentila number (1..MAX_UINT32-1)
@@ -199,6 +200,7 @@ int MLOG_getLog(MLOG_T *log_p)
     }
     _MLOG_tailAddress = ((uint32_t)pageNo << 8) + offset;
 //	putst("TAIL=");puthxw(_MLOG_tailAddress);putcrlf();
+    _MLOG_ReportList = _MLOG_headAddress;
     return (mlogID);
 }
 
@@ -243,11 +245,11 @@ int MLOG_updateLog()
 	// backload record flag
 	uint16_t pageNo;
 	uint8_t offset;
-	if(_MLOG_tailAddressBuckUp == _MLOG_headAddress) {
+	if(_MLOG_tailAddressBuckUp == _MLOG_ReportList ) {
 		putst("NoRecode\r\n");
 		return (MLOG_ERR_NONE);
 	}
-	while (_MLOG_tailAddressBuckUp != _MLOG_headAddress) {
+	while (_MLOG_tailAddressBuckUp != _MLOG_ReportList) {
 		pageNo = _MLOG_tailAddressBuckUp >> 8;
 		offset = _MLOG_tailAddressBuckUp & 0xff;
 		if (offset < MLOG_RECORD_SIZE * (MLOG_LOGS_PER_PAGE - 1)){
