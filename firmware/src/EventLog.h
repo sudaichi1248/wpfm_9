@@ -43,6 +43,7 @@ void DLCEventLogClr( int );
 #define		_ID1_USIM_CNUM				0x0102
 #define		_ID1_ALERT1					0x0103
 #define		_ID1_ALERT2					0x0104
+#define		_ID1_ALERTCLR				0x0105
 #define		_ID1_USB_CMD_OKNG			0x1020
 #define		_ID1_FOTA_START				0x1021
 #define		_ID1_FOTA_END				0x1022

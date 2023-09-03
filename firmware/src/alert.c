@@ -729,6 +729,7 @@ void WPFM_cancelAlert()
 	WPFM_lastAlertStartTimes[0][0] = WPFM_lastAlertStartTimes[1][0] = WPFM_lastAlertStartTimes[0][1] = WPFM_lastAlertStartTimes[1][1] = 0;
 	WPFM_lastAlertStartTimes2[0][0] = WPFM_lastAlertStartTimes2[0][1] = 0;
 	WPFM_lastAlertStartTimes2[1][0] = WPFM_lastAlertStartTimes2[1][1] = 0;
+	DLCEventLogWrite( _ID1_ALERTCLR,0,0 );
 // 上記 WPFM_updateCommunicationInterval() でcallされる
 //	WPFM_setNextCommunicateAlarm();
 }

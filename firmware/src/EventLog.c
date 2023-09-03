@@ -258,6 +258,9 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_ALERT2:
 		strcat( str,"ALERT2 ");
 		break;
+	case _ID1_ALERTCLR:
+		strcat( str,"AltCLR ");
+		break;
 	case _ID1_CONNECT:
 		strcat( str,"CNNECT ");
 		break;
