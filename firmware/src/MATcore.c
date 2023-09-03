@@ -1178,7 +1178,7 @@ void MTBatt()
 		WPFM_lastBatteryVoltages[1] = ( DLC_MatVolt[1][0] + DLC_MatVolt[1][1] + DLC_MatVolt[1][2] )/3;
 		DLCEventLogWrite( _ID1_BATTRY,WPFM_lastBatteryVoltages[0],WPFM_lastBatteryVoltages[1] );
 		char	tmp[64];
-		sprintf( tmp,"“d’r1=%.3f  2=%.3f",(float)WPFM_lastBatteryVoltages[0]/1000,(float)WPFM_lastBatteryVoltages[1]/1000 );
+		sprintf( tmp,"Cell(%.3f,%.3f)\n",(float)WPFM_lastBatteryVoltages[0]/1000,(float)WPFM_lastBatteryVoltages[1]/1000 );
 		putst( tmp );
 		if( BATTERY_checkAndSwitchBattery() == BATTERY_ERR_HALT )
 			WPFM_halt(0);
