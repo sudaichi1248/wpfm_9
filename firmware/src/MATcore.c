@@ -268,9 +268,11 @@ void DLCMATrtcDisp()
 /*
 	定期通信が6時間毎以上の場合、1時間毎リトライを２回行う
 */
+#define		_24hour		(24*60*60)
 #define		_6hour		(6*60*60)
 #define		_1hour		(60*60)
 char	DLC_ConstCallRetry;
+char	DLC_24h_ignor;
 void DLCMatConstCallRetry()
 {
 	if( WPFM_settingParameter.communicationInterval >= _6hour ){
@@ -1080,6 +1082,11 @@ void DLCMatClockGet(uint32_t t,char *s)
 */
 void DLCMatCall(int knd )
 {
+	if( DLC_24h_ignor ){
+		putst("24h ignor\r\n");
+		DLC_24h_ignor = 0;
+		return;
+	}
 	if( DLC_Matknd )
 		putst("Stacked TheCall..\r\n" );
 	switch( knd ){
@@ -1967,15 +1974,17 @@ void DLCMatSTRParamSet(char *config_p)
 }
 void DLCcommunicationIntervalChange()
 {
-	extern uint32_t	DLC_now;
+	extern uint32_t	DLC_now;				/* 前回SETしたときのタイミング調整用 */
 	if( config.communicationInterval != WPFM_communicationInterval ){
 		putst("COM:Interval Change!" );putdecw( WPFM_communicationInterval );putst("->");putdecw( config.communicationInterval );putcrlf();
-	    uint32_t nextTime = DLC_now + config.communicationInterval;
-	    uint32_t minutesLater = ((nextTime - RTC_now) + 59) / 60;
+	    uint32_t nextTime = DLC_now + config.communicationInterval;	
+	    uint32_t minutesLater = ((nextTime - RTC_now) + 59) / 60;	/* この関数は設定変更時にCallされので、次回通信開始時刻を調整している */
 	    int stat;
 	    if ((stat = RTC_setAlarm(minutesLater, WPFM_onAlarm)) != RTC_ERR_NONE){
 	        puts("RTC_setAlarm Err\r\n");
 	    }
+	    if( config.communicationInterval == _24hour )
+		    DLC_24h_ignor = 1;
 	}
 }
 void DLCMatReflectionConfig()
