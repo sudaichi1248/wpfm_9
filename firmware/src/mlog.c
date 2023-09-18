@@ -200,7 +200,6 @@ int MLOG_getLog(MLOG_T *log_p)
     }
     _MLOG_tailAddress = ((uint32_t)pageNo << 8) + offset;
 //	putst("TAIL=");puthxw(_MLOG_tailAddress);putcrlf();
-    _MLOG_ReportList = _MLOG_headAddress;
     return (mlogID);
 }
 
@@ -232,6 +231,7 @@ void MLOG_tailAddressBuckUp()
 void MLOG_tailAddressRestore()
 {
 	_MLOG_tailAddress = _MLOG_tailAddressBuckUp;
+    _MLOG_ReportList = _MLOG_headAddress;
 }
 void MLOG_addressDisp()
 {
@@ -306,7 +306,8 @@ int MLOG_updateLog()
 		if (W25Q128JV_programPage(pageNo, W25Q128JV_PAGE_SIZE-2, (uint8_t *)&Mark, 2, true) != W25Q128JV_ERR_NONE){
 			return (MLOG_ERR_PROGRAM_PAGE);
 		}
-		DEBUG_UART_printlnFormat("MARK %06X AS %04Xh ", (unsigned int)(pageNo*256+offset), Mark);
+		putst(" MARK ");putdecw((unsigned int)(pageNo*256+offset));putch(':');putdecw(Mark);
+//		DEBUG_UART_printlnFormat("MARK %06X AS %04Xh ", (unsigned int)(pageNo*256+offset), Mark);
 	}
 	return (MLOG_ERR_NONE);
 }

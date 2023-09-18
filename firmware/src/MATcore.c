@@ -1715,16 +1715,16 @@ void DLCMatReportSndSub()
 	DLCMatSend( DLC_MatSendBuff );
 	memset( http_tmp,0,sizeof( http_tmp ));
 }
-void DLCMatReportDisp()
+int DLCMatReportDisp(int max)
 {
 	char	tmp[48],s[32];
 	int		i;
 	MLOG_T 	log_p;
 	putcrlf();
 	http_tmp[0] = 0;
-	for( i=0;; i++ ){
-		if( i == DLC_REPORT_SND_LMT )
-			break;
+	for( i=0;i<max; i++ ){
+//		if( i == DLC_REPORT_SND_LMT )
+//			break;
 		if( MLOG_getLog( &log_p ) < 0 )
 			break;
 		DLCMatClockGet( log_p.timestamp.second,s );
@@ -1738,6 +1738,7 @@ void DLCMatReportDisp()
 		strcat( http_tmp,tmp );
 	}
 	putst( http_tmp );putcrlf();
+	return i;
 }
 void DLCMatReportThru( int v )
 {
@@ -2941,9 +2942,11 @@ void DLCMatMlogMenu()
 			break;
 		case 'B':															/* 表示 */
 			MLOG_tailAddressBuckUp();										/* 通知位置をセーブ */
-			DLCMatReportDisp();
+			num = DLCMatReportDisp(3000);
+			MLOG_tailAddressRestore();
 			break;
 		case 'C':															/* 通知済みにする */
+			DLCMatReportDisp(num);
 			if ( MLOG_updateLog() != MLOG_ERR_NONE) {	// 
 				putst("write error\r\n");
 			}
@@ -2956,7 +2959,6 @@ void DLCMatMlogMenu()
 			MLOG_addressDisp();
 			break;
 		case 'E':
-			MLOG_tailAddressRestore();
 			break;
 		case 'F':
 			putst("0:input recode num 1:3000 2:30000\r\n");
