@@ -262,7 +262,8 @@ int MLOG_updateLog()
 			if (W25Q128JV_programPage(pageNo, W25Q128JV_PAGE_SIZE-2, (uint8_t *)&Mark, 2, true) != W25Q128JV_ERR_NONE){
 				return (MLOG_ERR_PROGRAM_PAGE);
 			}
-			DEBUG_UART_printlnFormat("MARK %06X AS %04Xh ", (unsigned int)(pageNo*256+offset), Mark);
+//			putst(" MARK ");puthxw((unsigned int)(pageNo*256+offset));putch(':');puthxw(Mark);
+//			DEBUG_UART_printlnFormat("MARK %06X AS %04Xh ", (unsigned int)(pageNo*256+offset), Mark);
 			// turn the page
 			offset = 0;
 			if (++pageNo > (MLOG_ADDRESS_MLOG_LAST >> 8)){
@@ -306,7 +307,7 @@ int MLOG_updateLog()
 		if (W25Q128JV_programPage(pageNo, W25Q128JV_PAGE_SIZE-2, (uint8_t *)&Mark, 2, true) != W25Q128JV_ERR_NONE){
 			return (MLOG_ERR_PROGRAM_PAGE);
 		}
-		putst(" MARK ");putdecw((unsigned int)(pageNo*256+offset));putch(':');putdecw(Mark);
+		putst(" MARK ");puthxw((unsigned int)(pageNo*256+offset));putch(':');puthxw(Mark);putcrlf();
 //		DEBUG_UART_printlnFormat("MARK %06X AS %04Xh ", (unsigned int)(pageNo*256+offset), Mark);
 	}
 	return (MLOG_ERR_NONE);
