@@ -19,22 +19,22 @@
 #include "Eventlog.h"
 #include "DLCpara.h"
 
-#define BATTERY_MEASURE_MARGIN  2000	// 交換後測定マージン2V
-
 #ifdef DEBUG_UART
 #   define  DBG_PRINT(...)  { if (DLC_Para.MeasureLog == 0) {char _line[80]; snprintf(_line, sizeof(_line),  __VA_ARGS__); UART_DEBUG_writeBytes(_line, strlen(_line)); UART_DEBUG_writeBytes("\n", 1);} }
 #else
 #   define  DBG_PRINT()
 #endif
-
+void BATTERY_AutoResume();
 /*
 *   外部電池の電圧をチェックし、条件がそろえば、使用する電池を交換する
 *   両方の電池が使えない場合は、処理を停止する。
 */
 int BATTERY_checkAndSwitchBattery(void)
 {
-	char	LoNow[2];
+	char	LoNow[2],HiNow[2];
     // Check both batteries for low voltage.
+    if( WPFM_timesBelowTheThresholds[0] == 0 )
+    	memset( HiNow,0,sizeof ( HiNow ));
     for (int batteryIndex = 0; batteryIndex < 2; batteryIndex++){
         if (WPFM_lastBatteryVoltages[batteryIndex] < WPFM_settingParameter.lowThresholdVoltage){
             DBG_PRINT("Battery #%d low.", batteryIndex + 1);
@@ -52,6 +52,10 @@ int BATTERY_checkAndSwitchBattery(void)
             LoNow[batteryIndex] = 0;
             WPFM_timesBelowTheThresholds[batteryIndex] = 0;     // reset counter
         }
+	    if (WPFM_lastBatteryVoltages[batteryIndex] >= (WPFM_settingParameter.lowThresholdVoltage + BATTERY_MEASURE_MARGIN))//電池が交換されている
+		    HiNow[batteryIndex]++;
+        else
+		    HiNow[batteryIndex] = 0;
     }
     // Set in-use flag to WPFM_batteryStatus
     switch (WPFM_externalBatteryNumberInUse){
@@ -68,6 +72,7 @@ int BATTERY_checkAndSwitchBattery(void)
             break;
     }
     DBG_PRINT("WPFM_batteryStatus %02X\n", WPFM_batteryStatus);
+    BATTERY_AutoResume( HiNow );													/* Added 23.10.3 */
     // Switch batteries if necessary.
     uint16_t batteryStatus = WPFM_batteryStatus;
     if (WPFM_timesBelowTheThresholds[0] >= WPFM_settingParameter.timesLessThresholdVoltage){
@@ -138,7 +143,6 @@ int BATTERY_checkAndSwitchBattery(void)
 	        return (BATTERY_ERR_HALT);      // It will be stopped by caller
 		}
     }
-
     return (BATTERY_ERR_NONE);
 }
 
@@ -156,7 +160,8 @@ int BATTERY_enterReplaceBattery(void)
             WPFM_startExchangingBatteryTime = WPFM_now;
             // Just in case, detach external battery #1
             EXT1_OFF_Set();
-            break;
+ 			DLCEventLogWrite( _ID1_CELLACT,0xfc,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
+           break;
 
         case 2:
             // Indicate battery #2 to exchange by blinking ext-led2
@@ -164,6 +169,7 @@ int BATTERY_enterReplaceBattery(void)
             WPFM_startExchangingBatteryTime = WPFM_now;
             // Just in case, detach external battery #2
             EXT2_OFF_Set();
+			DLCEventLogWrite( _ID1_CELLACT,0xfd,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
             break;
     }
 
@@ -227,4 +233,22 @@ void BATTERY_shutdown(void)
 
     // Fall asleep if possible..
     WPFM_sleep();
+}
+/*
+	電池交換後のPushスイッチ忘れ用に自動で電池ステータスを戻す
+*/
+void BATTERY_AutoResume(	char	HiNow[] )
+{
+	switch( WPFM_batteryStatus ){
+	case MLOG_BAT_STATUS_BAT1_IN_USE|MLOG_BAT_STATUS_BAT2_LOW_VOLTAGE:
+		if( HiNow[1] >= 3){		/* Loだった電池2が交換されてる雰囲気 */
+			BATTERY_leaveReplaceBattery();
+		}
+		break;
+	case MLOG_BAT_STATUS_BAT1_LOW_VOLTAGE|MLOG_BAT_STATUS_BAT2_IN_USE:
+		if( HiNow[0] >= 3){		/* Loだった電池21交換されてる雰囲気 */
+			BATTERY_leaveReplaceBattery();
+		}
+		break;
+	}
 }

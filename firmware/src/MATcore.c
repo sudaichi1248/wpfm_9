@@ -225,6 +225,11 @@ void DLCMatTimerInt()
 		}
 	}
 }
+void DLCMatTimerInit()
+{
+	TC5_TimerCallbackRegister( (TC_TIMER_CALLBACK)DLCMatTimerInt, (uintptr_t)0 );
+	TC5_TimerStart();
+}
 /*
 	Function:RTCタイマー関数通信タスクのTO通知の確認
 */
@@ -319,9 +324,7 @@ int DLCMatWake()
 */
 void DLCMatInit()
 {
-	TC5_TimerCallbackRegister( (TC_TIMER_CALLBACK)DLCMatTimerInt, (uintptr_t)0 );
-	TC5_TimerStart();
-	if (WPFM_isVbatDrive == true) {	// VBAT駆動?
+	if (WPFM_isVbatDrive == true) {		// VBAT駆動?
 		return;
 	}
 	DLCMatGoWake();						/* Wake! */
@@ -1189,7 +1192,6 @@ void MTBatt()
 		putst( tmp );
 		if( BATTERY_checkAndSwitchBattery() == BATTERY_ERR_HALT )
 			WPFM_halt(0);
-//			DLCMatHalt();
 		DLC_MatBatCnt = 0;
 		break;
 	}

@@ -21,6 +21,8 @@ extern "C" {
 #define BATTERY_ERR_NOT_NECESSARY   (-2)    // No battery replacement required
 #define BATTERY_ERR_TIMEOUT         (-3)
 #define BATTERY_ERR_LOW_VOLTAGE     (-4)
+#define BATTERY_MEASURE_MARGIN  2000	// 交換後測定マージン2V
+#define BATTERY_MEASURE_EXIST   3000	// 起動時交換シーケンスエントリ 3V
 
 extern int BATTERY_checkAndSwitchBattery(void);
 extern int BATTERY_enterReplaceBattery(void);

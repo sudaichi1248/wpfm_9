@@ -1,2 +1,0 @@
-; EventLogDisp
-send #2 "000M4" #3

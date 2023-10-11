@@ -21,6 +21,7 @@
 #include "moni.h"
 #include "DLCpara.h"
 #include "Eventlog.h"
+#include "battery.h"
 void DLCMatTimerset();
 int	DLCMatTmChk();
 void DLCMatErrorSleep();
@@ -28,7 +29,6 @@ void DLC_Halt();
 #ifdef ADD_FUNCTION
 bool DLCMatWatchAlertPause();
 #endif
-
 /*
 *   Local variables and functions
 */
@@ -167,7 +167,8 @@ void WPFM_initializeApplication(void)
         dt.minute = 0;
         dt.second = 0;
         RTC_setDateTime(dt);
-    }	SENSOR_readExternalBatteryVoltage(1, &WPFM_lastBatteryVoltages[0]);
+    }
+	SENSOR_readExternalBatteryVoltage(1, &WPFM_lastBatteryVoltages[0]);
 	SENSOR_readExternalBatteryVoltage(2, &WPFM_lastBatteryVoltages[1]);
 	DLCEventLogWrite( _ID1_BATTRY,WPFM_lastBatteryVoltages[0],WPFM_lastBatteryVoltages[1] );
 	char	tmp[64];
@@ -179,6 +180,11 @@ void WPFM_initializeApplication(void)
         WPFM_batteryStatus = MLOG_BAT_STATUS_BAT1_IN_USE | MLOG_BAT_STATUS_BAT2_NOT_USE;
 		DLCEventLogWrite( _ID1_POWER_START,cause,0 );
         EXT2_OFF_Set();         // detach battery #2
+		if (WPFM_lastBatteryVoltages[1] <= WPFM_settingParameter.lowThresholdVoltage){		/* Cell-2 <= 8v */
+			if (WPFM_lastBatteryVoltages[1] >= BATTERY_MEASURE_EXIST){						/* Cell-2 < 3v */
+				WPFM_externalBatteryNumberToReplace = 2;									/* 起動時電池交換シーケンス起動フラグON */
+			}
+		}
     }
     else {
 		if (WPFM_lastBatteryVoltages[1] > WPFM_settingParameter.lowThresholdVoltage){		/* Cell-2 Hi */
@@ -186,13 +192,18 @@ void WPFM_initializeApplication(void)
             WPFM_batteryStatus = MLOG_BAT_STATUS_BAT2_IN_USE | MLOG_BAT_STATUS_BAT1_NOT_USE;
 			DLCEventLogWrite( _ID1_POWER_START,cause,1 );
             EXT1_OFF_Set();     // detach battery #1
+			if (WPFM_lastBatteryVoltages[0] <= WPFM_settingParameter.lowThresholdVoltage){	/* Cell-1 <= 8v */
+				if (WPFM_lastBatteryVoltages[0] >= BATTERY_MEASURE_EXIST){					/* Cell-1 < 3v */
+					WPFM_externalBatteryNumberToReplace = 1;								/* 起動時電池交換シーケンス起動フラグON */
+				}
+			}
         }
         else {																				/* Both Lo */
             // Both batteries are low voltage, blink ext1-led and ext2-led until the battery is replaced and reset.
 			// ここはVBAT駆動(USB電源)と判断する
 			if( WPFM_isConnectingUSB == true ){
 				putst("##### VBAT drive\r\n");
-				WPFM_isVbatDrive = true;													// VBAT駆動
+				WPFM_isVbatDrive = true;													// VBAT駆動(USB電源起動)
 			}
 			else
 				DLC_Halt();
@@ -226,23 +237,6 @@ void WPFM_initializeApplication(void)
         DEBUG_UART_printlnFormat("Sensor #2 set as %d", WPFM_settingParameter.sensorKinds[1]);
         DEBUG_UART_FLUSH();
     }
-
-#if 0	// mainのLED点滅後に移動
-    if (WPFM_operationMode == WPFM_OPERATION_MODE_MEASUREMENT)
-    {
-        if (! WPFM_setNextCommunicateAlarm())
-        {
-            DEBUG_UART_printlnString("RTC_setAlarm() ERROR");
-            DEBUG_HALT();
-        }
-        if ((stat = MLOG_begin(true)) != MLOG_ERR_NONE)
-        {
-            DEBUG_UART_printlnFormat("MLOG ERROR: %d", stat);
-            DEBUG_HALT();
-        }
-    }
-#endif
-
     //- Initialize temperature sensor(S5851A)
     S5851A_setMode(S5851A_MODE_SHUTDOWN);
 

@@ -46,9 +46,8 @@
 #include "Moni.h"
 #include "DLCpara.h"
 #include "Eventlog.h"
-void	DLCMatMain(),DLCMatHalt(),DLCMatLed1Proc();
+void	DLCMatMain(),DLCMatHalt(),DLCMatLed1Proc(),DLCMatTimerInit();
 int		DLCMatIsSleep(),DLCMatOffChk();
-
 extern int		RTCReadRetry;
 extern int		RTCWriteRetry;
 
@@ -108,7 +107,6 @@ int main(void)
 	        // Erase flash memory chip
 	        W25Q128JV_begin(MEM_CS_PIN);
 	        int stat;
-			DLCEventLogClr(0);
 	        if ((stat = W25Q128JV_eraseChip(true)) == W25Q128JV_ERR_NONE)
 	        {
 	            DEBUG_UART_printlnString("ERASE CHIP OK.");
@@ -121,6 +119,7 @@ int main(void)
 			DLCEventLogWrite( _ID1_INIT_ALL,0,0 );
 #else
 			DLCsumBreakAndReset(); 
+			UTIL_LED1_ON();
 #endif
 	    }
 	}
@@ -152,7 +151,7 @@ ResetReset:
 
     // Read temperature sensor on board 起動時も温度測定
 	WPFM_getTemperature();
-
+	DLCMatTimerInit();																		/* Matcore用内部タイマー初期化 */
     // Main-loop
     int stat;
     if ((WPFM_operationMode == WPFM_OPERATION_MODE_NON_MEASUREMENT)||(DLC_Para.FOTAact == 0)) /* 非測定モードorFOTA */
@@ -249,6 +248,26 @@ void SlideSwProc()
 		WPFM_reboot();																// 変更されていた時は、リブートして新しい動作モードで処理を開始する
 	}
 }
+extern uchar	DLC_BigState;
+void DLCStartUpExchg()
+{
+	if( WPFM_externalBatteryNumberToReplace ){										// 起動時に3v～8vの電池あり、起動時交換シーケンスへ
+		DLCEventLogWrite( _ID1_CELLACT,0xf0,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
+	     // 電池交換を開始する
+	    DEBUG_UART_printFormat("BEGIN REPLACE(#%d)", WPFM_externalBatteryNumberToReplace);
+	    BATTERY_enterReplaceBattery();
+        int stat;
+        if ((stat = MLOG_switchToSRAM()) != MLOG_ERR_NONE){
+            DEBUG_UART_printlnFormat("MLOG_switchToSRAM() error: %d", stat);
+        }
+        WPFM_tactSwStatus = WPFM_TACTSW_STATUS_PRESSED;
+        WPFM_lastButtonPressedTime = SYS_tick;
+        WPFM_isBeingReplacedBattery = true;
+        WPFM_startExchangingBatteryTime = RTC_now;
+	    DEBUG_UART_FLUSH();
+	    DLC_BigState = 2;
+	}
+}
 /*
 *   測定モード時のメインループ処理
 */
@@ -256,6 +275,7 @@ static void eventLoopOnMeasurementMode(void)
 {
 	APP_delay(20);
 	SlideSwProc();
+	DLCStartUpExchg();
     while (true){
 		SYS_Tasks();
 		DLCMatMain();
@@ -290,6 +310,8 @@ static void eventLoopOnMeasurementMode(void)
 	                        DEBUG_UART_printlnFormat(" - ERROR: %d", stat);
 	                    }
 	                    DEBUG_UART_FLUSH();
+	                    if( DLC_BigState == 2 )
+	                   	    DLC_BigState = 0;
 	                }
 	                else
 	                {
@@ -386,6 +408,8 @@ static void eventLoopOnMeasurementMode(void)
                 WPFM_startExchangingBatteryTime = 0;
                 BATTERY_turnOffExtLed();
                 DEBUG_UART_printlnString("EXIT REPLACE BATTERY..");
+                if( DLC_BigState == 2 )
+	                DLC_BigState = 0;
             }
         }
         else if (WPFM_isConnectingUSB)
@@ -453,6 +477,8 @@ static void eventLoopOnNonMeasurementMode(void)
 	DLCEventLogWrite( _ID1_MANTE_START,0,0 );
 	APP_delay(20);
 	SlideSwProc();
+	DLC_BigState = 0;
+	WPFM_externalBatteryNumberToReplace = 0;
 	while (true){
 		SYS_Tasks();
 		DLCMatMain();
