@@ -25,16 +25,15 @@
 #   define  DBG_PRINT()
 #endif
 void BATTERY_AutoResume();
+static char HiNow[2];
 /*
 *   外部電池の電圧をチェックし、条件がそろえば、使用する電池を交換する
 *   両方の電池が使えない場合は、処理を停止する。
 */
 int BATTERY_checkAndSwitchBattery(void)
 {
-	char	LoNow[2],HiNow[2];
+	char	LoNow[2];
     // Check both batteries for low voltage.
-    if( WPFM_timesBelowTheThresholds[0] == 0 )
-    	memset( HiNow,0,sizeof ( HiNow ));
     for (int batteryIndex = 0; batteryIndex < 2; batteryIndex++){
         if (WPFM_lastBatteryVoltages[batteryIndex] < WPFM_settingParameter.lowThresholdVoltage){
             DBG_PRINT("Battery #%d low.", batteryIndex + 1);
@@ -53,7 +52,7 @@ int BATTERY_checkAndSwitchBattery(void)
             WPFM_timesBelowTheThresholds[batteryIndex] = 0;     // reset counter
         }
 	    if (WPFM_lastBatteryVoltages[batteryIndex] >= (WPFM_settingParameter.lowThresholdVoltage + BATTERY_MEASURE_MARGIN))//電池が交換されている
-		    HiNow[batteryIndex]++;
+		    HiNow[batteryIndex] = 1;
         else
 		    HiNow[batteryIndex] = 0;
     }
@@ -241,12 +240,14 @@ void BATTERY_AutoResume(	char	HiNow[] )
 {
 	switch( WPFM_batteryStatus ){
 	case MLOG_BAT_STATUS_BAT1_IN_USE|MLOG_BAT_STATUS_BAT2_LOW_VOLTAGE:
-		if( HiNow[1] >= 3){		/* Loだった電池2が交換されてる雰囲気 */
+		putst(" HiNow[1]=");puthxb( HiNow[1] );putcrlf();
+		if( HiNow[1] ){			/* Loだった電池2が交換されてる雰囲気 */
 			BATTERY_leaveReplaceBattery();
 		}
 		break;
 	case MLOG_BAT_STATUS_BAT1_LOW_VOLTAGE|MLOG_BAT_STATUS_BAT2_IN_USE:
-		if( HiNow[0] >= 3){		/* Loだった電池21交換されてる雰囲気 */
+		putst(" HiNow[0]=");puthxb( HiNow[0] );putcrlf();
+		if( HiNow[0] ){			/* Loだった電池21交換されてる雰囲気 */
 			BATTERY_leaveReplaceBattery();
 		}
 		break;
