@@ -12,6 +12,7 @@
 #include "util.h"
 #include "debug.h"
 #include "smpif.h"
+#include "Eventlog.h"
 
 /*
 *   Symbols
@@ -260,7 +261,7 @@ void SMPIF_readCallibrationValues(const char *param, char *resp)
 static int parseParameterTypeE(const char *param, WPFM_SETTING_PARAMETER *q)
 {
     char *p = (char *)param;
-
+	int		wk;
     // 各カラムをパースして、該当する動作条件項目へ設定する
     for (int column = 1; column <= NUM_COLUMNS_TYPE_E; column++)
     {
@@ -319,7 +320,12 @@ static int parseParameterTypeE(const char *param, WPFM_SETTING_PARAMETER *q)
                 q->timesLessThresholdVoltage = atoi(p);
                 break;
             case 16:    // 電池交換のために許容する最大時間（秒） [UINT]
-                q->maximumBatteryExchangeTime = atoi(p);
+			    wk = atoi(p);
+			    if( wk >= 600 ){
+					wk = 600;
+					DLCEventLogWrite( _ID1_ERROR,0x300,atoi(p) );
+				}
+                q->maximumBatteryExchangeTime = wk;
                 break;
         }
 
