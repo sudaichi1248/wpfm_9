@@ -41,7 +41,7 @@ extern "C" {
 #define MLOG_ADDRESS_RESERVED_TOP       0xC00000    // Reserved region top
 #define MLOG_ADDRESS_RESERVED_LAST      0xFFFFFF    // Reserved region last
   // (3) SRAM
-#define MLOG_SRAM_SIZE                  (2048 + 256)    // Temporary Mlog storage region size on SRAM [bytes] -- Large enough to hold 75 Mlogs @R0.5
+#define MLOG_SRAM_SIZE                  0x900*2     // Temporary Mlog storage region size on SRAM [bytes] -- Large enough to hold 160 Mlogs @R0.5
 
 // Error codes
 #define MLOG_ERR_NONE                   0           // Success(no error)
