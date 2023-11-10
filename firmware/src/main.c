@@ -289,7 +289,6 @@ static void eventLoopOnMeasurementMode(void)
 			    if (TEST_SW_Get()==0){				              							/* 押されたまま */
 					DEBUG_UART_printlnString(">>LONG PRSD");		
 					if (WPFM_isBeingReplacedBattery){										/* 電池交換 */
-						DLCEventLogWrite( _ID1_CELLACT,0xfe,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
 	                    // 電池交換を終了する
 	                    DEBUG_UART_printFormat("END REPLACE(#%d)", WPFM_externalBatteryNumberToReplace);
 	                    int stat;
@@ -303,6 +302,9 @@ static void eventLoopOnMeasurementMode(void)
 	                        }
 
 	                        WPFM_isBeingReplacedBattery = false;
+		                    if( DLC_BigState == 2 )
+		                   	    DLC_BigState = 0;											/* Matcore開始 */
+							DLCEventLogWrite( _ID1_CELLACT,0xf1,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
 	                    }
 	                    else
 	                    {
@@ -310,12 +312,9 @@ static void eventLoopOnMeasurementMode(void)
 	                        DEBUG_UART_printlnFormat(" - ERROR: %d", stat);
 	                    }
 	                    DEBUG_UART_FLUSH();
-	                    if( DLC_BigState == 2 )
-	                   	    DLC_BigState = 0;
 	                }
 	                else
 	                {
-						DLCEventLogWrite( _ID1_CELLACT,0xff,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
 	                    // 電池交換を開始する
 	                    DEBUG_UART_printFormat("BEGIN REPLACE(#%d)", WPFM_externalBatteryNumberToReplace);
 	                    int stat;
@@ -336,6 +335,7 @@ static void eventLoopOnMeasurementMode(void)
 	                        DEBUG_UART_printlnFormat(" - ERROR: %d", stat);
 	                    }
 	                    DEBUG_UART_FLUSH();
+						DLCEventLogWrite( _ID1_CELLACT,0xf2,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
 	                }
 	            }
                 WPFM_tactSwStatus = WPFM_TACTSW_STATUS_NORMAL;
@@ -407,9 +407,10 @@ static void eventLoopOnMeasurementMode(void)
                 WPFM_isBeingReplacedBattery = false;
                 WPFM_startExchangingBatteryTime = 0;
                 BATTERY_turnOffExtLed();
+				DLCEventLogWrite( _ID1_CELLACT,0xff,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
                 DEBUG_UART_printlnString("EXIT REPLACE BATTERY..");
                 if( DLC_BigState == 2 )
-	                DLC_BigState = 0;
+	                DLC_BigState = 0;								/* Matcore開始 */
             }
         }
         else if (WPFM_isConnectingUSB)
