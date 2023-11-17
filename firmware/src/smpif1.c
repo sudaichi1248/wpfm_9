@@ -145,6 +145,7 @@ void SMPIF_setOperationalCondition(const char *param, char *resp)
 
 static int parseParameterTypeA(const char *param, WPFM_SETTING_PARAMETER *q)
 {
+	int v;
     char *p = (char *)param;
 
     // 各カラムをパースして、該当する動作条件項目へ設定する
@@ -168,15 +169,11 @@ static int parseParameterTypeA(const char *param, WPFM_SETTING_PARAMETER *q)
 
             // Ch1
             case 5:     // Ch1入力種類 [UINT]
-<<<<<<< HEAD
 				v = atoi(p);
-				if(( v >= 1 )&&( v <= 5 ))
+				if( v <= 5 )
 	                q->sensorKinds[WPFM_SETTING_CH1] = v;
                 else
 					return SMPIF_ERR_BAD_PARAMETER;
-                break;
-=======
-                q->sensorKinds[WPFM_SETTING_CH1] = atoi(p);
                 break;
             case 6:     // Ch1上限 [INT]
                 q->upperLimits[WPFM_SETTING_CH1] = atoi(p);
@@ -214,7 +211,11 @@ static int parseParameterTypeA(const char *param, WPFM_SETTING_PARAMETER *q)
 
             // Ch2
             case 17:     // Ch2入力種類 [UINT]
-                q->sensorKinds[WPFM_SETTING_CH2] = atoi(p);
+ 				v = atoi(p);
+				if( v <= 5 )
+	                q->sensorKinds[WPFM_SETTING_CH2] = v;
+                else
+					return SMPIF_ERR_BAD_PARAMETER;
                 break;
             case 18:     // Ch2上限 [INT]
                 q->upperLimits[WPFM_SETTING_CH2] = atoi(p);
