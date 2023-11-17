@@ -263,6 +263,10 @@ void DLCMatRtcProc()
 		}
 	}
 }
+int DLCMatRtcTimerget(int tmid )
+{
+	return DLC_MatRtcTimer[tmid].cnt;
+}
 void DLCMATrtcDisp()
 {
 	putcrlf();
@@ -1099,11 +1103,10 @@ void DLCMatCall(int knd )
 		break;
 	case 2:	
 		putst("Push-CALL!\r\n");										/* Push */
-#ifdef BOARD_PROTOTYPE2
-		DLCMatRtcTimerset(4, 60);										/* 60•bŒã‚Ì’ÊM */
-#else
-		DLCMatRtcTimerset(4, 1);										/* 1•bŒã‚Ì’ÊM */
-#endif
+		if( DLCMatRtcTimerget( 4 ) )									/* 1•ª‘Ò‚¿’† */
+			DLCMatRtcTimerset(4, 1);									/* ‘¦’ÊM */
+		else
+			DLCMatRtcTimerset(4, 60);									/* 60•bŒã‚Ì’ÊM */
 		return;
 	case 3:
 		putst("Alert-CALL!\r\n");										/* Alert */
