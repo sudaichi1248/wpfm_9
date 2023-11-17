@@ -168,6 +168,14 @@ static int parseParameterTypeA(const char *param, WPFM_SETTING_PARAMETER *q)
 
             // Ch1
             case 5:     // Ch1入力種類 [UINT]
+<<<<<<< HEAD
+				v = atoi(p);
+				if(( v >= 1 )&&( v <= 5 ))
+	                q->sensorKinds[WPFM_SETTING_CH1] = v;
+                else
+					return SMPIF_ERR_BAD_PARAMETER;
+                break;
+=======
                 q->sensorKinds[WPFM_SETTING_CH1] = atoi(p);
                 break;
             case 6:     // Ch1上限 [INT]
