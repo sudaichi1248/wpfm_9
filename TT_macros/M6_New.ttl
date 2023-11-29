@@ -1,0 +1,2 @@
+; BatCraiv New!
+send #2 "001M60" #3

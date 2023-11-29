@@ -12,7 +12,7 @@
 
 #define ADD_FUNCTION									// Additional Function ChatteringType2 etc
 #define VER_DELTA_5										// Specification Ver.delta 5
-#define BOARD_PROTOTYPE2								// Prototype Ver.2 board
+//#define BOARD_PROTOTYPE2								// Prototype Ver.2 board( 2023.11.24 コンパイラGCCオプションに移動 )
 
 #ifdef	__cplusplus
 extern "C" {

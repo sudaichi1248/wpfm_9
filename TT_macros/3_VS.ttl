@@ -1,3 +1,2 @@
 ; VS ’èŠú‘—MŠJn
 send #2 "000VS" #3
-wait "OK"

@@ -1,3 +1,2 @@
 ; CR Z³’l“Çæ
 send #2 "000CR" #3
-wait "OK"

@@ -1,3 +1,2 @@
 ; CG Z³’læ“¾
 send #2 "000CG" #3
-wait "OK"
