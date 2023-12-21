@@ -195,6 +195,7 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	char	str[64],tmp[10];
 //	puthxw( log->.second );puthxs( log->mSecond );putch(':');
 	RTC_DATETIME dt;
+	WDT_Clear();
 	RTC_convertToDateTime(log->second,&dt);
 	sprintf( str,"%02d-%02d-%02d %02d:%02d:%02d ",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 	switch( log->ID1 ){

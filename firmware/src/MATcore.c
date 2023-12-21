@@ -32,9 +32,9 @@ void MatMsgSend( int msg );
 //void _GO_IDLE(){command_main();DLCMatState();}
 #ifdef ADD_FUNCTION
 void DLCMatRtcTimeChk();
-void _GO_IDLE(){DLCMatState();IDLEputch();DLCMatRtcTimeChk();}
+void _GO_IDLE(){PORT_GroupWrite(PORT_GROUP_1,0x1<<22,-1);WDT_Clear();DLCMatState();IDLEputch();DLCMatRtcTimeChk();PORT_GroupWrite(PORT_GROUP_1,0x1<<22,0);}
 #else
-void _GO_IDLE(){DLCMatState();IDLEputch();}
+void _GO_IDLE(){WDT_Clear();DLCMatState();IDLEputch();}
 #endif
 int	DLCMatPostReport(),MTErr3();
 void Moni();
@@ -94,7 +94,8 @@ char getch()
 			putch(c);
 			return c;
 		}
-		DLC_delay(1000);
+		WDT_Clear();
+		DLC_delay(300);
 	}
     return -1;
 }
@@ -109,6 +110,7 @@ char getchT()
 			putch(c);
 			return c;
 		}
+		WDT_Clear();
 		DLC_delay(100);
 	}
     return -1;
@@ -254,7 +256,6 @@ int	DLCMatRtcChk(int tmid)
 }
 void DLCMatRtcProc()
 {
-	WDT_Clear();
 	for(int i=0;i<RTC_TIMER_NUM;i++ ){
 		if( DLC_MatRtcTimer[i].cnt != 0 ){
 			DLC_MatRtcTimer[i].cnt--;
@@ -1072,10 +1073,14 @@ void MatMsgSend( int msg )
 	DLC_MatMsg.msg[DLC_MatMsg.wx++] = msg;
 	DLC_MatMsg.wx &= 0x1F;
 }
+void DLCMatgetDatetime( RTC_DATETIME *dt_p )
+{
+	RTC_convertToDateTime( RTC_now,dt_p );
+}
 void DLCMatClockDisplay(char *s)
 {
 	RTC_DATETIME dt;
-	RTC_getDatetime( &dt );
+	DLCMatgetDatetime( &dt );
 	sprintf( s,"%02d/%02d/%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 }
 void DLCMatClockGet(uint32_t t,char *s)
@@ -1362,7 +1367,7 @@ void DLCMatState()
 			if( strchr( p,'\r' )){							/* <cr>まで受信済み */
 				DLC_Matfact = MATC_FACT_TIM;
 				RTC_DATETIME dt1,dt2;
-				RTC_getDatetime( &dt1 );
+				DLCMatgetDatetime( &dt1 );
 				dt2.year   = (p[6]-'0')*10 + (p[7]-'0');
 				dt2.month  = (p[9]-'0')*10 + (p[10]-'0');
 				dt2.day	   = (p[12]-'0')*10 + (p[13]-'0');
@@ -2055,7 +2060,7 @@ bool DLCMatWatchAlertPause()
 	char tmp[3] = {0, 0, 0};
 	uint8_t ap_year, ap_month, ap_day, ap_hour, ap_minute, ap_second;
 
-	RTC_getDatetime( &dt );
+	DLCMatgetDatetime( &dt );
 //	sprintf( time,"%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 //	putst("\r\nCulentTime:  ");putst(time);putcrlf();
 //	putst("AlertPause:");putst(WPFM_settingParameter.AlertPause);putcrlf();
@@ -2134,7 +2139,7 @@ bool DLCMatCheckAlertPause(char *alertpause_p)
 	char tmp[3] = {0, 0, 0};
 	uint8_t ap_year, ap_month, ap_day, ap_hour, ap_minute, ap_second;
 
-	RTC_getDatetime( &dt );
+	DLCMatgetDatetime( &dt );
 //	sprintf( time,"%02d-%02d-%02d %02d:%02d:%02d",(int)dt.year,(int)dt.month,(int)dt.day,(int)dt.hour,(int)dt.minute,(int)dt.second );
 //	putst("\r\nCulentTime:  ");putst(time);putcrlf();
 //	putst("AlertPause:");putst(alertpause_p);putcrlf();
@@ -3076,6 +3081,13 @@ void DLCMatMain()
 		if( key ){
 			key = toupper(key);
 			switch( key ){
+			case 'B':															/* WDTチェック */
+				//if( CheckPasswd() )
+				//	while(1);
+				PORT_GroupWrite( PORT_GROUP_1,0x1<<22,-1 );						/* Moni Hi */
+				UTIL_delayMicros(1000);
+				PORT_GroupWrite( PORT_GROUP_1,0x1<<22,0 );						/* Moni Lo */
+				break;
 			case 0x1b:															/* モニターモード */
 				Moni();
 				break;

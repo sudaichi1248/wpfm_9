@@ -125,7 +125,6 @@ int main(void)
 	}
 #ifdef BOARD_PROTOTYPE2
 ResetReset:
-	WDT_SetClkCycle(8);	// WDT設定
 	WDT_Enable();
 	if( UTIL_getPowerModeSW() == WPFM_POWEROFF_MODE ){						/* PA07と15が同時Lo(スライドSWが真ん中 ) */
 		WDT_Disable();
@@ -136,7 +135,6 @@ ResetReset:
 		goto ResetReset;
 	}
 #else
-	WDT_SetClkCycle(8);	// WDT設定
 	WDT_Enable();
 #endif
    /* Get current operation mode */

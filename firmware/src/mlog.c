@@ -170,7 +170,7 @@ int MLOG_getLog(MLOG_T *log_p)
 //    Dump( (char*)log_p,16 );
     MLOG_ID_T mlogID = _MLOG_tailAddress;
     //dumpLog("<", mlogID, log_p);
-
+	WDT_Clear();
     // update _MLOG_tailAddress for next use
     uint16_t pageNo = _MLOG_tailAddress >> 8;
     uint8_t offset = _MLOG_tailAddress & 0xff;
@@ -456,6 +456,7 @@ int MLOG_checkLogs(bool oldestOnly)
 	for( uint32_t addr = MLOG_ADDRESS_MLOG_TOP;addr < MLOG_ADDRESS_MLOG_LAST;addr += W25Q128JV_PAGE_SIZE ){
 		uint32_t sn;			
 		uint8_t buf[4];			// find head (find the most recent page)
+		WDT_Clear();
 		if (W25Q128JV_readData(addr, buf, (uint16_t)sizeof(buf)) != W25Q128JV_ERR_NONE)
 			return (MLOG_ERR_READ);
 		memcpy((void *)&sn, (void *)buf, sizeof(sn));
@@ -690,6 +691,7 @@ void MLOG_dump_uart(int from, int to)
 	resp[0] = 0;
 	DLC_delay(10);
 	for( addr = from; addr < to; addr += W25Q128JV_PAGE_SIZE ){
+		WDT_Clear();
 		if (W25Q128JV_readData(addr, _MLOG_pageBuffer, (uint16_t)sizeof(_MLOG_pageBuffer)) != W25Q128JV_ERR_NONE){
 			putst("Read Err\r\n");
 			APP_delay(2);
@@ -735,6 +737,7 @@ void MLOG_dump_USB(const char *param, char *resp)
 			to = MLOG_ADDRESS_MLOG_LAST;
 	}
 	for( addr = from; addr < to; addr += W25Q128JV_PAGE_SIZE ){
+		WDT_Clear();
 		if (W25Q128JV_readData(addr, _MLOG_pageBuffer, (uint16_t)sizeof(_MLOG_pageBuffer)) != W25Q128JV_ERR_NONE){
 			APP_printUSB(resp);
 			APP_delay(2);

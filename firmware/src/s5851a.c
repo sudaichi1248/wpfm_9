@@ -167,14 +167,20 @@ int S5851A_startMeasurement(void)
 static bool _S5851A_waitForCompleted(uint32_t timeout)
 {
     DEBUG_USB_printlnFormat("> _S5851A_waitForCompleted(): %u", (unsigned int)SYS_mSec)
-    uint32_t start = SYS_mSec;
+    uint32_t start = 0;
+    timeout *= 10;
     while (SERCOM3_I2C_IsBusy())
     {
-        if (SYS_mSec - start > timeout)
+//		putch('.');
+        UTIL_delayMicros(100);
+        if ( start > timeout)
         {
             DEBUG_USB_printlnFormat("< _S5851A_waitForCompleted() ERROR: %u", (unsigned int)SYS_mSec)
             return (false);     // timeout error
         }
+        start++;
+        if( start > 10 )
+        	putch('&');
     }
 
     DEBUG_USB_printlnFormat("< _S5851A_waitForCompleted() OK: %u", (unsigned int)SYS_mSec)

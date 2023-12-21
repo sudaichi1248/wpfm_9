@@ -36,7 +36,7 @@
 static void _SENSOR_storeLog(uint32_t occurrenceTime, uint32_t mSec);
 
 int DLCMatIsCom();
-
+void DLCMatgetDatetime( RTC_DATETIME* );
  /*
  *   measureRegularly() -
  */
@@ -47,7 +47,7 @@ void WPFM_measureRegularly(bool justMeasure)
 	bool kind_1_3v = false;
 
     RTC_DATETIME dt;
-    RTC_getDatetime(&dt);
+    DLCMatgetDatetime(&dt);
     DBG_PRINT("\n-- START MEASUREMENT(20%02d/%02d/%02d %02d:%02d:%02d.%03lu) --",
             dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, SYS_mSec);
 
@@ -145,7 +145,7 @@ void WPFM_measureRegularly(bool justMeasure)
         _SENSOR_storeLog(occurrenceTime, start);
     }
 
-    RTC_getDatetime(&dt);
+    DLCMatgetDatetime(&dt);
     DBG_PRINT("-- END MEASUREMENT(%02d:%02d:%02d.%03lu) --\n", dt.hour, dt.minute, dt.second, SYS_mSec);
 
 #ifdef DEBUG_DETAIL
