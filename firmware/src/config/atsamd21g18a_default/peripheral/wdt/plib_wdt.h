@@ -83,8 +83,6 @@ void WDT_Clear( void );
 
 void WDT_ClearWithSync( void );
 
-void WDT_SetClkCycle();
-
 // DOM-IGNORE-BEGIN
 #ifdef __cplusplus  // Provide C++ Compatibility
 
