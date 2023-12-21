@@ -411,13 +411,13 @@ int RTC_convertToDateTime(uint32_t epochTime, RTC_DATETIME *dt_p)
 
 static int _RTC_calculateNextHourAndMinute(uint32_t t, uint32_t minutesLater, uint8_t values[])
 {
-    DEBUG_UART_printlnFormat("> _RTC_calculateNextHourAndMinute(%u,%u,-)", (unsigned int)t, (unsigned int)minutesLater);
+//    DEBUG_UART_printlnFormat("> _RTC_calculateNextHourAndMinute(%u,%u,-)", (unsigned int)t, (unsigned int)minutesLater);
     t = (t + (minutesLater * 60) + SECS_JST_TIME_DIFF) % (60 * 60 * 24);
     uint32_t m = t / 60;
-    DEBUG_UART_printlnFormat("+ t=%u, m=%u", (unsigned int)t, (unsigned int)m);
+//    DEBUG_UART_printlnFormat("+ t=%u, m=%u", (unsigned int)t, (unsigned int)m);
     values[0] = m % 60;     // set minute
     values[1] = m / 60;     // set hour
-    DEBUG_UART_printlnFormat("< ALARM minute=%u, hour=%u", (unsigned int)values[0], (unsigned int)values[1]);
+    DEBUG_UART_printlnFormat("TheNext=%02u:%02u",(unsigned int)values[1],(unsigned int)values[0]);
 
     return (RTC_ERR_NONE);
 }
