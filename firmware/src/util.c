@@ -33,7 +33,7 @@ void UTIL_delayMicros(uint32_t time)
 
     while (time > 0)
     {
-        for (i = 0; i < 20; i++)
+        for (i = 0; i < 3; i++)
             dummy[i % 4] = (uint8_t)i;
         time--;
     }
