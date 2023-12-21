@@ -58,9 +58,13 @@
 // *****************************************************************************
 
 
+#if 0
+/* SERCOM0 USART baud value for 921600 Hz baud rate */
+#define SERCOM0_USART_INT_BAUD_VALUE            (45403UL)
+#else
 /* SERCOM0 USART baud value for 115200 Hz baud rate */
 #define SERCOM0_USART_INT_BAUD_VALUE            (63019UL)
-
+#endif
 static SERCOM_USART_RING_BUFFER_OBJECT sercom0USARTObj;
 
 // *****************************************************************************
