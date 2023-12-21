@@ -32,7 +32,7 @@ void MatMsgSend( int msg );
 //void _GO_IDLE(){command_main();DLCMatState();}
 #ifdef ADD_FUNCTION
 void DLCMatRtcTimeChk();
-void _GO_IDLE(){PORT_GroupWrite(PORT_GROUP_1,0x1<<22,-1);WDT_Clear();DLCMatState();IDLEputch();DLCMatRtcTimeChk();PORT_GroupWrite(PORT_GROUP_1,0x1<<22,0);}
+void _GO_IDLE(){WDT_Clear();DLCMatState();IDLEputch();DLCMatRtcTimeChk();}
 #else
 void _GO_IDLE(){WDT_Clear();DLCMatState();IDLEputch();}
 #endif
