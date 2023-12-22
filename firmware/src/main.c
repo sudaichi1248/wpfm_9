@@ -246,7 +246,7 @@ void SlideSwProc()
 		WPFM_reboot();																// 変更されていた時は、リブートして新しい動作モードで処理を開始する
 	}
 }
-extern uchar	DLC_BigState;
+extern uchar	DLC_BigState;																/* Matcoreタスク状態 */
 void DLCStartUpExchg()
 {
 	if( WPFM_externalBatteryNumberToReplace ){										// 起動時に3v～8vの電池あり、起動時交換シーケンスへ
@@ -258,12 +258,11 @@ void DLCStartUpExchg()
         if ((stat = MLOG_switchToSRAM()) != MLOG_ERR_NONE){
             DEBUG_UART_printlnFormat("MLOG_switchToSRAM() error: %d", stat);
         }
-        WPFM_tactSwStatus = WPFM_TACTSW_STATUS_PRESSED;
         WPFM_lastButtonPressedTime = SYS_tick;
         WPFM_isBeingReplacedBattery = true;
         WPFM_startExchangingBatteryTime = RTC_now;
 	    DEBUG_UART_FLUSH();
-	    DLC_BigState = 2;
+	    DLC_BigState = 2;																	/* Matcoreタスクを"電池交換中"に */
 	}
 }
 /*
@@ -300,7 +299,7 @@ static void eventLoopOnMeasurementMode(void)
 	                        }
 
 	                        WPFM_isBeingReplacedBattery = false;
-		                    if( DLC_BigState == 2 )
+		                    if( DLC_BigState == 2 )											/* Matcoreタスクを電池交換中から初期状態へ */
 		                   	    DLC_BigState = 0;											/* Matcore開始 */
 							DLCEventLogWrite( _ID1_CELLACT,0xf1,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
 	                    }
@@ -407,7 +406,7 @@ static void eventLoopOnMeasurementMode(void)
                 BATTERY_turnOffExtLed();
 				DLCEventLogWrite( _ID1_CELLACT,0xff,WPFM_lastBatteryVoltages[0]<<16|WPFM_lastBatteryVoltages[1] );
                 DEBUG_UART_printlnString("EXIT REPLACE BATTERY..");
-                if( DLC_BigState == 2 )
+                if( DLC_BigState == 2 )								/* Matcoreタスクを電池交換中から初期状態へ */
 	                DLC_BigState = 0;								/* Matcore開始 */
             }
         }
