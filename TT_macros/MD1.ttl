@@ -1,0 +1,2 @@
+; MATcore POWER ON
+send #2 "001MD1" #3
