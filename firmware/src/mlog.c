@@ -747,7 +747,7 @@ void MLOG_dump_USB(const char *param, char *resp)
 			MLOG_ID_T mlogId = (uint32_t)addr + (MLOG_RECORD_SIZE * n);
 			MLOG_T *mlp = (MLOG_T *)_MLOG_pageBuffer + n;
 			if (IS_NOT_USED_SN(mlp->sequentialNumber)){				// Unused entry
-				sprintf(resp, "%06lX: -\r\n", mlogId);
+				sprintf(resp, "\r\n%06lX: -", mlogId);
 				APP_printUSB(resp);
 				APP_delay(2);
 			}
@@ -759,11 +759,11 @@ void MLOG_dump_USB(const char *param, char *resp)
 		// output page mark
 		uint16_t *Mark;
 		Mark = (uint16_t*)&_MLOG_pageBuffer[W25Q128JV_PAGE_SIZE - 2];
-		sprintf(resp, "MARK %04Xh\r\n", *Mark );
+		sprintf(resp, " MARK %04Xh", *Mark );
 		APP_printUSB(resp);
 		APP_delay(2);
 	}
-	APP_printUSB("[END]\r\n");
+	APP_printUSB("\r\n[END]\r\n");
 	APP_delay(10);
 }
 
@@ -821,7 +821,7 @@ static void dumpLog_line(char const *prefix, MLOG_ID_T mlogId, MLOG_T *log_p,cha
 	char	s[32];
 	DLCMatClockGet(log_p->timestamp.second,s );
 	snprintf(line, 80,
-        "%s%06X: %08u,%s.%03u,%.3f/%.3f,%u/%u,%d,%02Xh,%02Xh\r\n",
+        "\r\n%s%06X: %08u,%s.%03u,%.3f/%.3f,%u/%u,%d,%02Xh,%02Xh",
         prefix,
         (unsigned int)mlogId,
         (unsigned int)log_p->sequentialNumber,s,
