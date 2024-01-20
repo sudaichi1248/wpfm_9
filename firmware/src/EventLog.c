@@ -181,7 +181,8 @@ Retry:
 	}
 #endif
 	else {
-		W25Q128JV_eraseSctor(writeAddress/EVENT_LOG_AREA_ERASE_SZ, true);					/* 現セクタを即erase 24.1.19 */
+		W25Q128JV_eraseSctor( writeAddress/EVENT_LOG_AREA_ERASE_SZ, true);					/* 古いログに上書きするため現セクタを即erase 24.1.19 */
+		puthxw( writeAddress );putst("delete!\r\n");
 		++flg;
 		if( flg > 2 ){
 			putst("●Err●");
