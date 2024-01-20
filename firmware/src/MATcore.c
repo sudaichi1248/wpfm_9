@@ -146,6 +146,7 @@ void IDLEputch( )
 #define		TIMER_3000ms	3000
 #define		TIMER_5000ms	5000
 #define		TIMER_SYSFIN	5500
+#define		TIMER_MATRESET	60000
 #define		TIMER_7000ms	7000
 #define		TIMER_10s		10000
 #define		TIMER_11s		11000
@@ -3386,9 +3387,9 @@ void DLCMatStart( )
 */
 void DLCMatReset( )
 {
-	putst("MATcore Fsleep!\r\n");
+	putst("MATcore Force Sleep(for Reset)\r\n");
 	DLCEventLogWrite( _ID1_ERROR,0x500,DLC_MatState );
-	DLCMatTimerset( 0,TIMER_SYSFIN );
+	DLCMatTimerset( 0,TIMER_MATRESET );
 	putst("Go Sleep\r\n");
 	DLCMatGoSleep();											/* Sleep! */
 	DLC_MatState = MATC_STATE_ERR;
