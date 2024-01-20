@@ -35,19 +35,19 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     // Serial number
     12345678,
     // Operational condition
-    60,                     // measurement interval on normal[sec]
+    10,                     // measurement interval on normal[sec]
     300,                    // communication interval on normal[sec]
     4,                      // measurement interval on alert[sec]
     60,                     // communication interval on alert[sec]
     0,
-    { SENSOR_KIND_1_3V, SENSOR_KIND_NOT_PRESENT },   // sensor kinds
-    { 3, 5 }, { 1, 1 },                   // upper/lower values
+    { SENSOR_KIND_1_3V, SENSOR_KIND_1_3V }, // sensor kinds
+    { 3, 3 }, { 1, 1 },                     // upper/lower values ch1(3-1),ch2(3-1)
     {
-        {       // ch1 alert enabled kind
-            { WPFM_ALERT_KIND_ENABLED, WPFM_ALERT_KIND_ENABLED }, { WPFM_ALERT_KIND_ENABLED, WPFM_ALERT_KIND_ENABLED }
+        {       // ch1 alert disabled kind
+            { WPFM_ALERT_KIND_DISABLED, WPFM_ALERT_KIND_DISABLED }, { WPFM_ALERT_KIND_DISABLED, WPFM_ALERT_KIND_DISABLED }
         },
-        {       // ch2 alert enabled kind
-            { WPFM_ALERT_KIND_ENABLED, WPFM_ALERT_KIND_ENABLED }, { WPFM_ALERT_KIND_ENABLED, WPFM_ALERT_KIND_ENABLED }
+        {       // ch2 alert disabled kind
+            { WPFM_ALERT_KIND_DISABLED, WPFM_ALERT_KIND_DISABLED }, { WPFM_ALERT_KIND_DISABLED, WPFM_ALERT_KIND_DISABLED }
         }
     },
     { { 2.620, 2.823 }, { 4.620, 4.823 } },         // alart upper limits
