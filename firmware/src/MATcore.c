@@ -53,7 +53,6 @@ int	 	DLC_MatResIdx;
 uchar	DLC_MatLineBuf[2100];
 int		DLC_MatLineIdx;
 uchar	DLC_Matfact,DLC_MatState;
-char	DLC_MatDateTime[32];
 char	DLC_MatRadioDensty[80];
 char	DLC_MatNUM[32];
 char	DLC_MatIMEI[32];
@@ -300,7 +299,7 @@ void DLCMatConstCallRetry()
 }
 /*
 	MATcoreをWAKEUPさせる処理
-	3秒待つ
+	30秒待つ
 */
 #define		WAKE_CHECK_RETRY	300
 int DLCMatWake()
@@ -569,19 +568,6 @@ void MTconn()
 		DLC_MatState = MATC_STATE_FOTA;	
 	}
 }
-void MTtime()
-{
-	memcpy( DLC_MatDateTime,DLC_MatLineBuf,DLC_MatLineIdx );
-	DLC_MatLineIdx = 0;
-	if (WPFM_ForcedCall == true) {	// 強制発報
-		UTIL_LED1_ON();
-#ifdef VER_DELTA_5
-		WPFM_doConfigPost = true;	// send Config
-#endif
-	}
-	DLCMatSend( "AT$TIME\r" );
-	DLCMatTimerset( 0,TIMER_3000ms );
-}
 void MTrsrp()
 {
 	DLC_MatLineIdx = 0;
@@ -591,6 +577,22 @@ void MTrsrp()
 		DLCMatSend( "AT$CELLID\rAT$EARFCN\r" );
 	DLCMatTimerset( 0,TIMER_3000ms );
 	DLCMatSend( "AT$RSRP\rAT$RSRQ\rAT$RSSI\rAT$SINR\r" );
+}
+void MTtime()
+{
+	DLC_MatLineIdx = 0;
+	if (WPFM_ForcedCall == true) {	// 強制発報
+		UTIL_LED1_ON();
+#ifdef VER_DELTA_5
+		WPFM_doConfigPost = true;	// send Config
+#endif
+	}
+	if( DLC_NeedTimeAdjust == 0 ){
+		DLCMatSend( "AT$TIME\r" );
+		DLCMatTimerset( 0,TIMER_3000ms );
+	}
+	else
+		MTrsrp();
 }
 void MTopnF()	// fota
 {
@@ -900,15 +902,14 @@ void MTcls1()
 }
 /*
 	REPT状態のMatcore ERROR return
+	AT$CLOSEする
 */
 void MTcls2()
 {
 	DLC_MatLineIdx = 0;
-	DLCEventLogWrite( _ID1_MAT_ERR,0,DLC_MatState );
+	DLCEventLogWrite( _ID1_MAT_ERR,2,DLC_MatState );
 	MATReportLmtUpDw(0);										/* Report Limit 下げる */
-	MLOG_tailAddressRestore();	// tailAddress戻す
-	if( MTErr3() )
-		return;
+	MLOG_tailAddressRestore();									/* tailAddress戻す */
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatTimerset( 0,TIMER_11s );
 	DLCMatSend( "AT$CLOSE\r" );
@@ -1259,6 +1260,16 @@ void DLCMatLed1Proc( char flg )
 		putst("LED1=Off\r\n");
 	}
 }
+/*
+	時刻補正してよいタイミングかどうか
+	計測タイミングが近いときは、補正を順延
+*/
+int	DLCMatCheckTimng( int sec )
+{
+	if(( sec % WPFM_measurementInterval ) == 0 )		/* 計測が10秒毎 */
+		return 0;
+	return 1;
+}
 void	 (*MTjmp[18][21])() = {
 /*					  0         1       2      3      4       5       6       7       8       9       10      11      12      13      14      15      16      17      18     19     20   **/
 /*				  	 INIT    IDLE    IMEI    APN     SVR     WAKE    CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR    OFF   **/
@@ -1374,11 +1385,11 @@ void DLCMatState()
 				dt2.hour   = (p[15]-'0')*10 + (p[16]-'0');
 				dt2.minute = (p[18]-'0')*10 + (p[19]-'0');
 				dt2.second = (p[21]-'0')*10 + (p[22]-'0');
-				if( DLC_NeedTimeAdjust == 0 ){
+				if( DLCMatCheckTimng( dt2.second ) ){			/* 時刻補正してよいタイミングか？*/
 					DLC_NeedTimeAdjust = 1;
-					RTC_setDateTime( dt2 );						/* RTC更新 */
 					putst("Time Adjust!\r\n");
-					if( memcmp( &dt2,&dt1,sizeof(RTC_DATETIME)-2) ){/* 差分あり */
+					if( memcmp( &dt2,&dt1,sizeof(RTC_DATETIME)) ){/* 差分あり */
+						RTC_setDateTime( dt2 );						/* RTC更新 */
 						WPFM_setNextCommunicateAlarm();			/* 時刻をセットしなおしたので、次回通信予約 */
 						putst("Reschedule!\r\n");
 						Dump( (char*)&dt1,sizeof(RTC_DATETIME) );
@@ -1386,6 +1397,8 @@ void DLCMatState()
 						DLCEventLogWrite( _ID1_TIME,*((uint*)&dt1),*((uint*)&dt2) );
 					}
 				}
+				else
+					putst("Time Adjust ignor!\r\n");
 			}
 		}
 	}
@@ -3353,6 +3366,7 @@ void DLC_delay( int msec )
 }
 /*
 	MATcoreのStart
+	初期状態はMatcore電源はoffなので、ここではOnにするのみ、ただしUSB駆動のときはOffのままにする
 */
 void DLCMatStart( )
 {
@@ -3363,16 +3377,16 @@ void DLCMatStart( )
 		DLCEventLogWrite( _ID1_VBAT_DRIVE,0,0 );
 		return;
 	}
-	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,-1 );		/* ON */
-	DLCMatTimerset( 0,TIMER_15s );
+	PORT_GroupWrite( PORT_GROUP_0,0x1<<12,-1 );		/* MatcoreON */
+	DLCMatTimerset( 0,TIMER_15s );					/* Ready待ちタイマー */
 	DLC_MatState = MATC_STATE_INIT;
 }
 /*
-	MATcoreのRESET
+	MATcoreの強制SLEEP
 */
 void DLCMatReset( )
 {
-	putst("MATcore RST!\r\n");
+	putst("MATcore Fsleep!\r\n");
 	DLCEventLogWrite( _ID1_ERROR,0x500,DLC_MatState );
 	DLCMatTimerset( 0,TIMER_SYSFIN );
 	putst("Go Sleep\r\n");
