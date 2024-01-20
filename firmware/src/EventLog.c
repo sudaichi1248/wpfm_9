@@ -395,6 +395,10 @@ void DLCMatEventLog(const char *param, char *resp)
 #ifdef EVENTLOG_SPI
 	_EventLog	log;
 	uint32_t	printAddress;
+    if (WPFM_operationMode != WPFM_OPERATION_MODE_NON_MEASUREMENT){
+		DLCMatUSBNG( resp );
+		return;
+	}
 	printAddress = EVENT_LOG_AREA_ADDRESS_START;
 	if( strchr( param,'-' ) ){
 		sscanf( param,"%d-%d",&from,&to );

@@ -34,3 +34,4 @@ void DLCMatReportLmt(const char *param, char *resp);
 void DLCMatErr900();
 void DLCMatEventLogClr();
 void DLCMatCPower(const char *param, char *resp);
+void DLCMatUSBNG(char*);

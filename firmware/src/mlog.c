@@ -725,6 +725,10 @@ void MLOG_dump_USB(const char *param, char *resp)
 {
 	int		from=0,to,addr;
 	char	line[80];
+    if (WPFM_operationMode != WPFM_OPERATION_MODE_NON_MEASUREMENT){
+		DLCMatUSBNG( resp );
+		return;
+	}
 	APP_printUSB("[START]\r\n");
 	APP_delay(10);
 	if( strchr( param,'-' ) ){
