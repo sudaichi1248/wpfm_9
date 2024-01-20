@@ -49,7 +49,7 @@ void DLCEventLogInit()
 			break;
 		if( readAddress < EVENT_LOG_AREA_ADDRESS_START )
 			break;
-		if( log.second & 0x80000000 )
+		if( log.second & 0x80000000 )														/* 最後尾発見 */
 			goto FinFin;
 		DLC_EventIdx++;
 		sec = log.second;
@@ -59,15 +59,15 @@ void DLCEventLogInit()
 	DLC_EventIdx = 0;
 	readAddress = EVENT_LOG_AREA_ADDRESS_START;
 	W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
-	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){
+	for( i = 0; i < EVENT_LOG_NUMOF_ITEM; i++ ){											/* タイムスタンプの境目を探す */
 //		puthxw( log.second );putcrlf();
 		WDT_Clear();
-		if( log.second < 100 ){
+		if( log.second < 1000000000 ){														/* 時刻補正前は読み捨て(2001-09-09 01:46:40以前は無効) */
 			readAddress += EVENT_LOG_AREA_WRITE_SZ;
 			W25Q128JV_readData(readAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
 			continue;
 		}
-		if( sec > log.second ){
+		if( sec > log.second ){																/* 前レコードより過去 */
 			W25Q128JV_eraseSctor(readAddress/EVENT_LOG_AREA_ERASE_SZ, true);
 			puthxw( readAddress );putst("deleted!\r\n");
 			goto FinFin;
@@ -147,8 +147,8 @@ void DLCEventLogWrite( ushort ID1,uint ID2,uint ID3 )
 	_EventLog	*log;
 #endif
 	uchar		flg=0;
-	DLC_EventLog.second = RTC_now;															/* 現時刻 Get!秒 */
-	DLC_EventLog.mSecond = SYS_mSec;														/* 現時刻 Get!m秒 */
+	DLC_EventLog.second = RTC_now;															/* 現時刻 epoch秒 */
+	DLC_EventLog.mSecond = SYS_mSec;														/* 現時刻 OSのm秒 */
 	DLC_EventLog.ID1 = ID1;
 	DLC_EventLog.ID2 = ID2;
 	DLC_EventLog.ID3 = ID3;
@@ -156,9 +156,9 @@ Retry:
 #ifdef EVENTLOG_SPI
 	writeAddress = EVENT_LOG_AREA_ADDRESS_START + (DLC_EventIdx * EVENT_LOG_AREA_WRITE_SZ);
 	W25Q128JV_readData(writeAddress, (uint8_t *)&log, EVENT_LOG_AREA_WRITE_SZ);
-	if( log.second & 0x80000000 ){															/* 空きレコードでない */
+	if( log.second & 0x80000000 ){															/* 空きレコード */
 		pageNo = writeAddress >> 8;
-		offset = writeAddress & 0xff;
+		offset = writeAddress & 0xff;														/* 当該セクタを削除して上書き */
 		W25Q128JV_programPage(pageNo, offset, (uint8_t*)&DLC_EventLog, EVENT_LOG_AREA_WRITE_SZ, true);
 		DLC_EventIdx++;
 		if( DLC_EventIdx == EVENT_LOG_NUMOF_ITEM ){
@@ -181,7 +181,7 @@ Retry:
 	}
 #endif
 	else {
-		DLCEventLogInit();
+		W25Q128JV_eraseSctor(writeAddress/EVENT_LOG_AREA_ERASE_SZ, true);					/* 現セクタを即erase 24.1.19 */
 		++flg;
 		if( flg > 2 ){
 			putst("●Err●");
