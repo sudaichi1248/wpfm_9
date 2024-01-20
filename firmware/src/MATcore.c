@@ -1206,7 +1206,7 @@ void MTBatt()
 		break;
 	}
 }
-void MTledQ()
+void MTinit()
 {
 	GPIOEXP_set(0);												/* LEDëSè¡ìî */
 	GPIOEXP_set(1);
@@ -1275,7 +1275,7 @@ void	 (*MTjmp[18][21])() = {
 /*					  0         1       2      3      4       5       6       7       8       9       10      11      12      13      14      15      16      17      18     19     20   **/
 /*				  	 INIT    IDLE    IMEI    APN     SVR     WAKE    CONN    COND    OPN1    CNFG    OPN2    STAT    OPN3    REPT    SLEEP   FOTA    FCON    FTP     DISC    ERR    OFF   **/
 /* MATCORE RDY 0 */{ MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy,  MTRdy, MT____  },
-/* ERROR       1 */{ MTcls1, MTVrT,  MTRVer, MTRapn, MTRsvr, MTRdis, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls2, MT____, MT____, MT____, MT____, MTdisc ,MT____,MT____  },
+/* ERROR       1 */{ MTcls1, MTVrT,  MTRVer, MTRapn, MTRsvr, MTRdis, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls1, MTcls2, MT____, MT____, MT____, MT____, MTdisc ,MTinit,MT____  },
 /* $VER		   2 */{ ______, MTVer,  ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* $NUM		   3 */{ ______, ______, MTimei, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTsend, ______, ______, ______, ______, ______, ______, ______,______  },
 /* OK          4 */{ ______, ______, ______, MTapn,  MTdisc, ______, MTconn, ______, ______, MTrrcv, ______, MTrrcv, ______, MTrpOk, ______, ______, ______, ______, ______, ______,______  },
@@ -1286,11 +1286,11 @@ void	 (*MTjmp[18][21])() = {
 /* $CLOSE      9 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTopn2, ______, MTopn3, MTcls3, MTcls4, MTcls0, MTclsF, ______, ______, ______, ______,______  },
 /* $RECVDATA  10 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, MTdata, ______, MTdata, ______, MTdata, ______, MTfirm, ______, ______, ______, ______,______  },
 /* $CONNECT:0 11 */{ ______, ______, ______, ______, ______, ______, ______, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, MTdisc, ______, ______, ______, MTdisc, ______,______  },
-/* TimOut1    12 */{ MTwVer, MTVrT,  MTRVer, MTRapn, MTRsvr, MTRdis, MTdisT, MTdisT, MTcls3, MTrvTO, MTcls3, MTrvTO, MTrvTO, MTcls5, MTRSlp, MTtoF,  ______, ______, MTslpO, MTledQ,MTOff1  },
+/* TimOut1    12 */{ MTwVer, MTVrT,  MTRVer, MTRapn, MTRsvr, MTRdis, MTdisT, MTdisT, MTcls3, MTrvTO, MTcls3, MTrvTO, MTrvTO, MTcls5, MTRSlp, MTtoF,  ______, ______, MTslpO, MTinit,MTOff1  },
 /* WAKEUP     13 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, MTwake, ______, ______, ______, MTwake, ______,______  },
 /* FOTA       14 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
 /* FTP        15 */{ ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______, ______,______  },
-/* $SLEEP     16 */{ MTFwak, ______, ______, ______, ______, ______, ______, ______, ______, MTslep, MTslep, MTslep, MTslep, MTslep, ______, ______, ______, ______, MTslep, MTledQ,MTOff2  },
+/* $SLEEP     16 */{ MTFwak, ______, ______, ______, ______, ______, ______, ______, ______, MTslep, MTslep, MTslep, MTslep, MTslep, ______, ______, ______, ______, MTslep, MTinit,MTOff2  },
 /* TimeOut2   17 */{ MTtim2, ______, ______, ______, ______, ______, MTBatt, MTBatt, MTBatt, ______, ______, ______, MTBatt, MTBatt, MTBatt, ______, ______, ______, ______, MTBatt,MTtim2  },
 							};
 void DLCMatState()
