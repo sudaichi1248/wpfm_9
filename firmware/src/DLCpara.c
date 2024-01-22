@@ -230,7 +230,6 @@ void DLCMatGetClock(const char *param, char *resp)
 	resp[18] = 0x03;
 	resp[19] = 0x00;
 	APP_printUSB(resp);
-	DLCMatUSBOK( resp );
 }
 void DLCMatReportLmt(const char *p, char *resp)
 {
