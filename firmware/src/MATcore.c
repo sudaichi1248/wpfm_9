@@ -72,6 +72,7 @@ int		DLC_MatFotaTOcnt=0;	// fota  タイムアウトカウンタ
 int		DLC_MatFotaExe=0;	// fota  実行フラグ
 uchar	DLC_NeedTimeAdjust;					/*  1hに1度は時刻補正する */
 uchar	DLC_MatErr;							/* MATcore連続エラーカウンタ */
+int		RTC_deltaT;							/* 時刻補正差分値(秒) */
 // 測定logリングバッファ試験用
 int mlogdumywrite(uint32_t logtime);
 uint32_t logtime;
@@ -1262,14 +1263,35 @@ void DLCMatLed1Proc( char flg )
 	}
 }
 /*
-	時刻補正してよいタイミングかどうか
-	計測タイミングが近いときは、補正を順延
+	時刻補正処理
+	CONNECT時に補正が必要になった差分値を測定後にRTCにセットする
+	計測飛ばしやダブルカウントしないように、補正がプラスなら計測後にマイナスなら計測前に行う。
+	24.1.23
 */
-int	DLCMatCheckTimng( int sec )
+void DLCMatTimeAdj()
 {
-	if(( sec % WPFM_measurementInterval ) == 0 )		/* 計測が10秒毎 */
-		return 0;
-	return 1;
+	RTC_DATETIME dt1,dt2;
+	int	flg=0;
+	if( RTC_deltaT > 0 ){							/* 補正がプラス */
+		if(( RTC_now % WPFM_measurementInterval ) ==  1 )/* 計測1秒後に補正 */
+			flg = 1;
+	}
+	else if( RTC_deltaT < 0 ){						/* 補正がマイナス */
+		if(( RTC_now % WPFM_measurementInterval) == (WPFM_measurementInterval-1) )	/* 補正後のダブルカウント防止 */
+			flg = 1;								/* 計測-1秒前で補正する */
+	}
+	if( flg ){
+		DLCMatgetDatetime( &dt1 );
+		RTC_now += RTC_deltaT;
+		RTC_convertToDateTime( RTC_now,&dt2 );
+		RTC_setDateTime( dt2 );						/* RTC更新 */
+		WPFM_setNextCommunicateAlarm();				/* 時刻をセットしなおしたので、次回通信再予約 */
+		putst("Reschedule!\r\n");
+		Dump( (char*)&dt1,sizeof(RTC_DATETIME) );
+		Dump( (char*)&dt2,sizeof(RTC_DATETIME) );
+		DLCEventLogWrite( _ID1_TIME,*((uint*)&dt1),*((uint*)&dt2) );
+		RTC_deltaT = 0;
+	}
 }
 void	 (*MTjmp[18][21])() = {
 /*					  0         1       2      3      4       5       6       7       8       9       10      11      12      13      14      15      16      17      18     19     20   **/
@@ -1386,20 +1408,14 @@ void DLCMatState()
 				dt2.hour   = (p[15]-'0')*10 + (p[16]-'0');
 				dt2.minute = (p[18]-'0')*10 + (p[19]-'0');
 				dt2.second = (p[21]-'0')*10 + (p[22]-'0');
-				if( DLCMatCheckTimng( dt2.second ) ){			/* 時刻補正してよいタイミングか？*/
+				RTC_deltaT = 0;
+				if( memcmp( &dt2,&dt1,sizeof(RTC_DATETIME)) ){/* 差分あり */
+					RTC_deltaT = RTC_erochreturn( &dt2 )-RTC_now;	/* 差分値を求めておく(計測後にRTCにセットする) */
 					DLC_NeedTimeAdjust = 1;
-					putst("Time Adjust!\r\n");
-					if( memcmp( &dt2,&dt1,sizeof(RTC_DATETIME)) ){/* 差分あり */
-						RTC_setDateTime( dt2 );						/* RTC更新 */
-						WPFM_setNextCommunicateAlarm();			/* 時刻をセットしなおしたので、次回通信予約 */
-						putst("Reschedule!\r\n");
-						Dump( (char*)&dt1,sizeof(RTC_DATETIME) );
-						Dump( (char*)&dt2,sizeof(RTC_DATETIME) );
-						DLCEventLogWrite( _ID1_TIME,*((uint*)&dt1),*((uint*)&dt2) );
-					}
+					putst("Time Adjust Delta=");puthxw( RTC_deltaT );putcrlf();
 				}
 				else
-					putst("Time Adjust ignor!\r\n");
+					putst("Time Adjust no need!\r\n");
 			}
 		}
 	}

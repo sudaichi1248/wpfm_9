@@ -403,6 +403,32 @@ int RTC_convertToDateTime(uint32_t epochTime, RTC_DATETIME *dt_p)
     return (RTC_ERR_NONE);
 }
 
+uint32_t RTC_erochreturn( RTC_DATETIME *dt )
+{
+    static  const uint8_t monthDays[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+
+    // convert to epoch time - Seconds from 1970 till 1 jan 00:00:00 of the given year
+    uint16_t year = (2000 + dt->year) - 1970;
+    uint32_t t = year * (SECS_PER_DAY * 365);      // total seconds from 1970/01/01 00:00:00
+    for (int y = 0; y < year; y++){
+        if (LEAP_YEAR(y))
+            t += SECS_PER_DAY;      // add extra days for leap years
+    }
+    // Add days for this year, months start from 1
+    for (int m = 1; m < dt->month; m++){
+        if ((m == 2) && LEAP_YEAR(year))
+            t += SECS_PER_DAY * (monthDays[m-1] + 1);
+        else
+            t += SECS_PER_DAY * monthDays[m-1];     //monthDay array starts from 0
+    }
+    t += (dt->day - 1) * SECS_PER_DAY;
+    t += dt->hour * SECS_PER_HOUR;
+    t += dt->minute * SECS_PER_MIN;
+    t += dt->second;
+    t -= SECS_JST_TIME_DIFF;
+
+    return (t);     // return epoch time[sec]
+}
 
 
 /*

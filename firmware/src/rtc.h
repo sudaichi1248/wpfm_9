@@ -50,12 +50,14 @@ extern int RTC_initialize(EIC_PIN interruptPinA, EIC_PIN interruptPinB);
 extern int RTC_setDateTime(RTC_DATETIME dt);
 extern int RTC_getDatetime(RTC_DATETIME *dt_p);
 extern uint32_t RTC_getEpoch(void);     // return epoch time(sec.) as JST
+extern uint32_t RTC_erochreturn( RTC_DATETIME *dt );
 extern int RTC_convertToDateTime(uint32_t epochTime, RTC_DATETIME *dt_p);
 extern int RTC_setTimeUpdateInterrupt(RTC_TIMEUPDATE_TYPE which, RTC_HANDLER handler);
 extern int RTC_setAlarm(uint32_t minutesLater, RTC_HANDLER handler);
 extern int RTC_writeNVRAM(uint8_t data);
 extern int RTC_readNVRAM(uint8_t *data_p);
 extern void RTCstop();
+extern int RTC_deltaT;
 /*
 *   Variables
 */

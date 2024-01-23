@@ -48,6 +48,8 @@
 #include "Eventlog.h"
 void	DLCMatMain(),DLCMatHalt(),DLCMatLed1Proc(),DLCMatTimerInit();
 int		DLCMatIsSleep(),DLCMatOffChk();
+void	DLCMatTimeAdj();
+
 extern int		RTCReadRetry;
 extern int		RTCWriteRetry;
 
@@ -367,6 +369,7 @@ static void eventLoopOnMeasurementMode(void)
             }
             WPFM_doMeasure = false;
         }
+        DLCMatTimeAdj();
         // アラート警報するかどうかチェックする(また、電池交換中は定期通信を行わない)
         if ((WPFM_doNotifies[0] || WPFM_doNotifies[1]) && ! WPFM_isBeingReplacedBattery)
         {
@@ -514,6 +517,7 @@ static void eventLoopOnNonMeasurementMode(void)
                 {
                     WPFM_measureRegularly(true);
                     SMPIF_sendRegularly();       // VRレスポンス
+		            DLCMatTimeAdj();
                     WPFM_doMeasure = false;
                 }
             }
