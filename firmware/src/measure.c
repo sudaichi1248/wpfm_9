@@ -48,7 +48,7 @@ void WPFM_measureRegularly(bool justMeasure)
 
     RTC_DATETIME dt;
     DLCMatgetDatetime(&dt);
-    DBG_PRINT("\n-- START MEASUREMENT(20%02d/%02d/%02d %02d:%02d:%02d.%03lu) --",
+    DBG_PRINT("\nSTART(%02d/%02d/%02d %02d:%02d:%02d.%03lu)",
             dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, SYS_mSec);
 
     // Start measument of temperature here baecause of too slow
@@ -98,11 +98,11 @@ void WPFM_measureRegularly(bool justMeasure)
         float value = WPFM_MISSING_VALUE_FLOAT;
         if ((stat = SENSOR_readSensorOutput(sensorIndex + 1, &value)) == SENSOR_ERR_NONE)
         {
-            DEBUG_UART_printlnFormat("SENSOR_readSensorOutput(%d) OK: %.3f", sensorIndex + 1, value);
+            DEBUG_UART_printlnFormat("Sensor(%d)=%.3f", sensorIndex + 1, value);
         }
         else
         {
-            DEBUG_UART_printlnFormat("SENSOR_readSensorOutput(%d) NG: %d", sensorIndex + 1, stat);
+            DEBUG_UART_printlnFormat("Sensor(%d):%d", sensorIndex + 1, stat);
         }
 		if (value > WPFM_settingParameter.upperLimits[sensorIndex]) {	// è„å¿Å^â∫å¿Ç≈ä€ÇﬂçûÇ›
 			value = WPFM_settingParameter.upperLimits[sensorIndex];
@@ -121,10 +121,10 @@ void WPFM_measureRegularly(bool justMeasure)
 	if ((stat = SENSOR_readSensorOutputShurink(&WPFM_lastMeasuredValues[0], &WPFM_lastMeasuredValues[1])) == SENSOR_ERR_NONE)
 	{
 		if (WPFM_settingParameter.sensorKinds[0] != SENSOR_KIND_NOT_PRESENT) {
-			DBG_PRINT("SENSOR_readSensorOutput(1) OK: %.3f", WPFM_lastMeasuredValues[0]);
+			DBG_PRINT("Sensor(1)=%.3f", WPFM_lastMeasuredValues[0]);
 		}
 		if (WPFM_settingParameter.sensorKinds[1] != SENSOR_KIND_NOT_PRESENT) {
-			DBG_PRINT("SENSOR_readSensorOutput(2) OK: %.3f", WPFM_lastMeasuredValues[1]);
+			DBG_PRINT("Sensor(2)=%.3f", WPFM_lastMeasuredValues[1]);
 		}
 	}
 	else
@@ -146,7 +146,7 @@ void WPFM_measureRegularly(bool justMeasure)
     }
 
     DLCMatgetDatetime(&dt);
-    DBG_PRINT("-- END MEASUREMENT(%02d:%02d:%02d.%03lu) --\n", dt.hour, dt.minute, dt.second, SYS_mSec);
+    DBG_PRINT("END(%02d:%02d:%02d.%03lu)\n", dt.hour, dt.minute, dt.second, SYS_mSec);
 
 #ifdef DEBUG_DETAIL
     DEBUG_UART_printlnFormat("measureRegularly() execution time: %umS", (unsigned int)(SYS_mSec - start));
