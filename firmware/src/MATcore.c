@@ -1409,9 +1409,9 @@ void DLCMatState()
 				dt2.minute = (p[18]-'0')*10 + (p[19]-'0');
 				dt2.second = (p[21]-'0')*10 + (p[22]-'0');
 				RTC_deltaT = 0;
+				DLC_NeedTimeAdjust = 1;
 				if( memcmp( &dt2,&dt1,sizeof(RTC_DATETIME)) ){/* 差分あり */
 					RTC_deltaT = RTC_erochreturn( &dt2 )-RTC_now;	/* 差分値を求めておく(計測後にRTCにセットする) */
-					DLC_NeedTimeAdjust = 1;
 					putst("Time Adjust Delta=");puthxw( RTC_deltaT );putcrlf();
 				}
 				else
