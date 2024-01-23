@@ -1,5 +1,5 @@
 #ifndef  BOARD_PROTOTYPE2
-#define MAIN_VERSION "Ver 00.B2 "
+#define MAIN_VERSION "Ver 00.B3 "
 #else
 #ifdef _Version2
 #define MAIN_VERSION "Ver 02.00 "
