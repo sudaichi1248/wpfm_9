@@ -47,10 +47,9 @@
 /*
 *   Local(static) variables and functions
 */
- uint32_t     _MLOG_headAddress    = 0;           // address of head log (point next address)
- uint32_t     _MLOG_tailAddress    = 0;           // address of tail log for upload
+ uint32_t     _MLOG_headAddress    = 0;           // address of head log (point next address) 書き込み位置
+ uint32_t     _MLOG_tailAddress    = 0;           // address of tail log for upload			  通知済み位置
 static uint32_t     _MLOG_tailAddressBuckUp    = 0;
-static uint32_t     _MLOG_ReportList  = 0;				// RepostListの最後尾
 static uint32_t     _MLOG_oldestAddress  = 0;           // oldest log address in chip
 static uint32_t     _MLOG_latestAddress  = 0;           // latest log address in chip
 static uint32_t     _MLOG_lastSequentialNumber = 0;     // last sequentila number (1..MAX_UINT32-1)
@@ -222,16 +221,19 @@ int MLOG_getNumberofLog()
 	}
 	return (MLOG_ERR_NONE);
 }
-
+/*---------------------------------------------------------
+	ReportList作成前にポジションを記憶
+----------------------------------------------------------*/
 void MLOG_tailAddressBuckUp()
 {
-	_MLOG_tailAddressBuckUp = _MLOG_tailAddress;
+	_MLOG_tailAddressBuckUp = _MLOG_tailAddress; /* 通知済み位置をセーブ、MLOG_getLog()で更新されるから */
 }
-
+/*--------------------------------------------------------
+	Report送信失敗でポジションを戻す
+---------------------------------------------------------*/
 void MLOG_tailAddressRestore()
 {
-	_MLOG_tailAddress = _MLOG_tailAddressBuckUp;
-    _MLOG_ReportList = _MLOG_headAddress;
+	_MLOG_tailAddress = _MLOG_tailAddressBuckUp;/* 通知済み位置を戻す、送信失敗とか */
 }
 void MLOG_addressDisp()
 {
@@ -245,11 +247,11 @@ int MLOG_updateLog()
 	// backload record flag
 	uint16_t pageNo;
 	uint8_t offset;
-	if(_MLOG_tailAddressBuckUp == _MLOG_ReportList ) {
+	if(_MLOG_tailAddressBuckUp == _MLOG_tailAddress ) {
 		putst("NoRecode\r\n");
 		return (MLOG_ERR_NONE);
 	}
-	while (_MLOG_tailAddressBuckUp != _MLOG_ReportList) {
+	while (_MLOG_tailAddressBuckUp != _MLOG_tailAddress) {
 		pageNo = _MLOG_tailAddressBuckUp >> 8;
 		offset = _MLOG_tailAddressBuckUp & 0xff;
 		if (offset < MLOG_RECORD_SIZE * (MLOG_LOGS_PER_PAGE - 1)){
