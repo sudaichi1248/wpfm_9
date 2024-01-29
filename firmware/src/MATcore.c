@@ -40,7 +40,6 @@ int	DLCMatPostReport(),MTErr3();
 void Moni();
 void DLCMatConfigDefault();
 void DLCMatPostConfig(),DLCMatPostStatus(),DLCMatReportSnd(),DLCMatPostReptInit();
-void MATReportLmtUpDw( int );
 void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatStart(),DLCMatReset(),MTcls0(),DLCMatRptLimit();
 void DLC_Halt(),DLCMatHalt();
 void MLOG_dump_uart(int to, int from);
@@ -62,7 +61,7 @@ uchar	DLC_MatRetry;
 char	DLC_MatConfigItem[32];
 uchar	DLC_MatTxType;
 bool	DLC_ForcedCallOK=false;
-bool	DLC_MatsendRepOK=false;
+bool	DLC_MatsendRepOK=true;
 short	DLC_MatRSRP;
 short	DLC_MatRSRQ;
 uchar	DLC_MatRptMore;						/* Reportが連続している */
@@ -73,6 +72,7 @@ int		DLC_MatFotaExe=0;	// fota  実行フラグ
 uchar	DLC_NeedTimeAdjust;					/*  1hに1度は時刻補正する */
 uchar	DLC_MatErr;							/* MATcore連続エラーカウンタ */
 int		RTC_deltaT;							/* 時刻補正差分値(秒) */
+uchar	DLC_MatReport100;					/* Report 100件のNGフラグ */
 // 測定logリングバッファ試験用
 int mlogdumywrite(uint32_t logtime);
 uint32_t logtime;
@@ -155,7 +155,7 @@ void IDLEputch( )
 #define		TIMER_15s		15000
 #define		TIMER_20s		20000
 #define		TIMER_OPN		32000
-#define		TIMER_HTTP		45000
+#define		TIMER_HTTP		120000						/* Report送信OK待ちTO(120sへ) */
 #define		TIMER_90s		90000
 #define		TIMER_120s		120000
 #define		TIMER_300s		300000
@@ -309,6 +309,7 @@ int DLCMatWake()
 	int		i;
 	DLCMatGoWake();						/* Wake! */
 	for(i=0;i<WAKE_CHECK_RETRY;i++){
+		WDT_Clear();
 		DLC_delay(100);
 		if( PORT_GroupRead( PORT_GROUP_1 ) & (0x1<<11))
 			break;
@@ -786,7 +787,7 @@ void MTrpOk()
 {
 	DLC_MatLineIdx = 0;
 	DLCMatReportSnd();
-	DLCMatTimerset( 0,TIMER_HTTP );										// 23.4.21 15->30へ 3000件でTOしてしまうから
+	DLCMatTimerset( 0,TIMER_HTTP );										// 23.4.21 15s->30sへ 3000件でTOしてしまうから 24.1.26更に120sに延長、圏外近くに対応 */
 	DLC_MatState = MATC_STATE_RPT;
 }
 void MTdisc()
@@ -910,7 +911,6 @@ void MTcls2()
 {
 	DLC_MatLineIdx = 0;
 	DLCEventLogWrite( _ID1_MAT_ERR,2,DLC_MatState );
-	MATReportLmtUpDw(0);										/* Report Limit 下げる */
 	MLOG_tailAddressRestore();									/* tailAddress戻す */
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatTimerset( 0,TIMER_11s );
@@ -926,7 +926,6 @@ void MTcls3()
 	if( DLC_MatState == MATC_STATE_RPT ){	// Report送信で
 		if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
 			MLOG_tailAddressRestore();	// tailAddress戻す
-			MATReportLmtUpDw(0);								/* Report Limit 下げる */
 		}
 	}
 	else
@@ -942,7 +941,6 @@ void MTcls4()
 	DLC_MatLineIdx = 0;
 	if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
 		MLOG_tailAddressRestore();	// tailAddress戻す
-		MATReportLmtUpDw(0);								/* Report Limit 下げる */
 	}
 	else {
 		if( DLC_MatRptMore ){						/* ReportList連続中 */
@@ -963,7 +961,6 @@ void MTcls5()
 {
 	DLC_MatLineIdx = 0;
 	DLCEventLogWrite( _ID1_MAT_TO,0,DLC_MatState );
-	MATReportLmtUpDw(0);										/* Report Limit 下げる */
 	MLOG_tailAddressRestore();	// tailAddress戻す
 	if( MTErr3() )
 		return;
@@ -1209,6 +1206,7 @@ void MTBatt()
 }
 void MTinit()
 {
+	DLC_MatLineIdx = 0;
 	GPIOEXP_set(0);												/* LED全消灯 */
 	GPIOEXP_set(1);
 	GPIOEXP_set(2);
@@ -1723,12 +1721,16 @@ void MATReportLmtUpDw( int updw )
 			DLC_MatReportLmt = DLC_REPORT_ALL_MAX;
 		else if( DLC_MatReportLmt == 300 )
 			DLC_MatReportLmt = 1000;
-		else if( DLC_MatReportLmt == 100 )
-			DLC_MatReportLmt = 300;
+		else if( DLC_MatReportLmt == 100 ){
+			if( DLC_MatReport100 )
+				DLC_MatReportLmt = 300;
+			else
+				DLC_MatReport100 = 1;
+		}
 		else if( DLC_MatReportLmt == 1 )
 			DLC_MatReportLmt = 100;
 	}
-	else {
+	else {									/* Down */
 		if( DLC_MatReportLmt == DLC_REPORT_ALL_MAX )
 			DLC_MatReportLmt = 1000;
 		else if( DLC_MatReportLmt == 1000 )
@@ -1737,6 +1739,7 @@ void MATReportLmtUpDw( int updw )
 			DLC_MatReportLmt = 100;
 		else if( DLC_MatReportLmt == 100 )
 			DLC_MatReportLmt = 1;
+		DLC_MatReport100 = 0;
 	}
 }
 void DLCMatReportSndSub()
@@ -1864,6 +1867,10 @@ void DLCMatRptLimit()
 void DLCMatPostReptInit()
 {
 	DLC_MatReportMax = 0;
+	if( DLC_MatsendRepOK == true )
+		MATReportLmtUpDw( 1 );																		/* ReportList数Maxを１段Up */
+	else
+		MATReportLmtUpDw( 0 );																		/*                  １Down */
 	DLC_MatsendRepOK = false;
 	DLC_MatReportCnt = 0;																			/* httpを作るときのReportのカウンタ */
 	DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
@@ -2631,7 +2638,6 @@ int DLCMatRecvDisp()
 						}
 						else {
 							DLCEventLogWrite( _ID1_HTTP_OK,0,0 );
-							MATReportLmtUpDw(1);								/* Report Limit数Up */
 						}
 						DLCMatTtcTimerClr( 5 );									/* 定期通信6時間毎時のリトライタイマークリア */
 						DLC_ConstCallRetry = 0;
@@ -2640,8 +2646,6 @@ int DLCMatRecvDisp()
 				}
 				else if( strstr( DLC_MatResBuf,"HTTP/1.1 504 " ))			/* Gateway TimeOut */
 					DLC_MatReportLmt = 1001;								/* 24h(NextConfig)まで1000にする */
-				else
-					MATReportLmtUpDw(0);									/* Report Limit数Dw(その他のエラー 504 Gatewa TOなど) */
 			}
 			if( j == 0 ){
 				DLC_MatResBuf[DLC_MatResIdx] = 0;
