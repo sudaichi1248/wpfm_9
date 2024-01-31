@@ -44,7 +44,7 @@ void DLCMatTimerset(int tmid,int cnt ),DLCMatError(),DLCMatStart(),DLCMatReset()
 void DLC_Halt(),DLCMatHalt();
 void MLOG_dump_uart(int to, int from);
 extern	char _Main_version[];
-int DLCMatRecvDisp();
+int DLCMatRecvDisp(),DLCRpt100Rtry();
 char 	zLogOn=1;
 char	DLC_MatVer[8];
 char 	DLC_MatResBuf[1050];
@@ -72,11 +72,9 @@ int		DLC_MatFotaExe=0;	// fota  実行フラグ
 uchar	DLC_NeedTimeAdjust;					/*  1hに1度は時刻補正する */
 uchar	DLC_MatErr;							/* MATcore連続エラーカウンタ */
 int		RTC_deltaT;							/* 時刻補正差分値(秒) */
-uchar	DLC_MatReport100;					/* Report 100件のNGフラグ */
 // 測定logリングバッファ試験用
 int mlogdumywrite(uint32_t logtime);
 uint32_t logtime;
-
 char getkey()
 {
 	char	c;
@@ -912,6 +910,8 @@ void MTcls2()
 	DLC_MatLineIdx = 0;
 	DLCEventLogWrite( _ID1_MAT_ERR,2,DLC_MatState );
 	MLOG_tailAddressRestore();									/* tailAddress戻す */
+	if( DLCRpt100Rtry() )
+		return;
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatTimerset( 0,TIMER_11s );
 	DLCMatSend( "AT$CLOSE\r" );
@@ -962,6 +962,8 @@ void MTcls5()
 	DLC_MatLineIdx = 0;
 	DLCEventLogWrite( _ID1_MAT_TO,0,DLC_MatState );
 	MLOG_tailAddressRestore();	// tailAddress戻す
+	if( DLCRpt100Rtry() )
+		return;
 	if( MTErr3() )
 		return;
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
@@ -1710,8 +1712,9 @@ void DLCMatPostStatus()
 	Parameter:通知する数
 	2022.11.3 Reportを分割して送信する
 */
-//http_tmpをASCII変換して送信する。→OKを待つ、これおループ
+//http_tmpをASCII変換して送信する。→OKを待つ、これをループ
 int		DLC_MatReportMax,DLC_MatReportCnt,DLC_MatReportFin,DLC_MatExtbyte,DLC_MatReportLmt;
+uchar	DLC_MatReport100Rtry;				/* Report 100件リトライ中フラグ */
 #define			DLC_REPORT_ALL_MAX		3000				/* HTTP ReportのMaxList数 */
 #define			DLC_REPORT_SND_LMT		12					/* MATcoreに一度にSendするReport数 */
 void MATReportLmtUpDw( int updw )
@@ -1721,12 +1724,8 @@ void MATReportLmtUpDw( int updw )
 			DLC_MatReportLmt = DLC_REPORT_ALL_MAX;
 		else if( DLC_MatReportLmt == 300 )
 			DLC_MatReportLmt = 1000;
-		else if( DLC_MatReportLmt == 100 ){
-			if( DLC_MatReport100 )
-				DLC_MatReportLmt = 300;
-			else
-				DLC_MatReport100 = 1;
-		}
+		else if( DLC_MatReportLmt == 100 )
+			DLC_MatReportLmt = 300;
 		else if( DLC_MatReportLmt == 1 )
 			DLC_MatReportLmt = 100;
 	}
@@ -1739,8 +1738,29 @@ void MATReportLmtUpDw( int updw )
 			DLC_MatReportLmt = 100;
 		else if( DLC_MatReportLmt == 100 )
 			DLC_MatReportLmt = 1;
-		DLC_MatReport100 = 0;
 	}
+	putst("ReportLmt=");putdech(DLC_MatReportLmt);putcrlf();
+}
+/* 
+	ReportList 100件送信時のリトライ制御
+	100件送信の失敗時に呼ばれる、AT$OPENし再度100件のReport送信する
+	24.1.31 added
+*/
+int DLCRpt100Rtry()
+{
+	if( DLC_MatReportLmt == 100 && DLC_MatReport100Rtry == 0 ){
+		putst("Report100Retry!\r\n");
+		DLC_MatReportCnt = 0;																			/* httpを作るときのReportのカウンタ */
+		DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
+		DLC_MatRptMore = 0;
+		DLC_MatReport100Rtry = 1;
+		DLCMatSend( "AT$OPEN\r" );
+		DLCMatTimerClr( 3 );
+		DLCMatTimerset( 0,TIMER_15s );
+		DLC_MatState = MATC_STATE_OPN3;
+		return 1;
+	}
+	return 0;
 }
 void DLCMatReportSndSub()
 {
@@ -1875,6 +1895,7 @@ void DLCMatPostReptInit()
 	DLC_MatReportCnt = 0;																			/* httpを作るときのReportのカウンタ */
 	DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
 	DLC_MatRptMore = 0;
+	DLC_MatReport100Rtry = 0;																		/* Report 100件送信リトライフラグ */
 	MLOG_tailAddressBuckUp();
 	DLC_MatExtbyte = 0;
 }
@@ -2644,8 +2665,8 @@ int DLCMatRecvDisp()
 						DLC_MatsendRepOK = true;
 					}
 				}
-				else if( strstr( DLC_MatResBuf,"HTTP/1.1 504 " ))			/* Gateway TimeOut */
-					DLC_MatReportLmt = 1001;								/* 24h(NextConfig)まで1000にする */
+//				else if( strstr( DLC_MatResBuf,"HTTP/1.1 504 " ))			/* Gateway TimeOut */
+//					DLC_MatReportLmt = 1001;								/* 24h(NextConfig)まで1000にする */
 			}
 			if( j == 0 ){
 				DLC_MatResBuf[DLC_MatResIdx] = 0;
