@@ -910,8 +910,6 @@ void MTcls2()
 	DLC_MatLineIdx = 0;
 	DLCEventLogWrite( _ID1_MAT_ERR,2,DLC_MatState );
 	MLOG_tailAddressRestore();									/* tailAddress戻す */
-	if( DLCRpt100Rtry() )
-		return;
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
 	DLCMatTimerset( 0,TIMER_11s );
 	DLCMatSend( "AT$CLOSE\r" );
@@ -941,6 +939,8 @@ void MTcls4()
 	DLC_MatLineIdx = 0;
 	if (DLC_MatsendRepOK == false) {	// 200 OK未受信の場合
 		MLOG_tailAddressRestore();	// tailAddress戻す
+		if( DLCRpt100Rtry() )						/* 100件送信のエラー時 */
+			return;
 	}
 	else {
 		if( DLC_MatRptMore ){						/* ReportList連続中 */
@@ -962,8 +962,6 @@ void MTcls5()
 	DLC_MatLineIdx = 0;
 	DLCEventLogWrite( _ID1_MAT_TO,0,DLC_MatState );
 	MLOG_tailAddressRestore();	// tailAddress戻す
-	if( DLCRpt100Rtry() )
-		return;
 	if( MTErr3() )
 		return;
 	DLCMatTimerClr( 3 );										/* AT$RECV,1024リトライタイマークリア */
@@ -1754,7 +1752,7 @@ int DLCRpt100Rtry()
 		DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
 		DLC_MatRptMore = 0;
 		DLC_MatReport100Rtry = 1;
-		DLCMatSend( "AT$OPEN\r" );
+		DLCMatSend( "AT$OPEN\r" );																		/* 100件のリトライ */
 		DLCMatTimerClr( 3 );
 		DLCMatTimerset( 0,TIMER_15s );
 		DLC_MatState = MATC_STATE_OPN3;
