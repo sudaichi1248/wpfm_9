@@ -72,6 +72,7 @@ int		DLC_MatFotaExe=0;	// fota  実行フラグ
 uchar	DLC_NeedTimeAdjust;					/*  1hに1度は時刻補正する */
 uchar	DLC_MatErr;							/* MATcore連続エラーカウンタ */
 int		RTC_deltaT;							/* 時刻補正差分値(秒) */
+uchar	DLC_MatReport300NG;					/* Report 300件NGのフラグ */
 // 測定logリングバッファ試験用
 int mlogdumywrite(uint32_t logtime);
 uint32_t logtime;
@@ -887,6 +888,7 @@ void MTslpO()
 	putst("[Sleep]\r\n");
 	DLCMatTimerClr( 0 );
 	DLCEventLogWrite( _ID1_SLEEP,0,0 );
+	DLC_MatReport300NG = 0;
 	DLC_MatState = MATC_STATE_SLP;
 }
 void MTcls1()
@@ -998,6 +1000,7 @@ void MTslep()
 	putst("[Sleep]\r\n");
 	DLCMatTimerClr( 0 );
 	DLCEventLogWrite( _ID1_SLEEP,0,0 );
+	DLC_MatReport300NG = 0;
 	DLC_MatState = MATC_STATE_SLP;
 }
 void MTwake()
@@ -1722,7 +1725,7 @@ void MATReportLmtUpDw( int updw )
 			DLC_MatReportLmt = DLC_REPORT_ALL_MAX;
 		else if( DLC_MatReportLmt == 300 )
 			DLC_MatReportLmt = 1000;
-		else if( DLC_MatReportLmt == 100 )
+		else if( DLC_MatReportLmt == 100 && DLC_MatReport300NG == 0 )
 			DLC_MatReportLmt = 300;
 		else if( DLC_MatReportLmt == 1 )
 			DLC_MatReportLmt = 100;
@@ -1748,13 +1751,28 @@ int DLCRpt100Rtry()
 {
 	if( DLC_MatReportLmt == 100 && DLC_MatReport100Rtry == 0 ){
 		putst("Report100Retry!\r\n");
+		DLC_MatReportMax = 0;
 		DLC_MatReportCnt = 0;																			/* httpを作るときのReportのカウンタ */
 		DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
 		DLC_MatRptMore = 0;
 		DLC_MatReport100Rtry = 1;
 		DLCMatSend( "AT$OPEN\r" );																		/* 100件のリトライ */
 		DLCMatTimerClr( 3 );
-		DLCMatTimerset( 0,TIMER_15s );
+		DLCMatTimerset( 0,TIMER_OPN );
+		DLC_MatState = MATC_STATE_OPN3;
+		return 1;
+	}
+	if( DLC_MatReportLmt == 300 ){
+		putst("Report300NG!\r\n");
+		DLC_MatReportMax = 0;
+		DLC_MatReportCnt = 0;																			/* httpを作るときのReportのカウンタ */
+		DLC_MatReportFin = 0;																			/* 分割送信の為,最終フレームを表すフラグ */
+		DLC_MatRptMore = 0;
+		DLC_MatReport300NG = 1;																			/* 300でNGになったフラグON */
+		DLC_MatReportLmt = 100;																			/* 100件のリトライする */
+		DLCMatSend( "AT$OPEN\r" );
+		DLCMatTimerClr( 3 );
+		DLCMatTimerset( 0,TIMER_OPN );
 		DLC_MatState = MATC_STATE_OPN3;
 		return 1;
 	}
