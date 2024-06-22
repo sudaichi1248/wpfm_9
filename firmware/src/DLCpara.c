@@ -237,10 +237,14 @@ void DLCMatReportLmt(const char *p, char *resp)
 		DLCMatUSBNG( resp );
 		return;
 	}
+#if 1
+	MLOG_format();
+#else
 	DLC_Para.Http_Report_max = ((p[0]-'0')*10000)+((p[1]-'0')*1000)+((p[2]-'0')*100)+((p[3]-'0')*10)+p[4]-'0';
 	putst("ReportLmt=");putdech( DLC_Para.Http_Report_max );putcrlf();
 	DLCParaSave();
 	DLCMatRptLimit();
+#endif
 	DLCMatUSBOK( resp );
 }
 void DLCMatErr900(const char *param, char *resp)
