@@ -71,3 +71,6 @@ void DLCEventLogClr( int );
 #define		_ID1_MAT_TO					0x2001
 #define		_ID1_MAT_RESET				0x2002
 #define		_ID1_TIME					0x2010
+#define		_ID1_PULSE					0x2020
+#define		_ID1_HALT					0x3000
+#define		_ID1_MLOGERR				0x3010

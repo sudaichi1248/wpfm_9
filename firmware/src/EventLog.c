@@ -329,6 +329,15 @@ void NcuEventLogPrint( _EventLog *log,int forword )
 	case _ID1_TIME:
 		strcat( str,"TIME   ");
 		break;
+	case _ID1_PULSE:
+		strcat( str,"PULSE  ");
+		break;
+	case _ID1_HALT:
+		strcat( str,"HALT   ");
+		break;
+	case _ID1_MLOGERR:
+		strcat( str,"MLOGer ");
+		break;
 	case 0:
 		strcat( str,"       ");
 		break;
