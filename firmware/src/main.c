@@ -162,7 +162,8 @@ ResetReset:
         if ((stat = MLOG_begin(true)) != MLOG_ERR_NONE)
         {
             DEBUG_UART_printlnFormat("MLOG ERROR: %d", stat);
-            DEBUG_HALT();
+			DLCEventLogWrite( _ID1_HALT,0,stat );
+			__NVIC_SystemReset();
         }
         WPFM_status = WPFM_STATUS_WAIT_COMMAND;
         SENSOR_updateMeasurementInterval(1);
@@ -176,19 +177,22 @@ ResetReset:
         DEBUG_UART_printlnString("RUN AS MEASUREMENT MODE");
 		if (WPFM_isVbatDrive == true){
 			// Fall asleep..
-           DEBUG_HALT();
+			DLCEventLogWrite( _ID1_HALT,1,0 );
+			__NVIC_SystemReset();
 		}
         UTIL_startBlinkLED1(5);
 		// initから移動
         if (! WPFM_setNextCommunicateAlarm())
         {
             DEBUG_UART_printlnString("RTC_setAlarm() ERROR");
-            DEBUG_HALT();
+			DLCEventLogWrite( _ID1_HALT,2,0 );
+			__NVIC_SystemReset();
         }
         if ((stat = MLOG_begin(true)) != MLOG_ERR_NONE)
         {
             DEBUG_UART_printlnFormat("MLOG ERROR: %d", stat);
-            DEBUG_HALT();
+			DLCEventLogWrite( _ID1_HALT,3,stat );
+			__NVIC_SystemReset();
         }
         WPFM_status = WPFM_STATUS_WAIT_COMMAND;
         DEBUG_UART_printlnFormat("START MEASURE MODE(%lu)", SYS_tick);
@@ -200,7 +204,8 @@ ResetReset:
 		DEBUG_UART_printlnString("RUN AS POWEROFF MODE");
 		nV1GD_Clear();	// PA06 Low
 			// Fall asleep..
-           DEBUG_HALT();
+		DLCEventLogWrite( _ID1_HALT,4,0 );
+		__NVIC_SystemReset();
 	}
 #else
     else
