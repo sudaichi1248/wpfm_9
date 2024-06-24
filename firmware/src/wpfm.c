@@ -59,7 +59,7 @@ WPFM_SETTING_PARAMETER WPFM_settingParameterDefault =   // default setting param
     { { 1793, 2996, 4070, 4060 }, { 1793, 2995, 4070, 4060 } },     // calibration upper values[LSB]
     { { 566, 566,  30,  40 }, { 566, 566,  20,  40  } },                // calibration lower values[LSB]
     8000,                       // lowThresholdVoltage[mV]
-    3,                          // timesLessThresholdVoltage
+    5,                          // timesLessThresholdVoltage
     300,                        // maximumBatteryExchangeTime[sec]
     "MPa","水圧",               // Measure_ch1, MeaKind_ch1
     "m3/h","流量",              // Measure_ch2, MeaKind_ch2
