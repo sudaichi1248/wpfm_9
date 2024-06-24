@@ -26,15 +26,11 @@ void DLCMatTimerset();
 int	DLCMatTmChk();
 void DLCMatErrorSleep();
 void DLC_Halt();
-#ifdef ADD_FUNCTION
-bool DLCMatWatchAlertPause();
-#endif
 /*
 *   Local variables and functions
 */
 static void onSysTick(uintptr_t context);   // systick interrupt handler
-
-
+char    zEvery1s;							/* ñàïbèàóùÉtÉâÉO */
 /*******************************************************************************
   Function:
     int WPFM_initializeApplication(void)
@@ -577,15 +573,7 @@ void WPFM_onTimeupdate(void)
     {
         WPFM_doMeasure = true;
     }
-#ifdef ADD_FUNCTION
-	WPFM_isAlertPause = DLCMatWatchAlertPause();
-	if (WPFM_isAlertPause == true) {
-		if (WPFM_cancelAlertDone == false) {
-			WPFM_cancelAlert();
-			WPFM_cancelAlertDone = true;
-		}
-	}
-#endif
+    zEvery1s = 1;
 }
 
 /*******************************************************************************
