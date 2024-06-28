@@ -439,12 +439,13 @@ int MLOG_format(void)
     // erase mlog data region in chip
     for (uint8_t blockNo = (MLOG_ADDRESS_MLOG_TOP >> 16); blockNo <= (MLOG_ADDRESS_MLOG_LAST >> 16) ; blockNo++) {
         DEBUG_UART_printlnFormat("eraseBlock64(%02Xh): %lu", (unsigned int)blockNo, SYS_tick);
+		WDT_Clear();
         if (W25Q128JV_eraseBlock64(blockNo, true) != W25Q128JV_ERR_NONE)
         {
             return (MLOG_ERR_ERASE);
         }
     }
-
+	_MLOG_lastSequentialNumber = _MLOG_latestAddress = _MLOG_tailAddress = _MLOG_headAddress = 0;
     DEBUG_UART_printlnFormat("<MLOG_format() OK: %lu", SYS_tick);
     return (MLOG_ERR_NONE);
 }
@@ -916,13 +917,13 @@ int mlogdumywrite(uint32_t logtime)
     MLOG_T mlog;
     mlog.timestamp.second = logtime;
     mlog.timestamp.mSecond = 0;
-    mlog.measuredValues[0] = WPFM_lastMeasuredValues[0];
-    mlog.measuredValues[1] = WPFM_lastMeasuredValues[1];
-    mlog.batteryVoltages[0] = WPFM_lastBatteryVoltages[0];
-    mlog.batteryVoltages[1] = WPFM_lastBatteryVoltages[1];
-    mlog.temperatureOnBoard = WPFM_lastTemperatureOnBoard;
-    mlog.alertStatus = WPFM_lastAlertStatusSuppressed;
-    mlog.batteryStatus = WPFM_batteryStatus;
+    mlog.measuredValues[0] = 1;
+    mlog.measuredValues[1] = 2;
+    mlog.batteryVoltages[0] = 3;
+    mlog.batteryVoltages[1] = 4;
+    mlog.temperatureOnBoard = 5;
+    mlog.alertStatus = 6;
+    mlog.batteryStatus = 7;
 
     int stat;
     // Store log into Flash
