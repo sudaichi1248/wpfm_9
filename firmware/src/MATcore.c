@@ -29,10 +29,10 @@ void IDLEputch();
 void command_main();
 void DLC_delay(int);
 void MatMsgSend( int msg );
-//void _GO_IDLE(){command_main();DLCMatState();}
+void DLCEvery1sProc();													/* 毎秒処理24.6.21 RTC割り込みから移動 */
 #ifdef ADD_FUNCTION
 void DLCMatRtcTimeChk();
-void _GO_IDLE(){WDT_Clear();DLCMatState();IDLEputch();DLCMatRtcTimeChk();}
+void _GO_IDLE(){WDT_Clear();DLCMatState();IDLEputch();DLCMatRtcTimeChk();DLCEvery1sProc();}
 #else
 void _GO_IDLE(){WDT_Clear();DLCMatState();IDLEputch();}
 #endif
@@ -73,6 +73,7 @@ uchar	DLC_NeedTimeAdjust;					/*  1hに1度は時刻補正する */
 uchar	DLC_MatErr;							/* MATcore連続エラーカウンタ */
 int		RTC_deltaT;							/* 時刻補正差分値(秒) */
 uchar	DLC_MatReport300NG;					/* Report 300件NGのフラグ */
+extern char zEvery1s;
 // 測定logリングバッファ試験用
 int mlogdumywrite(uint32_t logtime);
 uint32_t logtime;
@@ -2206,6 +2207,28 @@ bool DLCMatWatchAlertPause()
 	}
 	return false;
 }
+/*
+	1秒毎処理
+	24.6.21 RTCの毎秒割り込みから移動
+*/
+void DLCEvery1sProc()
+{
+	if( zEvery1s ){
+		zEvery1s = 0;
+//		putch('_');
+		WPFM_isAlertPause = DLCMatWatchAlertPause();
+		if (WPFM_isAlertPause == true) {
+			if (WPFM_cancelAlertDone == false) {
+				WPFM_cancelAlert();
+				WPFM_cancelAlertDone = true;
+			}
+		}
+	}
+}
+/*
+	アラーム解除処理
+	RTCの毎秒割り込みから移動（呼び出し元が移動)
+*/
 bool DLCMatCheckAlertPause(char *alertpause_p)
 {
 	RTC_DATETIME dt;
@@ -3033,8 +3056,13 @@ void DLCMatMlogMenu()
 			}
 			break;
 		case 'D':															/* Erase only 10pages */
-			for( int i=0;i<10;i++ )
-				W25Q128JV_eraseSctor(i, true);
+			putst("Delete 64kB Hex(max=b0)=");
+			if( c_gethxw( &num ))
+				break;
+			for( int i=0;i<num;i++ ){
+				WDT_Clear();
+				W25Q128JV_eraseBlock64(i, true);
+			}
 			break;
 		case ' ':															/* インデックス値を表示 */
 			MLOG_addressDisp();
@@ -3042,7 +3070,7 @@ void DLCMatMlogMenu()
 		case 'E':
 			break;
 		case 'F':
-			putst("0:input recode num 1:3000 2:30000\r\n");
+			putst("Add mlog.. 0:input recode num 1:3000 2:100000\r\n");
 			switch( getch() ){
 			case '0':
 				putst("Hex=");
@@ -3057,10 +3085,12 @@ void DLCMatMlogMenu()
 						break;
 					logtime += 4;
 					WDT_Clear();
+					DLC_delay(1);
 				}
-				putst("##### write end #####");
+				putst("mlog write success!\r\n");
 				break;
 			case '1':
+				putst("3000 write proceed...");
 				logtime = RTC_now;
 				logtime &= ~0x03;
 				logtime -= (3000*4);
@@ -3071,20 +3101,24 @@ void DLCMatMlogMenu()
 					logtime += 4;
 					WDT_Clear();
 				}
-				putst("##### write end #####");
+				putst("mlog write success!\r\n");
 				break;
 			case '2':
+				putst("100000 write proceed...");
 				logtime = RTC_now;
 				logtime &= ~0x03;
-				logtime -= (300000*4);
-				for(int i=0;i<300000;i++){
+				logtime -= (100000*4);
+				for(int i=0;i<100000;i++){
 					ret = mlogdumywrite(logtime);
-					if (ret == 0)
+					if (ret != 1){
+						putst("mlogdumywrite=");puthxw( i );putst(" ret=");puthxb( ret );putcrlf();
 						break;
+					}
 					logtime += 4;
 					WDT_Clear();
+					DLC_delay(1);
 				}
-				putst("##### write end #####");
+				putst("mlog write success!\r\n");
 				break;
 			}
 			break;
@@ -3418,6 +3452,7 @@ void DLC_delay( int msec )
 {
 	for(int i=0;i<msec;i++){
 		IDLEputch();
+		DLCEvery1sProc();
 		APP_delay(1);
 //		WDT_Clear();
 	}
