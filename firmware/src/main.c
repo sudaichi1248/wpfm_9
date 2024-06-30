@@ -284,7 +284,7 @@ static void eventLoopOnMeasurementMode(void)
 		SYS_Tasks();
 		DLCMatMain();
 		if (WPFM_wasButtonPressed){															/* ボタン押し状態 */
-		    if (TEST_SW_Get() && (WPFM_tactSwStatus == WPFM_TACTSW_STATUS_PRESSED)){		/* ボタン離した */
+		    if ( TEST_SW_Get() && (WPFM_tactSwStatus == WPFM_TACTSW_STATUS_PRESSED) && !WPFM_isBeingReplacedBattery ){		/* ボタン離した */
 				DEBUG_UART_printlnString(">>SHORT PRSD");
 				WPFM_uploadOneShot(true);													/* 強制発報 */
 				WPFM_tactSwStatus = WPFM_TACTSW_STATUS_RELEASING;
